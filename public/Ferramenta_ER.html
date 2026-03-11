@@ -1311,9 +1311,9 @@ async function exportPPTX() {
   const badgeEst   = s => s==='Em escala'  ?{bg:'E8F4EE',cor:'2D7A4F',label:'EM ESCALA'}
                         : s==='Piloto'     ?{bg:'FEF3DC',cor:'C8860A',label:'PILOTO'}
                         :                  {bg:'E8F0F8',cor:'1A4E7A',label:'EM DESENV.'};
-  const badgeAcao  = s => s==='Em andamento'          ?{bg:'E8F4EE',cor:'2D7A4F',label:'ANDAMENTO'}
-                        : s==='Planejada não iniciada' ?{bg:'FEF3DC',cor:'C8860A',label:'PLANEJADA'}
-                        :                              {bg:'E8F0F8',cor:'1A4E7A',label:'PLANEJANDO'};
+  const badgeInd   = nota => nota>=1.5?{bg:'E8F4EE',cor:'2D7A4F',label:nota.toFixed(1)}
+                         : nota>=0.8 ?{bg:'FEF3DC',cor:'C8860A',label:nota.toFixed(1)}
+                         :           {bg:'FCE8E8',cor:'C0392B',label:nota.toFixed(1)};
 
   // Estimador conservador de altura de texto (em polegadas)
   // Usa largura real em pixels (96dpi) e fator empírico de 0.55 char/px
