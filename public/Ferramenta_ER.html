@@ -1271,8 +1271,8 @@ function refreshMat() {
     card.querySelector('.mat-geral-valor').style.color = cor;
     card.querySelector('.mat-geral-valor').nextElementSibling.textContent = 'Média dos eixos: '+mat.media+'%';
     card.querySelector('.mat-eixos').innerHTML =
-      renderEixoBar('Estratégias', mat.e1) +
-      renderEixoBar('Ações', mat.e2) +
+      renderEixoBar('Indicadores', mat.e1) +
+      renderEixoBar('Estratégias', mat.e2) +
       renderEixoBar('Lacunas', mat.e3);
   }
 }
