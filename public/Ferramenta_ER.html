@@ -770,7 +770,7 @@ function defaultCoalizoes() {
 // Carrega dados do Google Sheets via Apps Script
 async function loadFromSheets() {
   try {
-    const res = await fetch(APPS_SCRIPT_URL, { method: 'GET' });
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'GET', credentials: 'include' });
     const json = await res.json();
     if (json.ok && Array.isArray(json.dados)) {
       json.dados.forEach(c => {
@@ -789,6 +789,7 @@ async function saveToSheets(dados) {
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dados }),
     });
@@ -1646,7 +1647,7 @@ async function init() {
     '<div style="font-family:DM Sans,sans-serif;font-size:13px;color:#888">Carregando dados...</div>' +
     '</div>';
 
-  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'https://script.google.com/a/macros/natura.net/s/AKfycby79hVbizgLDTwURyIbfW--Fb0cDcHqRu7-BnUtEJ2p6PT3WgroX1h5kxu3h5wQ-Xcy/exec') {
+  if (APPS_SCRIPT_URL) {
     const dados = await loadFromSheets();
     if (dados) state.coaliz = dados;
   }
