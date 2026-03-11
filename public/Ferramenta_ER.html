@@ -1169,8 +1169,8 @@ function renderSintese() {
     { label: 'Maturidade Geral', fn: c => { const m = calcMaturidade(c); return { tag: m.nivel, cl: matClass(m.nivel) }; } },
     { label: 'Diagnóstico (dados)', fn: c => c.diagnostico.stat1 ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
     { label: 'Visão de Sucesso', fn: c => c.visaoSucesso ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
+    { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
-    { label: 'Eixo Ações', fn: c => { const e = calcEixo(c.acoes,'acoes'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
