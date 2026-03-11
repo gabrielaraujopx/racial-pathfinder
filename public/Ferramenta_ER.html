@@ -789,6 +789,7 @@ async function saveToSheets(dados) {
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dados }),
     });
