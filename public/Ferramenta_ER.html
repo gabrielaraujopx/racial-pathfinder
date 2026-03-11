@@ -770,7 +770,7 @@ function defaultCoalizoes() {
 // Carrega dados do Google Sheets via Apps Script
 async function loadFromSheets() {
   try {
-    const res = await fetch(APPS_SCRIPT_URL, { method: 'GET' });
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'GET', credentials: 'include' });
     const json = await res.json();
     if (json.ok && Array.isArray(json.dados)) {
       json.dados.forEach(c => {
