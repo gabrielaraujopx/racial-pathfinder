@@ -839,18 +839,31 @@ function calcEixoLacunas(lacunas) {
   return { pct: Math.round(pct), nivel };
 }
 
+function calcEixoIndicadores(indicadores) {
+  if (!indicadores || indicadores.length === 0) return { pct: 0, nivel: 'Incipiente' };
+  const somaNotas = indicadores.reduce((acc, ind) => {
+    const statusVal = ind.statusQualidade === 'Tem' ? 2 : ind.statusQualidade === 'Tem parcialmente' ? 1 : 0;
+    const estadosVal = ind.resultadoEstados === 'S' ? 2 : ind.resultadoEstados === 'P' ? 1 : 0;
+    const nacionalVal = ind.resultadoNacional === 'S' ? 2 : ind.resultadoNacional === 'P' ? 1 : 0;
+    return acc + (statusVal + estadosVal + nacionalVal) / 3;
+  }, 0);
+  const media = somaNotas / indicadores.length; // 0 a 2
+  const pct = Math.round((media / 2) * 100);
+  const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
+  return { pct, nivel };
+}
+
 function calcMaturidade(c) {
-  const e1 = calcEixo(c.estrategias, 'estrategias');
-  const e2 = calcEixo(c.acoes, 'acoes');
+  const e1 = calcEixoIndicadores(c.indicadores);
+  const e2 = calcEixo(c.estrategias, 'estrategias');
   const e3 = calcEixoLacunas(c.lacunas);
 
-  const temDados = c.estrategias.length > 0 || c.acoes.length > 0 || c.lacunas.length > 0;
+  const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
 
   const media = Math.round((e1.pct + e2.pct + e3.pct) / 3);
   const niveis = ['Inicial', 'Em desenvolvimento', 'Em consolidação', 'Média', 'Avançada', 'Alta'];
 
-  // Nível base por percentual
   let idx;
   if      (media >= 85) idx = 5;
   else if (media >= 70) idx = 4;
@@ -859,12 +872,10 @@ function calcMaturidade(c) {
   else if (media >= 25) idx = 1;
   else                  idx = 0;
 
-  // Restrições por eixos Incipientes
   const nIncipientes = [e1, e2, e3].filter(e => e.nivel === 'Incipiente').length;
   if (nIncipientes >= 2) idx = Math.max(0, idx - 2);
   else if (nIncipientes === 1) idx = Math.max(0, idx - 1);
 
-  // Bônus: todos os 3 eixos Consolidados
   const todosConsolidados = [e1, e2, e3].every(e => e.nivel === 'Consolidado');
   if (todosConsolidados) idx = Math.min(5, idx + 1);
 
