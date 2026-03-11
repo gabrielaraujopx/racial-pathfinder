@@ -1545,8 +1545,8 @@ async function exportPPTX() {
 
     const dimsSint = [
       { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
+      { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Eixo Ações',        fn: c => { const e=calcEixo(c.acoes,'acoes');              return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas);            return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
     ];
 
