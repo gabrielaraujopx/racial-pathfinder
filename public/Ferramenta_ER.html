@@ -1067,18 +1067,54 @@ function renderItemEstrategia(it, i) {
   </div>`;
 }
 
-function renderItemAcao(it, i) {
-  const opts = ['Em planejamento','Planejada não iniciada','Em andamento'];
+function renderItemIndicador(it, i) {
+  const tipoOpts = ['Alcance','Transformação'];
+  const statusOpts = [['Tem',2],['Tem parcialmente',1]];
+  const resultOpts = [['Não (N)',0],['Parcialmente (P)',1],['Sim (S)',2]];
+  const statusVal = it.statusQualidade === 'Tem' ? 2 : it.statusQualidade === 'Tem parcialmente' ? 1 : 0;
+  const estadosVal = it.resultadoEstados === 'S' ? 2 : it.resultadoEstados === 'P' ? 1 : 0;
+  const nacionalVal = it.resultadoNacional === 'S' ? 2 : it.resultadoNacional === 'P' ? 1 : 0;
+  const nota = ((statusVal + estadosVal + nacionalVal) / 3).toFixed(2);
   return `<div class="item-card">
     <div class="item-card-content">
       <div class="item-card-row">
-        <textarea class="item-texto-input" rows="2" oninput="upItem('acoes',${i},'texto',this.value)" placeholder="Descreva a ação...">${it.texto||''}</textarea>
-        <select class="item-select" onchange="upItem('acoes',${i},'status',this.value)">
-          ${opts.map(o => `<option value="${o}" ${it.status===o?'selected':''}>${o}</option>`).join('')}
+        <textarea class="item-texto-input" rows="2" oninput="upItem('indicadores',${i},'texto',this.value)" placeholder="Nome/descrição do indicador...">${it.texto||''}</textarea>
+        <select class="item-select" onchange="upItem('indicadores',${i},'tipo',this.value)">
+          ${tipoOpts.map(o => `<option value="${o}" ${it.tipo===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
+      <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Status de qualidade</span>
+          <select class="item-select" onchange="upItem('indicadores',${i},'statusQualidade',this.value);renderCoalizao()">
+            <option value="" ${!it.statusQualidade?'selected':''}>—</option>
+            ${statusOpts.map(([label]) => `<option value="${label}" ${it.statusQualidade===label?'selected':''}>${label}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Resultado ≥2 estados</span>
+          <select class="item-select" onchange="upItem('indicadores',${i},'resultadoEstados',this.value);renderCoalizao()">
+            <option value="" ${!it.resultadoEstados?'selected':''}>—</option>
+            <option value="N" ${it.resultadoEstados==='N'?'selected':''}>Não (N)</option>
+            <option value="P" ${it.resultadoEstados==='P'?'selected':''}>Parcialmente (P)</option>
+            <option value="S" ${it.resultadoEstados==='S'?'selected':''}>Sim (S)</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Resultado nacional</span>
+          <select class="item-select" onchange="upItem('indicadores',${i},'resultadoNacional',this.value);renderCoalizao()">
+            <option value="" ${!it.resultadoNacional?'selected':''}>—</option>
+            <option value="N" ${it.resultadoNacional==='N'?'selected':''}>Não (N)</option>
+            <option value="P" ${it.resultadoNacional==='P'?'selected':''}>Parcialmente (P)</option>
+            <option value="S" ${it.resultadoNacional==='S'?'selected':''}>Sim (S)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <span style="font-size:11px;font-weight:700;color:var(--laranja)">Nota: ${nota}</span>
+        </div>
+      </div>
     </div>
-    <button class="item-remove" onclick="removeItem('acoes',${i})">×</button>
+    <button class="item-remove" onclick="removeItem('indicadores',${i})">×</button>
   </div>`;
 }
 
