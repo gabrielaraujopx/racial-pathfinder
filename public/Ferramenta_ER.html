@@ -987,16 +987,19 @@ function renderCoalizao() {
       </div>
     `)}
 
-    <!-- Estratégias -->
-    ${renderSecao(1, 'Estratégias Existentes', '#E05A1A', `
-      <div class="items-lista" id="lista-estrategias">${c.estrategias.map((it,i) => renderItemEstrategia(it,i)).join('')}</div>
-      <button class="btn-add" onclick="addItem('estrategias')">+ Adicionar estratégia</button>
+    <!-- Indicadores -->
+    ${renderSecao(1, 'Indicadores', '#1A4E7A', `
+      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
+        📊 Adicione indicadores de equidade racial. A nota do eixo é a média das notas individuais (escala 0–2).
+      </div>
+      <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i)).join('')}</div>
+      <button class="btn-add" onclick="addItem('indicadores')">+ Adicionar indicador</button>
     `)}
 
-    <!-- Ações -->
-    ${renderSecao(2, 'Ações', '#1A4E7A', `
-      <div class="items-lista" id="lista-acoes">${c.acoes.map((it,i) => renderItemAcao(it,i)).join('')}</div>
-      <button class="btn-add" onclick="addItem('acoes')">+ Adicionar ação</button>
+    <!-- Estratégias -->
+    ${renderSecao(2, 'Estratégias Existentes', '#E05A1A', `
+      <div class="items-lista" id="lista-estrategias">${c.estrategias.map((it,i) => renderItemEstrategia(it,i)).join('')}</div>
+      <button class="btn-add" onclick="addItem('estrategias')">+ Adicionar estratégia</button>
     `)}
 
     <!-- Lacunas -->
