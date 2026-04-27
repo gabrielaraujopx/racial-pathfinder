@@ -1431,14 +1431,21 @@ async function exportPPTX() {
     const itemStartY = labY + labH1 + 0.05;
 
     // ── Col 1: Indicadores ──
-    const indTW = colW - PAD*0.6 - leftZone - PAD*0.4;
+    // Reserva espaço à direita para 3 mini-badges (Q / RSN² / RN)
+    const indBdgH   = 0.115;
+    const indBdgW   = 0.30;
+    const indBdgGap = 0.025;
+    const indBdgsW  = indBdgW*3 + indBdgGap*2;
+    const indTW = colW - PAD*0.6 - leftZone - indBdgsW - 0.05 - PAD*0.4;
+    const corStatusQ = v => v==='Tem'              ?{bg:'E8F4EE',cor:'2D7A4F'}
+                        : v==='Tem parcialmente' ?{bg:'FEF3DC',cor:'C8860A'}
+                        :                         {bg:'FCE8E8',cor:'C0392B'};
+    const corResult  = v => v==='S' ?{bg:'E8F4EE',cor:'2D7A4F'}
+                        : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
+                        :          {bg:'FCE8E8',cor:'C0392B'};
     let yI = itemStartY;
     c.indicadores.slice(0,8).forEach((ind,idx) => {
       const txt    = ind.texto||'—';
-      const statusVal = ind.statusQualidade === 'Tem' ? 2 : ind.statusQualidade === 'Tem parcialmente' ? 1 : 0;
-      const estadosVal = ind.resultadoEstados === 'S' ? 2 : ind.resultadoEstados === 'P' ? 1 : 0;
-      const nacionalVal = ind.resultadoNacional === 'S' ? 2 : ind.resultadoNacional === 'P' ? 1 : 0;
-      const nota = ((statusVal + estadosVal + nacionalVal) / 3).toFixed(1);
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
       const totalH = tH + itmGap;
       if (yI + totalH > colBot) return;
@@ -1446,7 +1453,20 @@ async function exportPPTX() {
       const tX  = cX + leftZone;
       s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:C.azul},line:{color:C.azul}});
       s.addText(String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
-      s.addText(txt+' ('+nota+')',{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      s.addText(txt,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      // 3 mini-badges à direita do texto, alinhadas com a bolinha
+      const bdgs = [
+        { label:'Q',    ...corStatusQ(ind.statusQualidade) },
+        { label:'RSN²', ...corResult(ind.resultadoEstados) },
+        { label:'RN',   ...corResult(ind.resultadoNacional) },
+      ];
+      const bStartX = tX + indTW + 0.05;
+      const bMidY   = yI + (circR - indBdgH) / 2;
+      bdgs.forEach((b,bi) => {
+        const bX = bStartX + bi*(indBdgW + indBdgGap);
+        s.addShape(pres.ShapeType.roundRect,{x:bX,y:bMidY,w:indBdgW,h:indBdgH,fill:{color:b.bg},line:{color:b.bg},rectRadius:0.025});
+        s.addText(b.label,{x:bX,y:bMidY,w:indBdgW,h:indBdgH,fontSize:6,bold:true,color:b.cor,align:'center',valign:'middle',fontFace:'Calibri',wrap:false,shrinkText:true});
+      });
       yI += totalH;
     });
 
