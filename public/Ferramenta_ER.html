@@ -1437,8 +1437,9 @@ async function exportPPTX() {
     const indBdgGap = 0.025;
     const indBdgsW  = indBdgW*3 + indBdgGap*2;
     const indTW = colW - PAD*0.6 - leftZone - indBdgsW - 0.05 - PAD*0.4;
-    const corStatusQ = v => v==='Tem' ?{bg:'E8F4EE',cor:'2D7A4F'}
-                        :              {bg:'FCE8E8',cor:'C0392B'};
+    const corStatusQ = v => v==='Tem'              ?{bg:'E8F4EE',cor:'2D7A4F'}
+                        : v==='Tem parcialmente' ?{bg:'FEF3DC',cor:'C8860A'}
+                        :                         {bg:'FCE8E8',cor:'C0392B'};
     const corResult  = v => v==='S' ?{bg:'E8F4EE',cor:'2D7A4F'}
                         : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
                         :          {bg:'FCE8E8',cor:'C0392B'};
