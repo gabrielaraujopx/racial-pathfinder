@@ -827,7 +827,11 @@ function calcEixo(items, tipo) {
   const pesos = STATUS_PESO[tipo];
   const max = 3;
   const soma = items.reduce((acc, it) => acc + (pesos[it.status] || 1), 0);
-  const pct = (soma / (items.length * max)) * 100;
+  const pctQualidade = (soma / (items.length * max)) * 100;
+  // Fator de robustez (k=2): pondera qualidade pela quantidade com retornos decrescentes
+  const k = 2;
+  const robustez = Math.sqrt(items.length / (items.length + k));
+  const pct = pctQualidade * robustez;
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
   return { pct: Math.round(pct), nivel };
 }
@@ -855,7 +859,11 @@ function calcEixoIndicadores(indicadores) {
     return acc + (statusVal + estadosVal + nacionalVal) / 3;
   }, 0);
   const media = somaNotas / indicadores.length; // 0 a 2
-  const pct = Math.round((media / 2) * 100);
+  const pctQualidade = (media / 2) * 100;
+  // Fator de robustez (k=2): pondera qualidade pela quantidade com retornos decrescentes
+  const k = 2;
+  const robustez = Math.sqrt(indicadores.length / (indicadores.length + k));
+  const pct = Math.round(pctQualidade * robustez);
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
   return { pct, nivel };
 }
