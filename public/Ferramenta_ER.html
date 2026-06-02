@@ -837,7 +837,7 @@ function calcEixo(items, tipo) {
 }
 
 function calcEixoLacunas(lacunas) {
-  if (!lacunas || lacunas.length === 0) return { pct: 0, nivel: 'Incipiente' };
+  if (!lacunas || lacunas.length === 0) return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Sem lacunas registradas' };
   const max = 3;
   const soma = lacunas.reduce((acc, lac) => {
     if (lac.encaminhamento === 'sim') return acc + 3;
@@ -845,9 +845,14 @@ function calcEixoLacunas(lacunas) {
     if (lac.criticidade === 'Média') return acc + 1;
     return acc + 2; // Baixa sem enc
   }, 0);
+  // Sem fator de robustez (k): no eixo Lacunas, menos itens não deve penalizar.
   const pct = (soma / (lacunas.length * max)) * 100;
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
-  return { pct: Math.round(pct), nivel };
+  const nivelLacunas = pct >= 80 ? 'Baixa criticidade'
+                     : pct >= 60 ? 'Criticidade moderada'
+                     : pct >= 35 ? 'Criticidade alta'
+                     :             'Criticidade crítica';
+  return { pct: Math.round(pct), nivel, nivelLacunas };
 }
 
 function calcEixoIndicadores(indicadores) {
