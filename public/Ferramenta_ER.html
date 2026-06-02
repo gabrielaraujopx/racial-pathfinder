@@ -914,6 +914,21 @@ function eixoColor(nivel) {
   return '#C0392B';
 }
 
+function lacunasColor(nivelLac) {
+  if (nivelLac === 'Baixa criticidade')      return '#2D7A4F';
+  if (nivelLac === 'Criticidade moderada')   return '#C8860A';
+  if (nivelLac === 'Criticidade alta')       return '#E67E22';
+  if (nivelLac === 'Criticidade crítica')    return '#C0392B';
+  return '#8A8A8A';
+}
+function lacunasMatClass(nivelLac) {
+  if (nivelLac === 'Baixa criticidade')    return 'mat-alta';
+  if (nivelLac === 'Criticidade moderada') return 'mat-avancada';
+  if (nivelLac === 'Criticidade alta')     return 'mat-desenv';
+  if (nivelLac === 'Criticidade crítica')  return 'mat-baixa';
+  return 'mat-vazia';
+}
+
 // ══════════════════════════════════════════════════════════════
 // RENDER SIDEBAR NAV
 // ══════════════════════════════════════════════════════════════
