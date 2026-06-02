@@ -1056,10 +1056,12 @@ function renderCoalizao() {
 }
 
 function renderEixoBar(label, eixo) {
-  const cor = eixoColor(eixo.nivel);
+  const isLac = label === 'Lacunas';
+  const niv = isLac ? (eixo.nivelLacunas || 'Sem lacunas registradas') : eixo.nivel;
+  const cor = isLac ? lacunasColor(niv) : eixoColor(eixo.nivel);
   return `<div class="mat-eixo">
     <div class="mat-eixo-label">${label}</div>
-    <div class="mat-eixo-valor" style="color:${cor}">${eixo.nivel}</div>
+    <div class="mat-eixo-valor" style="color:${cor}">${niv}</div>
     <div class="mat-bar-bg"><div class="mat-bar-fill" style="width:${eixo.pct}%;background:${cor}"></div></div>
     <div class="mat-pct">${eixo.pct}%</div>
   </div>`;
