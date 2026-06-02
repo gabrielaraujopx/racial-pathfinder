@@ -828,9 +828,10 @@ function calcEixo(items, tipo) {
   const max = 3;
   const soma = items.reduce((acc, it) => acc + (pesos[it.status] || 1), 0);
   const pctQualidade = (soma / (items.length * max)) * 100;
-  // Fator de robustez (k=2): pondera qualidade pela quantidade com retornos decrescentes
-  const k = 2;
-  const robustez = Math.sqrt(items.length / (items.length + k));
+  // Fator de robustez com saturação em n_ref=3:
+  // 1 item = 58%, 2 = 82%, 3+ = 100% (a partir daí, eixo = pura qualidade).
+  const nRef = 3;
+  const robustez = Math.min(1, Math.sqrt(items.length / nRef));
   const pct = pctQualidade * robustez;
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
   return { pct: Math.round(pct), nivel };
@@ -865,9 +866,10 @@ function calcEixoIndicadores(indicadores) {
   }, 0);
   const media = somaNotas / indicadores.length; // 0 a 2
   const pctQualidade = (media / 2) * 100;
-  // Fator de robustez (k=2): pondera qualidade pela quantidade com retornos decrescentes
-  const k = 2;
-  const robustez = Math.sqrt(indicadores.length / (indicadores.length + k));
+  // Fator de robustez com saturação em n_ref=3:
+  // 1 indicador = 58%, 2 = 82%, 3+ = 100% (a partir daí, eixo = pura qualidade).
+  const nRef = 3;
+  const robustez = Math.min(1, Math.sqrt(indicadores.length / nRef));
   const pct = Math.round(pctQualidade * robustez);
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
   return { pct, nivel };
