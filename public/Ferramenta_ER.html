@@ -1019,6 +1019,9 @@ function renderCoalizao() {
         ${renderEixoBar('Lacunas', mat.e3)}
       </div>
     </div>
+    ${mat.alertaLacunas ? `<div class="alerta-lacunas" style="margin:-8px 0 16px;padding:10px 14px;background:#FEF3DC;border-left:3px solid #C8860A;border-radius:4px;font-size:12px;color:#7A5A0A;">
+      ⚠ A coalizão declarou <strong>não identificar lacunas relevantes</strong>, mas os Eixos Indicadores e Estratégias ainda estão em estágio inicial. Recomenda-se revisitar esse autodiagnóstico.
+    </div>` : ''}
 
     <!-- Diagnóstico -->
     ${renderSecao(0, 'Diagnóstico e Contexto', '#E05A1A', `
