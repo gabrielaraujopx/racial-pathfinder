@@ -1069,6 +1069,16 @@ function renderCoalizao() {
 
     <!-- Lacunas -->
     ${renderSecao(3, 'Lacunas', '#C8860A', `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bege);border-radius:5px;font-size:12px;">
+        <span style="font-weight:600;color:var(--cinza-m)">Estado do mapeamento de lacunas:</span>
+        <select class="item-select" style="max-width:320px" onchange="upEstadoLacunas(this.value)">
+          <option value="mapeadas"          ${(c.estadoLacunas||'nao_realizado')==='mapeadas'?'selected':''}>Mapeadas (itens preenchidos abaixo)</option>
+          <option value="nao_identificadas" ${c.estadoLacunas==='nao_identificadas'?'selected':''}>Não identificamos lacunas relevantes</option>
+          <option value="em_mapeamento"     ${c.estadoLacunas==='em_mapeamento'?'selected':''}>Em mapeamento</option>
+          <option value="nao_realizado"     ${(c.estadoLacunas||'nao_realizado')==='nao_realizado'?'selected':''}>Não mapeado (ainda não realizamos)</option>
+        </select>
+        <span style="color:var(--cinza-m);font-size:11px">· quando há itens listados, o estado é tratado como "Mapeadas"</span>
+      </div>
       <div class="items-lista" id="lista-lacunas">${c.lacunas.map((it,i) => renderItemLacuna(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('lacunas')">+ Adicionar lacuna</button>
     `)}
