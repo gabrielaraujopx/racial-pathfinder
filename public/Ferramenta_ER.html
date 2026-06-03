@@ -953,6 +953,9 @@ function lacunasMatClass(nivelLac) {
   if (nivelLac === 'Criticidade moderada') return 'mat-avancada';
   if (nivelLac === 'Criticidade alta')     return 'mat-desenv';
   if (nivelLac === 'Criticidade crítica')  return 'mat-baixa';
+  if (nivelLac === 'Sem lacunas relevantes') return 'mat-alta';
+  if (nivelLac === 'Em mapeamento')          return 'mat-desenv';
+  if (nivelLac === 'Não mapeado')            return 'mat-baixa';
   return 'mat-vazia';
 }
 
