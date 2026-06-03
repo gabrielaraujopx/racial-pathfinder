@@ -1240,7 +1240,7 @@ function renderSintese() {
     { label: 'Visão de Sucesso', fn: c => c.visaoSucesso ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
     { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
-    { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
+    { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
     { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
 
@@ -1645,7 +1645,7 @@ async function exportPPTX() {
       { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
       { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
+      { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
     ];
 
     dimsSint.forEach((dim,row) => {
