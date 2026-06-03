@@ -883,13 +883,7 @@ function calcMaturidade(c) {
   const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
 
-  // Eixo Lacunas vazio é ambíguo (pode significar ausência de problemas OU falta de
-  // capacidade de diagnóstico). Por isso, quando vazio, ele é excluído da média e
-  // não conta como "Incipiente" para fins de penalização.
-  const lacunasVazio = !c.lacunas || c.lacunas.length === 0;
-  const eixosAtivos = lacunasVazio ? [e1, e2] : [e1, e2, e3];
-  const somaPct = eixosAtivos.reduce((s, e) => s + e.pct, 0);
-  const media = Math.round(somaPct / eixosAtivos.length);
+  const media = Math.round((e1.pct + e2.pct + e3.pct) / 3);
   const niveis = ['Inicial', 'Em desenvolvimento', 'Em consolidação', 'Média', 'Avançada', 'Alta'];
 
   let idx;
@@ -900,14 +894,11 @@ function calcMaturidade(c) {
   else if (media >= 25) idx = 1;
   else                  idx = 0;
 
-  // Penalização por eixos incipientes considera apenas eixos ativos (Lacunas vazio
-  // não penaliza, pois não se pode afirmar que reflete imaturidade).
-  const nIncipientes = eixosAtivos.filter(e => e.nivel === 'Incipiente').length;
+  const nIncipientes = [e1, e2, e3].filter(e => e.nivel === 'Incipiente').length;
   if (nIncipientes >= 2) idx = Math.max(0, idx - 2);
   else if (nIncipientes === 1) idx = Math.max(0, idx - 1);
 
-  // Bônus por excelência: todos os eixos ativos consolidados.
-  const todosConsolidados = eixosAtivos.every(e => e.nivel === 'Consolidado');
+  const todosConsolidados = [e1, e2, e3].every(e => e.nivel === 'Consolidado');
   if (todosConsolidados) idx = Math.min(5, idx + 1);
 
   return { nivel: niveis[idx], e1, e2, e3, media };
