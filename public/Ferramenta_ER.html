@@ -769,6 +769,7 @@ function defaultCoalizoes() {
     indicadores: [],
     estrategias: [],
     lacunas: [],
+    estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
     evidencias: [],
   }));
 }
@@ -781,6 +782,7 @@ async function loadFromSheets() {
     if (json.ok && Array.isArray(json.dados)) {
       json.dados.forEach(c => {
         if (!Array.isArray(c.diagnostico)) c.diagnostico = [];
+        if (!c.estadoLacunas) c.estadoLacunas = 'nao_realizado';
       });
       return json.dados;
     }
