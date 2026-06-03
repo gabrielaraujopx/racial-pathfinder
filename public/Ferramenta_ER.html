@@ -839,23 +839,37 @@ function calcEixo(items, tipo) {
   return { pct: Math.round(pct), nivel };
 }
 
-function calcEixoLacunas(lacunas) {
-  if (!lacunas || lacunas.length === 0) return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Sem lacunas registradas' };
-  const max = 3;
-  const soma = lacunas.reduce((acc, lac) => {
-    if (lac.encaminhamento === 'sim') return acc + 3;
-    if (lac.criticidade === 'Alta') return acc + 0;
-    if (lac.criticidade === 'Média') return acc + 1;
-    return acc + 2; // Baixa sem enc
-  }, 0);
-  // Sem fator de robustez (k): no eixo Lacunas, menos itens não deve penalizar.
-  const pct = (soma / (lacunas.length * max)) * 100;
-  const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
-  const nivelLacunas = pct >= 80 ? 'Baixa criticidade'
-                     : pct >= 60 ? 'Criticidade moderada'
-                     : pct >= 35 ? 'Criticidade alta'
-                     :             'Criticidade crítica';
-  return { pct: Math.round(pct), nivel, nivelLacunas };
+function calcEixoLacunas(lacunas, estadoDecl) {
+  // Quando há itens: aplica regra normal (estado é tratado como 'mapeadas', sem penalização extra).
+  if (lacunas && lacunas.length > 0) {
+    const max = 3;
+    const soma = lacunas.reduce((acc, lac) => {
+      if (lac.encaminhamento === 'sim') return acc + 3;
+      if (lac.criticidade === 'Alta') return acc + 0;
+      if (lac.criticidade === 'Média') return acc + 1;
+      return acc + 2; // Baixa sem enc
+    }, 0);
+    // Sem fator de robustez (k): no eixo Lacunas, menos itens não deve penalizar.
+    const pct = (soma / (lacunas.length * max)) * 100;
+    const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
+    const nivelLacunas = pct >= 80 ? 'Baixa criticidade'
+                       : pct >= 60 ? 'Criticidade moderada'
+                       : pct >= 35 ? 'Criticidade alta'
+                       :             'Criticidade crítica';
+    return { pct: Math.round(pct), nivel, nivelLacunas, estado: 'mapeadas' };
+  }
+  // Eixo vazio: usa estado declarado.
+  const estado = estadoDecl || 'nao_realizado';
+  if (estado === 'nao_identificadas') {
+    // Excluído da média geral (neutro positivo).
+    return { pct: 100, nivel: 'Consolidado', nivelLacunas: 'Sem lacunas relevantes', estado, excluir: true };
+  }
+  if (estado === 'em_mapeamento') {
+    // Score parcial fixo (25%) — reconhece esforço em curso.
+    return { pct: 25, nivel: 'Incipiente', nivelLacunas: 'Em mapeamento', estado };
+  }
+  // 'nao_realizado' (default): penalização cheia.
+  return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Não mapeado', estado };
 }
 
 function calcEixoIndicadores(indicadores) {
@@ -880,12 +894,15 @@ function calcEixoIndicadores(indicadores) {
 function calcMaturidade(c) {
   const e1 = calcEixoIndicadores(c.indicadores);
   const e2 = calcEixo(c.estrategias, 'estrategias');
-  const e3 = calcEixoLacunas(c.lacunas);
+  const e3 = calcEixoLacunas(c.lacunas, c.estadoLacunas);
 
   const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
 
-  const media = Math.round((e1.pct + e2.pct + e3.pct) / 3);
+  // Se Lacunas foi declarado como "Não identificamos lacunas relevantes",
+  // o eixo é excluído da média (neutro) — coalizão que já tratou tudo não é penalizada.
+  const eixosMedia = e3.excluir ? [e1, e2] : [e1, e2, e3];
+  const media = Math.round(eixosMedia.reduce((s, e) => s + e.pct, 0) / eixosMedia.length);
   const niveis = ['Inicial', 'Em desenvolvimento', 'Em consolidação', 'Média', 'Avançada', 'Alta'];
 
   let idx;
@@ -896,14 +913,17 @@ function calcMaturidade(c) {
   else if (media >= 25) idx = 1;
   else                  idx = 0;
 
-  const nIncipientes = [e1, e2, e3].filter(e => e.nivel === 'Incipiente').length;
+  const nIncipientes = eixosMedia.filter(e => e.nivel === 'Incipiente').length;
   if (nIncipientes >= 2) idx = Math.max(0, idx - 2);
   else if (nIncipientes === 1) idx = Math.max(0, idx - 1);
 
-  const todosConsolidados = [e1, e2, e3].every(e => e.nivel === 'Consolidado');
+  const todosConsolidados = eixosMedia.every(e => e.nivel === 'Consolidado');
   if (todosConsolidados) idx = Math.min(5, idx + 1);
 
-  return { nivel: niveis[idx], e1, e2, e3, media };
+  // Alerta cruzado: coalizão declarou "Sem lacunas relevantes" mas Eixos 1 e 2 ainda incipientes.
+  const alertaLacunas = e3.excluir && ((e1.pct + e2.pct) / 2) < 50;
+
+  return { nivel: niveis[idx], e1, e2, e3, media, alertaLacunas };
 }
 
 function matClass(nivel) {
