@@ -1493,7 +1493,7 @@ async function exportPPTX() {
         ? (lacunasColor(nivExib)||'#8A8A8A').replace('#','')
         : eixoNivCor(eixoData.nivel);
       const statBg  = isLac
-        ? (nivExib==='Baixa criticidade'?'E8F4EE':nivExib==='Criticidade moderada'?'FEF3DC':nivExib==='Criticidade alta'?'FBE5D6':'FCE8E8')
+        ? (nivExib==='Baixa criticidade'||nivExib==='Sem lacunas relevantes'?'E8F4EE':nivExib==='Criticidade moderada'?'FEF3DC':nivExib==='Criticidade alta'?'FBE5D6':nivExib==='Em mapeamento'?'EEEAE3':'FCE8E8')
         : (eixoData.nivel==='Consolidado'?'E8F4EE':eixoData.nivel==='Avançado'?'D4EDE0':eixoData.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8');
       s.addText(labelTxt,{x:colX+PAD*0.6,y:labY,w:lW,h:labH1,fontSize:10,bold:true,color:labelCor,charSpacing:0.2,fontFace:'Calibri',valign:'middle',shrinkText:true});
       s.addShape(pres.ShapeType.roundRect,{x:sX,y:labY,w:sW,h:labH1,fill:{color:statBg},line:{color:statBg},rectRadius:0.03});
