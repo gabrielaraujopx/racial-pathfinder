@@ -769,6 +769,7 @@ function defaultCoalizoes() {
     indicadores: [],
     estrategias: [],
     lacunas: [],
+    estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
     evidencias: [],
   }));
 }
@@ -781,6 +782,7 @@ async function loadFromSheets() {
     if (json.ok && Array.isArray(json.dados)) {
       json.dados.forEach(c => {
         if (!Array.isArray(c.diagnostico)) c.diagnostico = [];
+        if (!c.estadoLacunas) c.estadoLacunas = 'nao_realizado';
       });
       return json.dados;
     }
@@ -837,23 +839,37 @@ function calcEixo(items, tipo) {
   return { pct: Math.round(pct), nivel };
 }
 
-function calcEixoLacunas(lacunas) {
-  if (!lacunas || lacunas.length === 0) return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Sem lacunas registradas' };
-  const max = 3;
-  const soma = lacunas.reduce((acc, lac) => {
-    if (lac.encaminhamento === 'sim') return acc + 3;
-    if (lac.criticidade === 'Alta') return acc + 0;
-    if (lac.criticidade === 'Média') return acc + 1;
-    return acc + 2; // Baixa sem enc
-  }, 0);
-  // Sem fator de robustez (k): no eixo Lacunas, menos itens não deve penalizar.
-  const pct = (soma / (lacunas.length * max)) * 100;
-  const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
-  const nivelLacunas = pct >= 80 ? 'Baixa criticidade'
-                     : pct >= 60 ? 'Criticidade moderada'
-                     : pct >= 35 ? 'Criticidade alta'
-                     :             'Criticidade crítica';
-  return { pct: Math.round(pct), nivel, nivelLacunas };
+function calcEixoLacunas(lacunas, estadoDecl) {
+  // Quando há itens: aplica regra normal (estado é tratado como 'mapeadas', sem penalização extra).
+  if (lacunas && lacunas.length > 0) {
+    const max = 3;
+    const soma = lacunas.reduce((acc, lac) => {
+      if (lac.encaminhamento === 'sim') return acc + 3;
+      if (lac.criticidade === 'Alta') return acc + 0;
+      if (lac.criticidade === 'Média') return acc + 1;
+      return acc + 2; // Baixa sem enc
+    }, 0);
+    // Sem fator de robustez (k): no eixo Lacunas, menos itens não deve penalizar.
+    const pct = (soma / (lacunas.length * max)) * 100;
+    const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
+    const nivelLacunas = pct >= 80 ? 'Baixa criticidade'
+                       : pct >= 60 ? 'Criticidade moderada'
+                       : pct >= 35 ? 'Criticidade alta'
+                       :             'Criticidade crítica';
+    return { pct: Math.round(pct), nivel, nivelLacunas, estado: 'mapeadas' };
+  }
+  // Eixo vazio: usa estado declarado.
+  const estado = estadoDecl || 'nao_realizado';
+  if (estado === 'nao_identificadas') {
+    // Excluído da média geral (neutro positivo).
+    return { pct: 100, nivel: 'Consolidado', nivelLacunas: 'Sem lacunas relevantes', estado, excluir: true };
+  }
+  if (estado === 'em_mapeamento') {
+    // Score parcial fixo (25%) — reconhece esforço em curso.
+    return { pct: 25, nivel: 'Incipiente', nivelLacunas: 'Em mapeamento', estado };
+  }
+  // 'nao_realizado' (default): penalização cheia.
+  return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Não mapeado', estado };
 }
 
 function calcEixoIndicadores(indicadores) {
@@ -878,12 +894,15 @@ function calcEixoIndicadores(indicadores) {
 function calcMaturidade(c) {
   const e1 = calcEixoIndicadores(c.indicadores);
   const e2 = calcEixo(c.estrategias, 'estrategias');
-  const e3 = calcEixoLacunas(c.lacunas);
+  const e3 = calcEixoLacunas(c.lacunas, c.estadoLacunas);
 
   const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
 
-  const media = Math.round((e1.pct + e2.pct + e3.pct) / 3);
+  // Se Lacunas foi declarado como "Não identificamos lacunas relevantes",
+  // o eixo é excluído da média (neutro) — coalizão que já tratou tudo não é penalizada.
+  const eixosMedia = e3.excluir ? [e1, e2] : [e1, e2, e3];
+  const media = Math.round(eixosMedia.reduce((s, e) => s + e.pct, 0) / eixosMedia.length);
   const niveis = ['Inicial', 'Em desenvolvimento', 'Em consolidação', 'Média', 'Avançada', 'Alta'];
 
   let idx;
@@ -894,14 +913,17 @@ function calcMaturidade(c) {
   else if (media >= 25) idx = 1;
   else                  idx = 0;
 
-  const nIncipientes = [e1, e2, e3].filter(e => e.nivel === 'Incipiente').length;
+  const nIncipientes = eixosMedia.filter(e => e.nivel === 'Incipiente').length;
   if (nIncipientes >= 2) idx = Math.max(0, idx - 2);
   else if (nIncipientes === 1) idx = Math.max(0, idx - 1);
 
-  const todosConsolidados = [e1, e2, e3].every(e => e.nivel === 'Consolidado');
+  const todosConsolidados = eixosMedia.every(e => e.nivel === 'Consolidado');
   if (todosConsolidados) idx = Math.min(5, idx + 1);
 
-  return { nivel: niveis[idx], e1, e2, e3, media };
+  // Alerta cruzado: coalizão declarou "Sem lacunas relevantes" mas Eixos 1 e 2 ainda incipientes.
+  const alertaLacunas = e3.excluir && ((e1.pct + e2.pct) / 2) < 50;
+
+  return { nivel: niveis[idx], e1, e2, e3, media, alertaLacunas };
 }
 
 function matClass(nivel) {
@@ -921,6 +943,9 @@ function lacunasColor(nivelLac) {
   if (nivelLac === 'Criticidade moderada')   return '#C8860A';
   if (nivelLac === 'Criticidade alta')       return '#E67E22';
   if (nivelLac === 'Criticidade crítica')    return '#C0392B';
+  if (nivelLac === 'Sem lacunas relevantes') return '#2D7A4F';
+  if (nivelLac === 'Em mapeamento')          return '#7A6A60';
+  if (nivelLac === 'Não mapeado')            return '#C0392B';
   return '#8A8A8A';
 }
 function lacunasMatClass(nivelLac) {
@@ -928,6 +953,9 @@ function lacunasMatClass(nivelLac) {
   if (nivelLac === 'Criticidade moderada') return 'mat-avancada';
   if (nivelLac === 'Criticidade alta')     return 'mat-desenv';
   if (nivelLac === 'Criticidade crítica')  return 'mat-baixa';
+  if (nivelLac === 'Sem lacunas relevantes') return 'mat-alta';
+  if (nivelLac === 'Em mapeamento')          return 'mat-desenv';
+  if (nivelLac === 'Não mapeado')            return 'mat-baixa';
   return 'mat-vazia';
 }
 
@@ -991,6 +1019,9 @@ function renderCoalizao() {
         ${renderEixoBar('Lacunas', mat.e3)}
       </div>
     </div>
+    ${mat.alertaLacunas ? `<div class="alerta-lacunas" style="margin:-8px 0 16px;padding:10px 14px;background:#FEF3DC;border-left:3px solid #C8860A;border-radius:4px;font-size:12px;color:#7A5A0A;">
+      ⚠ A coalizão declarou <strong>não identificar lacunas relevantes</strong>, mas os Eixos Indicadores e Estratégias ainda estão em estágio inicial. Recomenda-se revisitar esse autodiagnóstico.
+    </div>` : ''}
 
     <!-- Diagnóstico -->
     ${renderSecao(0, 'Diagnóstico e Contexto', '#E05A1A', `
@@ -1041,6 +1072,16 @@ function renderCoalizao() {
 
     <!-- Lacunas -->
     ${renderSecao(3, 'Lacunas', '#C8860A', `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bege);border-radius:5px;font-size:12px;">
+        <span style="font-weight:600;color:var(--cinza-m)">Estado do mapeamento de lacunas:</span>
+        <select class="item-select" style="max-width:320px" onchange="upEstadoLacunas(this.value)">
+          <option value="mapeadas"          ${(c.estadoLacunas||'nao_realizado')==='mapeadas'?'selected':''}>Mapeadas (itens preenchidos abaixo)</option>
+          <option value="nao_identificadas" ${c.estadoLacunas==='nao_identificadas'?'selected':''}>Não identificamos lacunas relevantes</option>
+          <option value="em_mapeamento"     ${c.estadoLacunas==='em_mapeamento'?'selected':''}>Em mapeamento</option>
+          <option value="nao_realizado"     ${(c.estadoLacunas||'nao_realizado')==='nao_realizado'?'selected':''}>Não mapeado (ainda não realizamos)</option>
+        </select>
+        <span style="color:var(--cinza-m);font-size:11px">· quando há itens listados, o estado é tratado como "Mapeadas"</span>
+      </div>
       <div class="items-lista" id="lista-lacunas">${c.lacunas.map((it,i) => renderItemLacuna(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('lacunas')">+ Adicionar lacuna</button>
     `)}
@@ -1202,7 +1243,7 @@ function renderSintese() {
     { label: 'Visão de Sucesso', fn: c => c.visaoSucesso ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
     { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
-    { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
+    { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
     { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
 
@@ -1271,6 +1312,10 @@ function upVisao(val) {
   state.coaliz[state.currentCoalizao].visaoSucesso = val;
   saveState(); refreshMat();
 }
+function upEstadoLacunas(val) {
+  state.coaliz[state.currentCoalizao].estadoLacunas = val;
+  saveState(); refreshMat();
+}
 function upItem(tipo, idx, campo, val) {
   state.coaliz[state.currentCoalizao][tipo][idx][campo] = val;
   saveState(); refreshMat();
@@ -1305,6 +1350,16 @@ function refreshMat() {
       renderEixoBar('Indicadores', mat.e1) +
       renderEixoBar('Estratégias', mat.e2) +
       renderEixoBar('Lacunas', mat.e3);
+    // Atualiza alerta de lacunas (declarou "Sem lacunas relevantes" em estágio inicial)
+    const existing = document.querySelector('.alerta-lacunas');
+    if (existing) existing.remove();
+    if (mat.alertaLacunas) {
+      const div = document.createElement('div');
+      div.className = 'alerta-lacunas';
+      div.setAttribute('style','margin:-8px 0 16px;padding:10px 14px;background:#FEF3DC;border-left:3px solid #C8860A;border-radius:4px;font-size:12px;color:#7A5A0A;');
+      div.innerHTML = '⚠ A coalizão declarou <strong>não identificar lacunas relevantes</strong>, mas os Eixos Indicadores e Estratégias ainda estão em estágio inicial. Recomenda-se revisitar esse autodiagnóstico.';
+      card.parentNode.insertBefore(div, card.nextSibling);
+    }
   }
 }
 
@@ -1438,7 +1493,7 @@ async function exportPPTX() {
         ? (lacunasColor(nivExib)||'#8A8A8A').replace('#','')
         : eixoNivCor(eixoData.nivel);
       const statBg  = isLac
-        ? (nivExib==='Baixa criticidade'?'E8F4EE':nivExib==='Criticidade moderada'?'FEF3DC':nivExib==='Criticidade alta'?'FBE5D6':'FCE8E8')
+        ? (nivExib==='Baixa criticidade'||nivExib==='Sem lacunas relevantes'?'E8F4EE':nivExib==='Criticidade moderada'?'FEF3DC':nivExib==='Criticidade alta'?'FBE5D6':nivExib==='Em mapeamento'?'EEEAE3':'FCE8E8')
         : (eixoData.nivel==='Consolidado'?'E8F4EE':eixoData.nivel==='Avançado'?'D4EDE0':eixoData.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8');
       s.addText(labelTxt,{x:colX+PAD*0.6,y:labY,w:lW,h:labH1,fontSize:10,bold:true,color:labelCor,charSpacing:0.2,fontFace:'Calibri',valign:'middle',shrinkText:true});
       s.addShape(pres.ShapeType.roundRect,{x:sX,y:labY,w:sW,h:labH1,fill:{color:statBg},line:{color:statBg},rectRadius:0.03});
@@ -1603,7 +1658,7 @@ async function exportPPTX() {
       { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
       { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
+      { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
     ];
 
     dimsSint.forEach((dim,row) => {
