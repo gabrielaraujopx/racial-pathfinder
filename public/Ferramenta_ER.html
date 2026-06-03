@@ -1309,6 +1309,10 @@ function upVisao(val) {
   state.coaliz[state.currentCoalizao].visaoSucesso = val;
   saveState(); refreshMat();
 }
+function upEstadoLacunas(val) {
+  state.coaliz[state.currentCoalizao].estadoLacunas = val;
+  saveState(); refreshMat();
+}
 function upItem(tipo, idx, campo, val) {
   state.coaliz[state.currentCoalizao][tipo][idx][campo] = val;
   saveState(); refreshMat();
