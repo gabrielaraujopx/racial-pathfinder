@@ -1350,6 +1350,16 @@ function refreshMat() {
       renderEixoBar('Indicadores', mat.e1) +
       renderEixoBar('Estratégias', mat.e2) +
       renderEixoBar('Lacunas', mat.e3);
+    // Atualiza alerta de lacunas (declarou "Sem lacunas relevantes" em estágio inicial)
+    const existing = document.querySelector('.alerta-lacunas');
+    if (existing) existing.remove();
+    if (mat.alertaLacunas) {
+      const div = document.createElement('div');
+      div.className = 'alerta-lacunas';
+      div.setAttribute('style','margin:-8px 0 16px;padding:10px 14px;background:#FEF3DC;border-left:3px solid #C8860A;border-radius:4px;font-size:12px;color:#7A5A0A;');
+      div.innerHTML = '⚠ A coalizão declarou <strong>não identificar lacunas relevantes</strong>, mas os Eixos Indicadores e Estratégias ainda estão em estágio inicial. Recomenda-se revisitar esse autodiagnóstico.';
+      card.parentNode.insertBefore(div, card.nextSibling);
+    }
   }
 }
 
