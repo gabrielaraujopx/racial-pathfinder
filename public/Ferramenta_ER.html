@@ -771,7 +771,39 @@ function defaultCoalizoes() {
     lacunas: [],
     estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
     evidencias: [],
+    barreirasContexto: defaultBarreiras(),
   }));
+}
+
+// Barreira externa de acesso a dados públicos (por eixo).
+// Quando ativa, aplica compensação na nota do eixo para não penalizar
+// a coalizão por um fator externo ao seu trabalho.
+const BARREIRA_EIXOS = ['indicadores', 'estrategias', 'lacunas'];
+const BARREIRA_FATOR = 0.5; // recupera 50% da lacuna entre pct bruto e 100
+function defaultBarreiras() {
+  return {
+    indicadores: { ativa: false, justificativa: '' },
+    estrategias: { ativa: false, justificativa: '' },
+    lacunas:     { ativa: false, justificativa: '' },
+  };
+}
+function normalizeBarreiras(b) {
+  const base = defaultBarreiras();
+  if (!b || typeof b !== 'object') return base;
+  BARREIRA_EIXOS.forEach(k => {
+    const v = b[k];
+    if (v && typeof v === 'object') {
+      base[k] = { ativa: !!v.ativa, justificativa: String(v.justificativa || '') };
+    }
+  });
+  return base;
+}
+function aplicarBarreira(eixo, barreira) {
+  if (!barreira || !barreira.ativa) return eixo;
+  const pctBruto = eixo.pct || 0;
+  const pctAj = Math.round(pctBruto + (100 - pctBruto) * BARREIRA_FATOR);
+  const nivel = pctAj >= 80 ? 'Consolidado' : pctAj >= 60 ? 'Avançado' : pctAj >= 35 ? 'Em desenvolvimento' : 'Incipiente';
+  return { ...eixo, pct: pctAj, pctBruto, nivel, compensado: true, justificativaBarreira: barreira.justificativa || '' };
 }
 
 function normalizeCoalizoes(dados) {
@@ -786,6 +818,7 @@ function normalizeCoalizoes(dados) {
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
       evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
+      barreirasContexto: normalizeBarreiras(c.barreirasContexto),
     };
   });
 }
@@ -904,9 +937,21 @@ function calcEixoIndicadores(indicadores) {
 }
 
 function calcMaturidade(c) {
-  const e1 = calcEixoIndicadores(c.indicadores);
-  const e2 = calcEixo(c.estrategias, 'estrategias');
-  const e3 = calcEixoLacunas(c.lacunas, c.estadoLacunas);
+  const b = c.barreirasContexto || defaultBarreiras();
+  const e1 = aplicarBarreira(calcEixoIndicadores(c.indicadores), b.indicadores);
+  const e2 = aplicarBarreira(calcEixo(c.estrategias, 'estrategias'), b.estrategias);
+  const e3raw = calcEixoLacunas(c.lacunas, c.estadoLacunas);
+  const e3 = aplicarBarreira(e3raw, b.lacunas);
+  if (e3raw.excluir) e3.excluir = true;
+  if (e3raw.nivelLacunas && !e3.compensado) e3.nivelLacunas = e3raw.nivelLacunas;
+  if (e3.compensado) {
+    // Recalcula rótulo de criticidade a partir do pct ajustado
+    const p = e3.pct;
+    e3.nivelLacunas = p >= 80 ? 'Baixa criticidade'
+                    : p >= 60 ? 'Criticidade moderada'
+                    : p >= 35 ? 'Criticidade alta'
+                    :           'Criticidade crítica';
+  }
 
   const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
@@ -1072,12 +1117,14 @@ function renderCoalizao() {
       <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
         📊 Adicione indicadores de equidade racial. A nota do eixo é a média das notas individuais (escala 0–2).
       </div>
+      ${renderBarreiraBlock('indicadores', c.barreirasContexto)}
       <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('indicadores')">+ Adicionar indicador</button>
     `)}
 
     <!-- Estratégias -->
     ${renderSecao(2, 'Estratégias Existentes', '#E05A1A', `
+      ${renderBarreiraBlock('estrategias', c.barreirasContexto)}
       <div class="items-lista" id="lista-estrategias">${c.estrategias.map((it,i) => renderItemEstrategia(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('estrategias')">+ Adicionar estratégia</button>
     `)}
@@ -1094,6 +1141,7 @@ function renderCoalizao() {
         </select>
         <span style="color:var(--cinza-m);font-size:11px">· quando há itens listados, o estado é tratado como "Mapeadas"</span>
       </div>
+      ${renderBarreiraBlock('lacunas', c.barreirasContexto)}
       <div class="items-lista" id="lista-lacunas">${c.lacunas.map((it,i) => renderItemLacuna(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('lacunas')">+ Adicionar lacuna</button>
     `)}
@@ -1114,11 +1162,15 @@ function renderEixoBar(label, eixo) {
   const isLac = label === 'Lacunas';
   const niv = isLac ? (eixo.nivelLacunas || 'Sem lacunas registradas') : eixo.nivel;
   const cor = isLac ? lacunasColor(niv) : eixoColor(eixo.nivel);
+  const ajuste = eixo.compensado
+    ? `<div title="${(eixo.justificativaBarreira||'').replace(/"/g,'&quot;')}" style="font-size:9px;color:#7A6A60;margin-top:2px;font-style:italic">⚖ ajustado por contexto (bruto: ${eixo.pctBruto}%)</div>`
+    : '';
   return `<div class="mat-eixo">
     <div class="mat-eixo-label">${label}</div>
     <div class="mat-eixo-valor" style="color:${cor}">${niv}</div>
     <div class="mat-bar-bg"><div class="mat-bar-fill" style="width:${eixo.pct}%;background:${cor}"></div></div>
     <div class="mat-pct">${eixo.pct}%</div>
+    ${ajuste}
   </div>`;
 }
 
@@ -1327,6 +1379,34 @@ function upVisao(val) {
 function upEstadoLacunas(val) {
   state.coaliz[state.currentCoalizao].estadoLacunas = val;
   saveState(); refreshMat();
+}
+function upBarreira(eixo, campo, val) {
+  const c = state.coaliz[state.currentCoalizao];
+  if (!c.barreirasContexto) c.barreirasContexto = defaultBarreiras();
+  if (!c.barreirasContexto[eixo]) c.barreirasContexto[eixo] = { ativa:false, justificativa:'' };
+  c.barreirasContexto[eixo][campo] = (campo === 'ativa') ? !!val : String(val||'');
+  saveState();
+  // Mostra/oculta o campo de justificativa imediatamente
+  const just = document.getElementById('barreira-just-'+eixo);
+  if (just) just.style.display = c.barreirasContexto[eixo].ativa ? 'block' : 'none';
+  refreshMat();
+}
+function renderBarreiraBlock(eixo, barreiras) {
+  const b = (barreiras && barreiras[eixo]) || { ativa:false, justificativa:'' };
+  const id = 'barreira-just-'+eixo;
+  return `<div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
+    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:var(--cinza)">
+      <input type="checkbox" ${b.ativa?'checked':''} style="margin-top:3px"
+        onchange="upBarreira('${eixo}','ativa',this.checked)">
+      <span><strong>Há barreira de acesso a dados públicos</strong> que limita este eixo (fator externo à coalizão).
+      <span style="color:var(--cinza-m);font-weight:400">Quando marcado, a nota é compensada em 50% da lacuna para não penalizar o trabalho da coalizão.</span></span>
+    </label>
+    <div id="${id}" style="display:${b.ativa?'block':'none'};margin-top:8px">
+      <textarea rows="2" maxlength="280" class="campo-input" style="width:100%"
+        placeholder="Descreva a barreira: ex. ausência de microdados raciais por município, defasagem na divulgação do Censo Escolar por raça/cor, etc."
+        oninput="upBarreira('${eixo}','justificativa',this.value)">${(b.justificativa||'').replace(/</g,'&lt;')}</textarea>
+    </div>
+  </div>`;
 }
 function upItem(tipo, idx, campo, val) {
   state.coaliz[state.currentCoalizao][tipo][idx][campo] = val;
@@ -1693,6 +1773,55 @@ async function exportPPTX() {
         }
       });
     });
+  }
+
+  // ── SLIDE BARREIRAS DE ACESSO A DADOS PÚBLICOS ───────────
+  {
+    const linhas = [];
+    state.coaliz.forEach(c => {
+      const b = c.barreirasContexto || {};
+      BARREIRA_EIXOS.forEach(eixo => {
+        if (b[eixo] && b[eixo].ativa) {
+          linhas.push({
+            coaliz: c.nome,
+            eixo: eixo === 'indicadores' ? 'Indicadores' : eixo === 'estrategias' ? 'Estratégias' : 'Lacunas',
+            just: b[eixo].justificativa || '(sem justificativa)',
+          });
+        }
+      });
+    });
+    if (linhas.length > 0) {
+      const bar = pres.addSlide();
+      bar.background = { color: C.creme };
+      const W=10, H=5.625, PAD=0.28;
+      bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
+      bar.addText('Barreiras de Acesso a Dados Públicos',{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
+      bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
+
+      const headerY = 0.78;
+      const headerH = 0.32;
+      const colX = [PAD, PAD+2.0, PAD+3.6];
+      const colW = [1.95, 1.55, W - PAD*2 - 3.55];
+      ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
+        bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colW[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
+        bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colW[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
+      });
+
+      const bodyTop = headerY + headerH + 0.04;
+      const bodyH = H - bodyTop - 0.22;
+      const rowH = Math.max(0.28, Math.min(0.55, bodyH / linhas.length));
+      linhas.forEach((l, r) => {
+        const y = bodyTop + r*rowH;
+        if (y + rowH > H - 0.22) return; // não estoura
+        const rowBg = r%2===0 ? C.branco : C.bege;
+        [0,1,2].forEach(i => {
+          bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colW[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+        });
+        bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colW[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
+        bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colW[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
+        bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colW[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+      });
+    }
   }
 
   await pres.writeFile({ fileName: 'ER_Sistematizacao_Educacao_Ja_2026.pptx' });
