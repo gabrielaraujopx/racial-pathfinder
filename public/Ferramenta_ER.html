@@ -1380,6 +1380,34 @@ function upEstadoLacunas(val) {
   state.coaliz[state.currentCoalizao].estadoLacunas = val;
   saveState(); refreshMat();
 }
+function upBarreira(eixo, campo, val) {
+  const c = state.coaliz[state.currentCoalizao];
+  if (!c.barreirasContexto) c.barreirasContexto = defaultBarreiras();
+  if (!c.barreirasContexto[eixo]) c.barreirasContexto[eixo] = { ativa:false, justificativa:'' };
+  c.barreirasContexto[eixo][campo] = (campo === 'ativa') ? !!val : String(val||'');
+  saveState();
+  // Mostra/oculta o campo de justificativa imediatamente
+  const just = document.getElementById('barreira-just-'+eixo);
+  if (just) just.style.display = c.barreirasContexto[eixo].ativa ? 'block' : 'none';
+  refreshMat();
+}
+function renderBarreiraBlock(eixo, barreiras) {
+  const b = (barreiras && barreiras[eixo]) || { ativa:false, justificativa:'' };
+  const id = 'barreira-just-'+eixo;
+  return `<div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
+    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:var(--cinza)">
+      <input type="checkbox" ${b.ativa?'checked':''} style="margin-top:3px"
+        onchange="upBarreira('${eixo}','ativa',this.checked)">
+      <span><strong>Há barreira de acesso a dados públicos</strong> que limita este eixo (fator externo à coalizão).
+      <span style="color:var(--cinza-m);font-weight:400">Quando marcado, a nota é compensada em 50% da lacuna para não penalizar o trabalho da coalizão.</span></span>
+    </label>
+    <div id="${id}" style="display:${b.ativa?'block':'none'};margin-top:8px">
+      <textarea rows="2" maxlength="280" class="campo-input" style="width:100%"
+        placeholder="Descreva a barreira: ex. ausência de microdados raciais por município, defasagem na divulgação do Censo Escolar por raça/cor, etc."
+        oninput="upBarreira('${eixo}','justificativa',this.value)">${(b.justificativa||'').replace(/</g,'&lt;')}</textarea>
+    </div>
+  </div>`;
+}
 function upItem(tipo, idx, campo, val) {
   state.coaliz[state.currentCoalizao][tipo][idx][campo] = val;
   saveState(); refreshMat();
