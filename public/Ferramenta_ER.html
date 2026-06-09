@@ -771,7 +771,39 @@ function defaultCoalizoes() {
     lacunas: [],
     estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
     evidencias: [],
+    barreirasContexto: defaultBarreiras(),
   }));
+}
+
+// Barreira externa de acesso a dados públicos (por eixo).
+// Quando ativa, aplica compensação na nota do eixo para não penalizar
+// a coalizão por um fator externo ao seu trabalho.
+const BARREIRA_EIXOS = ['indicadores', 'estrategias', 'lacunas'];
+const BARREIRA_FATOR = 0.5; // recupera 50% da lacuna entre pct bruto e 100
+function defaultBarreiras() {
+  return {
+    indicadores: { ativa: false, justificativa: '' },
+    estrategias: { ativa: false, justificativa: '' },
+    lacunas:     { ativa: false, justificativa: '' },
+  };
+}
+function normalizeBarreiras(b) {
+  const base = defaultBarreiras();
+  if (!b || typeof b !== 'object') return base;
+  BARREIRA_EIXOS.forEach(k => {
+    const v = b[k];
+    if (v && typeof v === 'object') {
+      base[k] = { ativa: !!v.ativa, justificativa: String(v.justificativa || '') };
+    }
+  });
+  return base;
+}
+function aplicarBarreira(eixo, barreira) {
+  if (!barreira || !barreira.ativa) return eixo;
+  const pctBruto = eixo.pct || 0;
+  const pctAj = Math.round(pctBruto + (100 - pctBruto) * BARREIRA_FATOR);
+  const nivel = pctAj >= 80 ? 'Consolidado' : pctAj >= 60 ? 'Avançado' : pctAj >= 35 ? 'Em desenvolvimento' : 'Incipiente';
+  return { ...eixo, pct: pctAj, pctBruto, nivel, compensado: true, justificativaBarreira: barreira.justificativa || '' };
 }
 
 function normalizeCoalizoes(dados) {
@@ -786,6 +818,7 @@ function normalizeCoalizoes(dados) {
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
       evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
+      barreirasContexto: normalizeBarreiras(c.barreirasContexto),
     };
   });
 }
