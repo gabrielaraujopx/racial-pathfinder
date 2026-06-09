@@ -1775,6 +1775,55 @@ async function exportPPTX() {
     });
   }
 
+  // ── SLIDE BARREIRAS DE ACESSO A DADOS PÚBLICOS ───────────
+  {
+    const linhas = [];
+    state.coaliz.forEach(c => {
+      const b = c.barreirasContexto || {};
+      BARREIRA_EIXOS.forEach(eixo => {
+        if (b[eixo] && b[eixo].ativa) {
+          linhas.push({
+            coaliz: c.nome,
+            eixo: eixo === 'indicadores' ? 'Indicadores' : eixo === 'estrategias' ? 'Estratégias' : 'Lacunas',
+            just: b[eixo].justificativa || '(sem justificativa)',
+          });
+        }
+      });
+    });
+    if (linhas.length > 0) {
+      const bar = pres.addSlide();
+      bar.background = { color: C.creme };
+      const W=10, H=5.625, PAD=0.28;
+      bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
+      bar.addText('Barreiras de Acesso a Dados Públicos',{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
+      bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
+
+      const headerY = 0.78;
+      const headerH = 0.32;
+      const colX = [PAD, PAD+2.0, PAD+3.6];
+      const colW = [1.95, 1.55, W - PAD*2 - 3.55];
+      ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
+        bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colW[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
+        bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colW[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
+      });
+
+      const bodyTop = headerY + headerH + 0.04;
+      const bodyH = H - bodyTop - 0.22;
+      const rowH = Math.max(0.28, Math.min(0.55, bodyH / linhas.length));
+      linhas.forEach((l, r) => {
+        const y = bodyTop + r*rowH;
+        if (y + rowH > H - 0.22) return; // não estoura
+        const rowBg = r%2===0 ? C.branco : C.bege;
+        [0,1,2].forEach(i => {
+          bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colW[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+        });
+        bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colW[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
+        bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colW[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
+        bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colW[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+      });
+    }
+  }
+
   await pres.writeFile({ fileName: 'ER_Sistematizacao_Educacao_Ja_2026.pptx' });
   showToast('✓ PPTX exportado com sucesso!');
 }
