@@ -1159,11 +1159,15 @@ function renderEixoBar(label, eixo) {
   const isLac = label === 'Lacunas';
   const niv = isLac ? (eixo.nivelLacunas || 'Sem lacunas registradas') : eixo.nivel;
   const cor = isLac ? lacunasColor(niv) : eixoColor(eixo.nivel);
+  const ajuste = eixo.compensado
+    ? `<div title="${(eixo.justificativaBarreira||'').replace(/"/g,'&quot;')}" style="font-size:9px;color:#7A6A60;margin-top:2px;font-style:italic">⚖ ajustado por contexto (bruto: ${eixo.pctBruto}%)</div>`
+    : '';
   return `<div class="mat-eixo">
     <div class="mat-eixo-label">${label}</div>
     <div class="mat-eixo-valor" style="color:${cor}">${niv}</div>
     <div class="mat-bar-bg"><div class="mat-bar-fill" style="width:${eixo.pct}%;background:${cor}"></div></div>
     <div class="mat-pct">${eixo.pct}%</div>
+    ${ajuste}
   </div>`;
 }
 
