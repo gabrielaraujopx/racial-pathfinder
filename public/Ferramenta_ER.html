@@ -774,17 +774,29 @@ function defaultCoalizoes() {
   }));
 }
 
+function normalizeCoalizoes(dados) {
+  return dados.map((c, i) => {
+    const diagnosticoBruto = Array.isArray(c.diagnostico) ? c.diagnostico : (Array.isArray(c['diagnóstico']) ? c['diagnóstico'] : []);
+    return {
+      nome: c.nome || COALIZ_NOMES[i] || '',
+      diagnostico: diagnosticoBruto.map(d => typeof d === 'string' ? { texto: d } : { texto: d.texto || d.descricao || d.contexto || '' }),
+      visaoSucesso: c.visaoSucesso || '',
+      indicadores: Array.isArray(c.indicadores) ? c.indicadores : [],
+      estrategias: Array.isArray(c.estrategias) ? c.estrategias : [],
+      lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
+      estadoLacunas: c.estadoLacunas || 'nao_realizado',
+      evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
+    };
+  });
+}
+
 // Carrega dados do Google Sheets via Apps Script
 async function loadFromSheets() {
   try {
     const res = await fetch(APPS_SCRIPT_URL, { method: 'GET', credentials: 'include' });
     const json = await res.json();
     if (json.ok && Array.isArray(json.dados)) {
-      json.dados.forEach(c => {
-        if (!Array.isArray(c.diagnostico)) c.diagnostico = [];
-        if (!c.estadoLacunas) c.estadoLacunas = 'nao_realizado';
-      });
-      return json.dados;
+      return normalizeCoalizoes(json.dados);
     }
   } catch(e) {
     console.warn('Não foi possível carregar do Sheets:', e);
