@@ -1735,8 +1735,7 @@ function importJSON(input) {
     try {
       const dados = JSON.parse(e.target.result);
       if (!Array.isArray(dados)) throw new Error('Formato inválido');
-      dados.forEach(c => { if (!Array.isArray(c.diagnostico)) c.diagnostico = []; });
-      state.coaliz = dados;
+      state.coaliz = normalizeCoalizoes(dados);
       saveState();
       renderNav();
       showCoalizao(state.currentCoalizao);
