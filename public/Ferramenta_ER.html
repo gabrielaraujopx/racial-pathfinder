@@ -937,9 +937,21 @@ function calcEixoIndicadores(indicadores) {
 }
 
 function calcMaturidade(c) {
-  const e1 = calcEixoIndicadores(c.indicadores);
-  const e2 = calcEixo(c.estrategias, 'estrategias');
-  const e3 = calcEixoLacunas(c.lacunas, c.estadoLacunas);
+  const b = c.barreirasContexto || defaultBarreiras();
+  const e1 = aplicarBarreira(calcEixoIndicadores(c.indicadores), b.indicadores);
+  const e2 = aplicarBarreira(calcEixo(c.estrategias, 'estrategias'), b.estrategias);
+  const e3raw = calcEixoLacunas(c.lacunas, c.estadoLacunas);
+  const e3 = aplicarBarreira(e3raw, b.lacunas);
+  if (e3raw.excluir) e3.excluir = true;
+  if (e3raw.nivelLacunas && !e3.compensado) e3.nivelLacunas = e3raw.nivelLacunas;
+  if (e3.compensado) {
+    // Recalcula rótulo de criticidade a partir do pct ajustado
+    const p = e3.pct;
+    e3.nivelLacunas = p >= 80 ? 'Baixa criticidade'
+                    : p >= 60 ? 'Criticidade moderada'
+                    : p >= 35 ? 'Criticidade alta'
+                    :           'Criticidade crítica';
+  }
 
   const temDados = c.indicadores.length > 0 || c.estrategias.length > 0 || c.lacunas.length > 0;
   if (!temDados) return { nivel: '—', e1, e2, e3, media: 0 };
