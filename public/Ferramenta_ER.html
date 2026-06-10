@@ -1596,6 +1596,33 @@ async function exportPPTX() {
     addEixoHeader(colW,   '03 — ESTRATÉGIAS', C.marrom,  mat.e2);
     addEixoHeader(colW*2, '04 — LACUNAS',      C.amarelo, mat.e3, true);
 
+    // ── Aviso de Barreira de Acesso a Dados Públicos por eixo ──
+    // Strip fina amarela logo abaixo do header de cada eixo quando há barreira ativa.
+    const barreiraColH = 0.20;
+    const baseItemStartY = labY + labH1 + 0.05;
+    const eixoBarreiras = [
+      { key: 'indicadores', colX: 0,        data: mat.e1 },
+      { key: 'estrategias', colX: colW,     data: mat.e2 },
+      { key: 'lacunas',     colX: colW*2,   data: mat.e3 },
+    ];
+    const startYByCol = {};
+    const bCtx = c.barreirasContexto || {};
+    eixoBarreiras.forEach(eb => {
+      const ativa = !!(bCtx[eb.key] && bCtx[eb.key].ativa);
+      if (ativa) {
+        const stripY = baseItemStartY;
+        const stripX = eb.colX + PAD*0.4;
+        const stripW = colW - PAD*0.8;
+        const brutoTxt = (eb.data && eb.data.pctBruto != null) ? ' (bruto: '+eb.data.pctBruto+'%)' : '';
+        s.addShape(pres.ShapeType.roundRect,{x:stripX,y:stripY,w:stripW,h:barreiraColH,fill:{color:C.amarelo},line:{color:C.amarelo},rectRadius:0.03});
+        s.addText('⚖ Nota ajustada — barreira de acesso a dados públicos'+brutoTxt,
+          {x:stripX+0.05,y:stripY,w:stripW-0.1,h:barreiraColH,fontSize:7,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+        startYByCol[eb.key] = stripY + barreiraColH + 0.04;
+      } else {
+        startYByCol[eb.key] = baseItemStartY;
+      }
+    });
+
     // ── Constantes dos itens ──
     const circR      = 0.16;   // bolinha numerada
     const bdgH       = 0.115;  // altura do badge de status
@@ -1619,7 +1646,7 @@ async function exportPPTX() {
     const corResult  = v => v==='S' ?{bg:'E8F4EE',cor:'2D7A4F'}
                         : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
                         :          {bg:'FCE8E8',cor:'C0392B'};
-    let yI = itemStartY;
+    let yI = startYByCol.indicadores;
     c.indicadores.slice(0,8).forEach((ind,idx) => {
       const txt    = ind.texto||'—';
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
@@ -1648,7 +1675,7 @@ async function exportPPTX() {
 
     // ── Col 2: Estratégias ──
     const eTW = colW - PAD*0.6 - leftZone - bdgW - PAD*0.4;
-    let yE = itemStartY;
+    let yE = startYByCol.estrategias;
     c.estrategias.slice(0,8).forEach((est,idx) => {
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
@@ -1673,7 +1700,7 @@ async function exportPPTX() {
     const encR  = 0.10;  // raio da bolinha de encaminhamento
     const lLeftW = leftZone;  // mesma zona esq das outras colunas
     const lTW    = colW - PAD*0.6 - lLeftW - PAD*0.4 - 0.04;
-    let yL = itemStartY;
+    let yL = startYByCol.lacunas;
     c.lacunas.slice(0,6).forEach((lac,idx) => {
       const txt    = lac.texto||'—';
       const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
