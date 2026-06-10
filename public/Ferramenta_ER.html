@@ -1819,35 +1819,62 @@ async function exportPPTX() {
       });
     });
     if (linhas.length > 0) {
-      const bar = pres.addSlide();
-      bar.background = { color: C.creme };
       const W=10, H=5.625, PAD=0.28;
-      bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
-      bar.addText('Barreiras de Acesso a Dados Públicos',{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
-      bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
-
       const headerY = 0.78;
       const headerH = 0.32;
       const colX = [PAD, PAD+2.0, PAD+3.6];
-      const colW = [1.95, 1.55, W - PAD*2 - 3.55];
-      ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
-        bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colW[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
-        bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colW[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
-      });
-
+      const colWs = [1.95, 1.55, W - PAD*2 - 3.55];
       const bodyTop = headerY + headerH + 0.04;
       const bodyH = H - bodyTop - 0.22;
-      const rowH = Math.max(0.28, Math.min(0.55, bodyH / linhas.length));
-      linhas.forEach((l, r) => {
-        const y = bodyTop + r*rowH;
-        if (y + rowH > H - 0.22) return; // não estoura
-        const rowBg = r%2===0 ? C.branco : C.bege;
-        [0,1,2].forEach(i => {
-          bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colW[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+      // Altura de linha estimada conforme o tamanho da justificativa
+      // (multi-linhas para textos longos). Mínimo 0.42 polegadas.
+      const estLinhasJust = txt => {
+        const chPerLine = 70; // ~ largura da col 3 a fontSize 8
+        return Math.max(1, Math.ceil((txt||'').length / chPerLine));
+      };
+      // Pré-calcula altura de cada linha
+      const linhasH = linhas.map(l => {
+        const nL = Math.min(4, estLinhasJust(l.just));
+        return Math.max(0.42, 0.18 + nL * 0.16);
+      });
+      // Pagina: distribui as linhas em múltiplos slides quando excede bodyH
+      const paginas = [];
+      let atual = { linhas: [], alturas: [], total: 0 };
+      linhas.forEach((l, i) => {
+        const h = linhasH[i];
+        if (atual.total + h > bodyH && atual.linhas.length > 0) {
+          paginas.push(atual);
+          atual = { linhas: [], alturas: [], total: 0 };
+        }
+        atual.linhas.push(l);
+        atual.alturas.push(h);
+        atual.total += h;
+      });
+      if (atual.linhas.length > 0) paginas.push(atual);
+
+      paginas.forEach((pag, pi) => {
+        const bar = pres.addSlide();
+        bar.background = { color: C.creme };
+        bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
+        const tituloPag = paginas.length > 1 ? ` (parte ${pi+1}/${paginas.length})` : '';
+        bar.addText('Barreiras de Acesso a Dados Públicos'+tituloPag,{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
+        bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
+        ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
+          bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colWs[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
+          bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colWs[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
         });
-        bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colW[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
-        bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colW[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
-        bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colW[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+        let y = bodyTop;
+        pag.linhas.forEach((l, r) => {
+          const rowH = pag.alturas[r];
+          const rowBg = r%2===0 ? C.branco : C.bege;
+          [0,1,2].forEach(i => {
+            bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colWs[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+          });
+          bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colWs[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
+          bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colWs[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
+          bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colWs[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:true});
+          y += rowH;
+        });
       });
     }
   }
