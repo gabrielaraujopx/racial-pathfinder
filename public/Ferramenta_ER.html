@@ -1596,6 +1596,33 @@ async function exportPPTX() {
     addEixoHeader(colW,   '03 — ESTRATÉGIAS', C.marrom,  mat.e2);
     addEixoHeader(colW*2, '04 — LACUNAS',      C.amarelo, mat.e3, true);
 
+    // ── Aviso de Barreira de Acesso a Dados Públicos por eixo ──
+    // Strip fina amarela logo abaixo do header de cada eixo quando há barreira ativa.
+    const barreiraColH = 0.20;
+    const baseItemStartY = labY + labH1 + 0.05;
+    const eixoBarreiras = [
+      { key: 'indicadores', colX: 0,        data: mat.e1 },
+      { key: 'estrategias', colX: colW,     data: mat.e2 },
+      { key: 'lacunas',     colX: colW*2,   data: mat.e3 },
+    ];
+    const startYByCol = {};
+    const bCtx = c.barreirasContexto || {};
+    eixoBarreiras.forEach(eb => {
+      const ativa = !!(bCtx[eb.key] && bCtx[eb.key].ativa);
+      if (ativa) {
+        const stripY = baseItemStartY;
+        const stripX = eb.colX + PAD*0.4;
+        const stripW = colW - PAD*0.8;
+        const brutoTxt = (eb.data && eb.data.pctBruto != null) ? ' (bruto: '+eb.data.pctBruto+'%)' : '';
+        s.addShape(pres.ShapeType.roundRect,{x:stripX,y:stripY,w:stripW,h:barreiraColH,fill:{color:C.amarelo},line:{color:C.amarelo},rectRadius:0.03});
+        s.addText('⚖ Nota ajustada — barreira de acesso a dados públicos'+brutoTxt,
+          {x:stripX+0.05,y:stripY,w:stripW-0.1,h:barreiraColH,fontSize:7,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+        startYByCol[eb.key] = stripY + barreiraColH + 0.04;
+      } else {
+        startYByCol[eb.key] = baseItemStartY;
+      }
+    });
+
     // ── Constantes dos itens ──
     const circR      = 0.16;   // bolinha numerada
     const bdgH       = 0.115;  // altura do badge de status
@@ -1619,7 +1646,7 @@ async function exportPPTX() {
     const corResult  = v => v==='S' ?{bg:'E8F4EE',cor:'2D7A4F'}
                         : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
                         :          {bg:'FCE8E8',cor:'C0392B'};
-    let yI = itemStartY;
+    let yI = startYByCol.indicadores;
     c.indicadores.slice(0,8).forEach((ind,idx) => {
       const txt    = ind.texto||'—';
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
@@ -1648,7 +1675,7 @@ async function exportPPTX() {
 
     // ── Col 2: Estratégias ──
     const eTW = colW - PAD*0.6 - leftZone - bdgW - PAD*0.4;
-    let yE = itemStartY;
+    let yE = startYByCol.estrategias;
     c.estrategias.slice(0,8).forEach((est,idx) => {
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
@@ -1673,7 +1700,7 @@ async function exportPPTX() {
     const encR  = 0.10;  // raio da bolinha de encaminhamento
     const lLeftW = leftZone;  // mesma zona esq das outras colunas
     const lTW    = colW - PAD*0.6 - lLeftW - PAD*0.4 - 0.04;
-    let yL = itemStartY;
+    let yL = startYByCol.lacunas;
     c.lacunas.slice(0,6).forEach((lac,idx) => {
       const txt    = lac.texto||'—';
       const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
@@ -1735,7 +1762,8 @@ async function exportPPTX() {
     sint.addText('Presença de estratégias de equidade racial por dimensão · Educação Já 2026',{x:PAD,y:0.44,w:8,h:0.18,fontSize:10,color:'FFD8C0',fontFace:'Calibri'});
 
     const gridX  = PAD, gridY = 0.72, labelW = 1.35;
-    const cellW  = (W - PAD*2 - labelW) / 5;
+    const nCoaliz = Math.max(1, state.coaliz.length);
+    const cellW  = (W - PAD*2 - labelW) / nCoaliz;
     const hdrRow = 0.36;
     const nRows  = 4;
     const cellH  = (H - gridY - hdrRow - 0.06) / nRows;
@@ -1791,35 +1819,62 @@ async function exportPPTX() {
       });
     });
     if (linhas.length > 0) {
-      const bar = pres.addSlide();
-      bar.background = { color: C.creme };
       const W=10, H=5.625, PAD=0.28;
-      bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
-      bar.addText('Barreiras de Acesso a Dados Públicos',{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
-      bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
-
       const headerY = 0.78;
       const headerH = 0.32;
       const colX = [PAD, PAD+2.0, PAD+3.6];
-      const colW = [1.95, 1.55, W - PAD*2 - 3.55];
-      ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
-        bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colW[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
-        bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colW[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
-      });
-
+      const colWs = [1.95, 1.55, W - PAD*2 - 3.55];
       const bodyTop = headerY + headerH + 0.04;
       const bodyH = H - bodyTop - 0.22;
-      const rowH = Math.max(0.28, Math.min(0.55, bodyH / linhas.length));
-      linhas.forEach((l, r) => {
-        const y = bodyTop + r*rowH;
-        if (y + rowH > H - 0.22) return; // não estoura
-        const rowBg = r%2===0 ? C.branco : C.bege;
-        [0,1,2].forEach(i => {
-          bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colW[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+      // Altura de linha estimada conforme o tamanho da justificativa
+      // (multi-linhas para textos longos). Mínimo 0.42 polegadas.
+      const estLinhasJust = txt => {
+        const chPerLine = 70; // ~ largura da col 3 a fontSize 8
+        return Math.max(1, Math.ceil((txt||'').length / chPerLine));
+      };
+      // Pré-calcula altura de cada linha
+      const linhasH = linhas.map(l => {
+        const nL = Math.min(4, estLinhasJust(l.just));
+        return Math.max(0.42, 0.18 + nL * 0.16);
+      });
+      // Pagina: distribui as linhas em múltiplos slides quando excede bodyH
+      const paginas = [];
+      let atual = { linhas: [], alturas: [], total: 0 };
+      linhas.forEach((l, i) => {
+        const h = linhasH[i];
+        if (atual.total + h > bodyH && atual.linhas.length > 0) {
+          paginas.push(atual);
+          atual = { linhas: [], alturas: [], total: 0 };
+        }
+        atual.linhas.push(l);
+        atual.alturas.push(h);
+        atual.total += h;
+      });
+      if (atual.linhas.length > 0) paginas.push(atual);
+
+      paginas.forEach((pag, pi) => {
+        const bar = pres.addSlide();
+        bar.background = { color: C.creme };
+        bar.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.amarelo},line:{color:C.amarelo}});
+        const tituloPag = paginas.length > 1 ? ` (parte ${pi+1}/${paginas.length})` : '';
+        bar.addText('Barreiras de Acesso a Dados Públicos'+tituloPag,{x:PAD,y:0,w:9.4,h:0.48,fontSize:18,color:C.branco,fontFace:'Georgia',valign:'middle'});
+        bar.addText('Fatores externos que limitam a maturidade — nota dos eixos sinalizados foi ajustada (+50% da lacuna)',{x:PAD,y:0.44,w:9.4,h:0.18,fontSize:10,color:'FFF3D8',fontFace:'Calibri'});
+        ['Coalizão','Eixo','Barreira / Justificativa'].forEach((h,i) => {
+          bar.addShape(pres.ShapeType.rect,{x:colX[i],y:headerY,w:colWs[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
+          bar.addText(h,{x:colX[i]+0.08,y:headerY,w:colWs[i]-0.16,h:headerH,fontSize:10,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle'});
         });
-        bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colW[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
-        bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colW[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
-        bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colW[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+        let y = bodyTop;
+        pag.linhas.forEach((l, r) => {
+          const rowH = pag.alturas[r];
+          const rowBg = r%2===0 ? C.branco : C.bege;
+          [0,1,2].forEach(i => {
+            bar.addShape(pres.ShapeType.rect,{x:colX[i],y,w:colWs[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+          });
+          bar.addText(l.coaliz,{x:colX[0]+0.08,y:y+0.02,w:colWs[0]-0.16,h:rowH-0.04,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:true});
+          bar.addText(l.eixo,  {x:colX[1]+0.08,y:y+0.02,w:colWs[1]-0.16,h:rowH-0.04,fontSize:9,color:C.amarelo,bold:true,fontFace:'Calibri',valign:'middle'});
+          bar.addText(l.just,  {x:colX[2]+0.08,y:y+0.02,w:colWs[2]-0.16,h:rowH-0.04,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:true});
+          y += rowH;
+        });
       });
     }
   }
