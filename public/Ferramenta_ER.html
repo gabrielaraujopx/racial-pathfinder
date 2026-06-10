@@ -1762,7 +1762,8 @@ async function exportPPTX() {
     sint.addText('Presença de estratégias de equidade racial por dimensão · Educação Já 2026',{x:PAD,y:0.44,w:8,h:0.18,fontSize:10,color:'FFD8C0',fontFace:'Calibri'});
 
     const gridX  = PAD, gridY = 0.72, labelW = 1.35;
-    const cellW  = (W - PAD*2 - labelW) / 5;
+    const nCoaliz = Math.max(1, state.coaliz.length);
+    const cellW  = (W - PAD*2 - labelW) / nCoaliz;
     const hdrRow = 0.36;
     const nRows  = 4;
     const cellH  = (H - gridY - hdrRow - 0.06) / nRows;
