@@ -1619,6 +1619,7 @@ function renderSintese() {
     { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
+    { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':e.nivel==='Pouco avanço'?'mat-desenv':e.nivel==='Sem avanço'?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
     { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
 
