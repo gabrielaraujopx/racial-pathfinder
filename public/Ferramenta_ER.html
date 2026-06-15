@@ -1738,6 +1738,78 @@ function removeItem(tipo, idx) {
   state.coaliz[state.currentCoalizao][tipo].splice(idx, 1);
   saveState(); renderCoalizao();
 }
+
+// ── Mutações do Eixo 06 ──────────────────────────────────────
+function _e6() {
+  const c = state.coaliz[state.currentCoalizao];
+  if (!c.eixo6) c.eixo6 = defaultEixo6();
+  return c.eixo6;
+}
+function upEixo6Config(campo, val) {
+  const e6 = _e6();
+  if (campo === 'pontosMinimos') {
+    const n = parseInt(val, 10);
+    e6.pontosMinimos = Number.isFinite(n) && n >= 2 ? n : 3;
+  }
+  saveState(); renderCoalizao();
+}
+function upEixo6Barreira(campo, val) {
+  const e6 = _e6();
+  if (!e6.barreira) e6.barreira = { ativa:false, justificativa:'' };
+  e6.barreira[campo] = (campo === 'ativa') ? !!val : String(val||'');
+  saveState();
+  const just = document.getElementById('barreira-just-eixo6');
+  if (just) just.style.display = e6.barreira.ativa ? 'block' : 'none';
+  refreshImpacto();
+}
+function addEixo6Item() {
+  _e6().itens.push({
+    indicadorRef: '', metrica: '', unidade: '%', sentidoDesejado: 'subir',
+    serie: [], observacoes: '',
+  });
+  saveState(); renderCoalizao();
+}
+function removeEixo6Item(i) {
+  _e6().itens.splice(i, 1);
+  saveState(); renderCoalizao();
+}
+function upEixo6Item(i, campo, val) {
+  const it = _e6().itens[i]; if (!it) return;
+  it[campo] = val;
+  saveState(); refreshImpacto();
+}
+function addEixo6Ponto(i) {
+  const it = _e6().itens[i]; if (!it) return;
+  if (!Array.isArray(it.serie)) it.serie = [];
+  const ultAno = it.serie.reduce((m, p) => Math.max(m, parseInt(p.ano,10)||0), 0);
+  it.serie.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorBA: null, valorPPI: null, fonte: '' });
+  saveState(); renderCoalizao();
+}
+function removeEixo6Ponto(i, j) {
+  const it = _e6().itens[i]; if (!it || !it.serie) return;
+  it.serie.splice(j, 1);
+  saveState(); renderCoalizao();
+}
+function upEixo6Ponto(i, j, campo, val) {
+  const it = _e6().itens[i]; if (!it || !it.serie || !it.serie[j]) return;
+  if (campo === 'ano')      it.serie[j].ano = val === '' ? '' : parseInt(val, 10);
+  else if (campo === 'fonte') it.serie[j].fonte = String(val||'');
+  else                       it.serie[j][campo] = val === '' ? null : Number(val);
+  saveState(); refreshImpacto();
+}
+function refreshImpacto() {
+  // Re-renderiza somente o card de impacto + status badges dos itens, sem perder foco
+  const c = state.coaliz[state.currentCoalizao];
+  const imp = calcEixo6(c.eixo6);
+  renderNav();
+  const cards = document.querySelectorAll('.maturidade-card');
+  if (cards.length >= 2) {
+    const novo = document.createElement('div');
+    novo.innerHTML = renderImpactoCard(imp);
+    const replacement = novo.firstElementChild;
+    cards[1].replaceWith(replacement);
+  }
+}
 function refreshMat() {
   // Atualiza só o card de maturidade sem re-renderizar tudo
   const mat = calcMaturidade(state.coaliz[state.currentCoalizao]);
