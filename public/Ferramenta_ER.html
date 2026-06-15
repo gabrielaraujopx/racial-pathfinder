@@ -1203,6 +1203,7 @@ function showSintese() {
 function renderCoalizao() {
   const c = state.coaliz[state.currentCoalizao];
   const mat = calcMaturidade(c);
+  const imp = calcEixo6(c.eixo6);
   const main = document.getElementById('main-content');
 
   main.innerHTML = `
@@ -1216,7 +1217,7 @@ function renderCoalizao() {
     <!-- Maturidade -->
     <div class="maturidade-card">
       <div>
-        <div class="mat-geral-label">Maturidade Geral</div>
+        <div class="mat-geral-label">Maturidade Operacional</div>
         <div class="mat-geral-valor" style="color:${mat.nivel==='Alta'?'#2D7A4F':mat.nivel==='Avançada'?'#1A6B3C':mat.nivel==='Média'?'#1A4E7A':mat.nivel==='Em consolidação'?'#3A5A7A':mat.nivel==='Em desenvolvimento'?'#C8860A':'#C0392B'}">${mat.nivel}</div>
         <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Média dos eixos: ${mat.media}%</div>
       </div>
@@ -1226,6 +1227,7 @@ function renderCoalizao() {
         ${renderEixoBar('Lacunas', mat.e3)}
       </div>
     </div>
+    ${renderImpactoCard(imp)}
     ${mat.alertaLacunas ? `<div class="alerta-lacunas" style="margin:-8px 0 16px;padding:10px 14px;background:#FEF3DC;border-left:3px solid #C8860A;border-radius:4px;font-size:12px;color:#7A5A0A;">
       ⚠ A coalizão declarou <strong>não identificar lacunas relevantes</strong>, mas os Eixos Indicadores e Estratégias ainda estão em estágio inicial. Recomenda-se revisitar esse autodiagnóstico.
     </div>` : ''}
@@ -1305,7 +1307,166 @@ function renderCoalizao() {
       <div class="items-lista" id="lista-evidencias">${c.evidencias.map((it,i) => renderItemEvidencia(it,i)).join('')}</div>
       <button class="btn-add" onclick="addItem('evidencias')">+ Adicionar evidência</button>
     `)}
+
+    <!-- Eixo 06 — Gaps BA×PPI e Evolução -->
+    ${renderSecao(5, 'Gaps BA×PPI e Evolução', '#3A5A7A', renderEixo6Form(c))}
   `;
+}
+
+// ── Render: card do Índice de Impacto em Equidade ─────────────
+function renderImpactoCard(imp) {
+  const cor = impactoCor(imp.nivel);
+  const ajusteNota = imp.compensado
+    ? `<div title="${(imp.justificativaBarreira||'').replace(/"/g,'&quot;')}" style="font-size:10px;color:#7A6A60;margin-top:4px;font-style:italic">⚖ ajustado por barreira de dados (bruto: ${imp.pctBruto}%)</div>`
+    : '';
+  const cgs = imp.contagens;
+  const chip = (lbl, n, c) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;background:${c}1A;color:${c};font-size:11px;font-weight:600">${lbl} ${n}</span>`;
+  return `<div class="maturidade-card" style="margin-top:-4px;border-left:3px solid ${cor}">
+    <div>
+      <div class="mat-geral-label">Índice de Impacto em Equidade</div>
+      <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
+      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 06 · ${imp.pct}% · cobertura ${imp.cobertura}/${imp.totalItens} ${imp.totalItens===1?'item':'itens'}</div>
+      ${ajusteNota}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:240px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${chip('▼ Fechando', cgs.fechando, '#2D7A4F')}
+        ${chip('■ Estagnado', cgs.estagnado, '#C8860A')}
+        ${chip('▲ Abrindo', cgs.abrindo, '#C0392B')}
+        ${chip('○ Insuficiente', cgs.insuficiente, '#8A8A8A')}
+      </div>
+      <div style="font-size:10px;color:var(--cinza-m);line-height:1.4">
+        Mede a redução do gap entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas) ao longo do tempo.
+        Não compõe a Maturidade Operacional acima.
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Render: formulário do Eixo 06 ─────────────────────────────
+function renderEixo6Form(c) {
+  const e6 = c.eixo6 || defaultEixo6();
+  const indicadoresRefs = (c.indicadores || []).map((ind, idx) => ({
+    id: 'ind-' + idx,
+    label: (ind.texto || '(indicador sem nome)').slice(0, 80),
+  }));
+  const semIndicadores = indicadoresRefs.length === 0;
+  const b = e6.barreira || { ativa:false, justificativa:'' };
+  return `
+    <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;line-height:1.5">
+      📊 Mede a <strong>redução do gap racial</strong> ao longo do tempo, entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas). Cada item referencia um indicador já cadastrado no Eixo Indicadores e registra uma série temporal (ano a ano).<br>
+      <span style="color:#3A5A7A;font-weight:600">⚖ Eixo separado da Maturidade Operacional — compõe o "Índice de Impacto em Equidade".</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bege);border-radius:5px;font-size:12px;">
+      <span style="font-weight:600;color:var(--cinza-m)">Pontos mínimos da série temporal para classificar evolução:</span>
+      <input type="number" min="2" max="10" value="${e6.pontosMinimos}" style="width:70px;padding:4px 8px;border:1px solid #D6CFC2;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('pontosMinimos', this.value)">
+      <span style="color:var(--cinza-m);font-size:11px">· itens com menos pontos ficam como "Insuficiente" e não pontuam</span>
+    </div>
+
+    <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:var(--cinza)">
+        <input type="checkbox" ${b.ativa?'checked':''} style="margin-top:3px"
+          onchange="upEixo6Barreira('ativa', this.checked)">
+        <span><strong>Há barreira de acesso a dados públicos</strong> que limita este eixo (fator externo à coalizão).
+        <span style="color:var(--cinza-m);font-weight:400">Quando marcado, a nota é compensada em 50% da lacuna.</span></span>
+      </label>
+      <div id="barreira-just-eixo6" style="display:${b.ativa?'block':'none'};margin-top:8px">
+        <textarea rows="2" maxlength="280" class="campo-input" style="width:100%"
+          placeholder="Ex: dados desagregados por raça/cor não disponíveis em painéis públicos para esta etapa..."
+          oninput="upEixo6Barreira('justificativa', this.value)">${(b.justificativa||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>
+
+    ${semIndicadores ? `<div style="padding:12px;background:#FCE8E8;border-left:3px solid #C0392B;border-radius:5px;font-size:12px;color:#7A2A20;margin-bottom:12px">
+      ⚠ Cadastre primeiro indicadores no <strong>Eixo Indicadores</strong> acima. Cada gap deste eixo precisa referenciar um indicador existente.
+    </div>` : ''}
+
+    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos)).join('')}</div>
+    <button class="btn-add" ${semIndicadores?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="addEixo6Item()">+ Adicionar gap BA×PPI</button>
+  `;
+}
+
+function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos) {
+  const calc = calcItemEixo6(it, pontosMinimos);
+  const corStatus = statusEvolucaoCor(calc.status);
+  const sentidoOpts = [
+    ['subir',  'Subir é o ideal (ex: % aprovação, proficiência)'],
+    ['descer', 'Descer é o ideal (ex: evasão, reprovação)'],
+  ];
+  return `<div class="item-card" style="border-left:3px solid ${corStatus}">
+    <div class="item-card-content">
+      <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:2;min-width:240px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Indicador referenciado (Eixo Indicadores)</span>
+          <select class="item-select" onchange="upEixo6Item(${i},'indicadorRef',this.value)">
+            <option value="">— selecione —</option>
+            ${indicadoresRefs.map(r => `<option value="${r.id}" ${it.indicadorRef===r.id?'selected':''}>${r.label.replace(/</g,'&lt;')}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:160px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Métrica observada</span>
+          <input class="item-select" value="${(it.metrica||'').replace(/"/g,'&quot;')}" placeholder="Ex: Taxa de alfabetização aos 7 anos"
+            oninput="upEixo6Item(${i},'metrica',this.value)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;width:80px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Unidade</span>
+          <input class="item-select" value="${(it.unidade||'%').replace(/"/g,'&quot;')}"
+            oninput="upEixo6Item(${i},'unidade',this.value)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Sentido desejado</span>
+          <select class="item-select" onchange="upEixo6Item(${i},'sentidoDesejado',this.value);renderCoalizao()">
+            ${sentidoOpts.map(([v,l]) => `<option value="${v}" ${it.sentidoDesejado===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;padding:8px 10px;background:var(--creme);border-radius:5px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:700;color:var(--cinza-m)">SÉRIE TEMPORAL · BA × PPI</span>
+          <span style="font-size:11px;font-weight:700;color:${corStatus}">${statusEvolucaoIcone(calc.status)} ${calc.status}${calc.variacaoPct!=null?' · '+(calc.variacaoPct>0?'+':'')+calc.variacaoPct+'% no gap':''}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead>
+            <tr style="color:var(--cinza-m);text-align:left">
+              <th style="padding:4px 6px;width:70px">Ano</th>
+              <th style="padding:4px 6px">BA (${(it.unidade||'%')})</th>
+              <th style="padding:4px 6px">PPI (${(it.unidade||'%')})</th>
+              <th style="padding:4px 6px;width:80px">Gap</th>
+              <th style="padding:4px 6px">Fonte</th>
+              <th style="padding:4px 6px;width:30px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(it.serie||[]).map((p, j) => {
+              let gapTxt = '—';
+              if (p.valorBA!=null && p.valorPPI!=null && !isNaN(p.valorBA) && !isNaN(p.valorPPI)) {
+                const g = it.sentidoDesejado==='descer' ? (p.valorPPI - p.valorBA) : (p.valorBA - p.valorPPI);
+                gapTxt = (g>0?'+':'') + g.toFixed(1);
+              }
+              return `<tr>
+                <td style="padding:3px 6px"><input type="number" value="${p.ano===''||p.ano==null?'':p.ano}" style="width:60px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'ano',this.value)"></td>
+                <td style="padding:3px 6px"><input type="number" step="0.01" value="${p.valorBA==null?'':p.valorBA}" style="width:80px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'valorBA',this.value)"></td>
+                <td style="padding:3px 6px"><input type="number" step="0.01" value="${p.valorPPI==null?'':p.valorPPI}" style="width:80px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'valorPPI',this.value)"></td>
+                <td style="padding:3px 6px;font-weight:600;color:var(--cinza)">${gapTxt}</td>
+                <td style="padding:3px 6px"><input value="${(p.fonte||'').replace(/"/g,'&quot;')}" placeholder="Ex: SAEB 2023" style="width:100%;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'fonte',this.value)"></td>
+                <td style="padding:3px 6px;text-align:center"><button onclick="removeEixo6Ponto(${i},${j})" style="background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;line-height:1">×</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <button onclick="addEixo6Ponto(${i})" style="margin-top:6px;padding:4px 10px;font-size:11px;background:none;border:1px dashed #B5A98F;border-radius:4px;color:var(--cinza-m);cursor:pointer">+ Adicionar ano</button>
+      </div>
+
+      <div style="margin-top:8px">
+        <textarea class="item-texto-input" rows="1" placeholder="Observações (opcional)"
+          oninput="upEixo6Item(${i},'observacoes',this.value)">${(it.observacoes||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>
+    <button class="item-remove" onclick="removeEixo6Item(${i})">×</button>
+  </div>`;
 }
 
 function renderEixoBar(label, eixo) {
