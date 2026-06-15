@@ -772,6 +772,7 @@ function defaultCoalizoes() {
     estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
     evidencias: [],
     barreirasContexto: defaultBarreiras(),
+    eixo6: defaultEixo6(),
   }));
 }
 
@@ -798,6 +799,43 @@ function normalizeBarreiras(b) {
   });
   return base;
 }
+
+// ── Eixo 06 — Gaps BA×PPI e Evolução ──────────────────────────
+// BA = Brancos e Amarelos · PPI = Pretos, Pardos e Indígenas
+// Mede a redução do gap racial ao longo do tempo. Vive em
+// paralelo aos demais eixos e compõe um Índice de Impacto em
+// Equidade exibido separadamente da Maturidade Operacional.
+function defaultEixo6() {
+  return {
+    pontosMinimos: 3,
+    barreira: { ativa: false, justificativa: '' },
+    itens: [],
+  };
+}
+function normalizeEixo6(e) {
+  if (!e || typeof e !== 'object') return defaultEixo6();
+  const pm = parseInt(e.pontosMinimos, 10);
+  const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
+  const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
+    indicadorRef: String(it.indicadorRef || ''),
+    metrica: String(it.metrica || ''),
+    unidade: String(it.unidade || '%'),
+    sentidoDesejado: it.sentidoDesejado === 'descer' ? 'descer' : 'subir',
+    serie: Array.isArray(it.serie) ? it.serie.map(p => ({
+      ano: p.ano === '' || p.ano == null ? '' : parseInt(p.ano, 10),
+      valorBA:  (p.valorBA  === '' || p.valorBA  == null) ? null : Number(p.valorBA),
+      valorPPI: (p.valorPPI === '' || p.valorPPI == null) ? null : Number(p.valorPPI),
+      fonte: String(p.fonte || ''),
+    })) : [],
+    observacoes: String(it.observacoes || ''),
+  })) : [];
+  return {
+    pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
+    barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
+    itens,
+  };
+}
+
 function aplicarBarreira(eixo, barreira) {
   if (!barreira || !barreira.ativa) return eixo;
   const pctBruto = eixo.pct || 0;
@@ -819,6 +857,7 @@ function normalizeCoalizoes(dados) {
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
       evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
       barreirasContexto: normalizeBarreiras(c.barreirasContexto),
+      eixo6: normalizeEixo6(c.eixo6),
     };
   });
 }
