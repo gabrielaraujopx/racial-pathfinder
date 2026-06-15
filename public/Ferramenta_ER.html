@@ -975,6 +975,117 @@ function calcEixoIndicadores(indicadores) {
   return { pct, nivel };
 }
 
+// ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
+// Para cada item com série temporal suficiente (>= pontosMinimos),
+// calcula o gap atual (BA−PPI ou PPI−BA conforme sentido desejado),
+// a variação relativa do gap entre o 1º e o último ponto e
+// classifica como Fechando / Estagnado / Abrindo. Itens com
+// menos pontos ou dados ausentes são classificados como
+// "Insuficiente" e não pontuam, mas entram na cobertura.
+function calcItemEixo6(item, pontosMinimos) {
+  const serie = (item.serie || [])
+    .filter(p => p && p.ano !== '' && p.ano != null
+              && p.valorBA != null && !isNaN(p.valorBA)
+              && p.valorPPI != null && !isNaN(p.valorPPI))
+    .slice().sort((a, b) => a.ano - b.ano);
+  const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
+  if (serie.length < minN) {
+    const ult = serie[serie.length - 1];
+    return {
+      status: 'Insuficiente',
+      gapAtual: ult ? +calcGap(ult).toFixed(2) : null,
+      gapInicial: null, variacaoPct: null, velAnual: null,
+      anos: serie.length, anoInicial: serie[0]?.ano, anoFinal: ult?.ano,
+      pontuavel: false,
+    };
+  }
+  const ini = serie[0], fim = serie[serie.length - 1];
+  const gapIni = calcGap(ini);
+  const gapFim = calcGap(fim);
+  const denom = Math.abs(gapIni) < 0.0001 ? 0.0001 : Math.abs(gapIni);
+  const variacaoPct = ((gapFim - gapIni) / denom) * 100; // negativo = gap caiu (bom)
+  const anosSpan = Math.max(1, fim.ano - ini.ano);
+  const velAnual = (gapFim - gapIni) / anosSpan;
+  let status;
+  if (variacaoPct <= -5) status = 'Fechando';
+  else if (variacaoPct >= 5) status = 'Abrindo';
+  else status = 'Estagnado';
+  return {
+    status,
+    gapAtual: +gapFim.toFixed(2),
+    gapInicial: +gapIni.toFixed(2),
+    variacaoPct: +variacaoPct.toFixed(1),
+    velAnual: +velAnual.toFixed(2),
+    anos: serie.length, anoInicial: ini.ano, anoFinal: fim.ano,
+    pontuavel: true,
+  };
+}
+function calcEixo6(eixo6Obj) {
+  const e6 = normalizeEixo6(eixo6Obj);
+  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos) }));
+  const pontuaveis = itens.filter(x => x.calc.pontuavel);
+  const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
+  const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
+  itens.forEach(x => {
+    const s = x.calc.status;
+    if (s === 'Fechando') contagens.fechando++;
+    else if (s === 'Estagnado') contagens.estagnado++;
+    else if (s === 'Abrindo') contagens.abrindo++;
+    else contagens.insuficiente++;
+  });
+  let pctBruto = 0, fatorCob = 0, nivel = 'Sem dados';
+  if (pontuaveis.length > 0) {
+    const mediaScore = pontuaveis.reduce((a, x) => a + SCORES[x.calc.status], 0) / pontuaveis.length;
+    fatorCob = Math.min(1, pontuaveis.length / 3);
+    pctBruto = Math.round(mediaScore * fatorCob);
+    nivel = pctBruto >= 70 ? 'Reduzindo gaps'
+          : pctBruto >= 40 ? 'Avanço parcial'
+          : pctBruto >= 20 ? 'Pouco avanço'
+          :                  'Sem avanço';
+  }
+  // Compensação por barreira de dados públicos (mesma fórmula dos demais eixos)
+  let pct = pctBruto, compensado = false, justificativaBarreira = '';
+  if (e6.barreira.ativa) {
+    pct = Math.round(pctBruto + (100 - pctBruto) * BARREIRA_FATOR);
+    compensado = true;
+    justificativaBarreira = e6.barreira.justificativa || '';
+    nivel = pct >= 70 ? 'Reduzindo gaps'
+          : pct >= 40 ? 'Avanço parcial'
+          : pct >= 20 ? 'Pouco avanço'
+          :             'Sem avanço';
+  }
+  return {
+    pct, pctBruto, nivel, compensado, justificativaBarreira,
+    itens, contagens,
+    cobertura: pontuaveis.length,
+    totalItens: itens.length,
+    pontosMinimos: e6.pontosMinimos,
+    barreira: e6.barreira,
+    semItens: itens.length === 0,
+  };
+}
+function impactoCor(nivel) {
+  if (nivel === 'Reduzindo gaps') return '#2D7A4F';
+  if (nivel === 'Avanço parcial') return '#1A6B3C';
+  if (nivel === 'Pouco avanço')   return '#C8860A';
+  if (nivel === 'Sem avanço')     return '#C0392B';
+  return '#8A8A8A';
+}
+function statusEvolucaoCor(s) {
+  if (s === 'Fechando')   return '#2D7A4F';
+  if (s === 'Estagnado')  return '#C8860A';
+  if (s === 'Abrindo')    return '#C0392B';
+  return '#8A8A8A'; // Insuficiente
+}
+function statusEvolucaoIcone(s) {
+  if (s === 'Fechando')  return '▼';
+  if (s === 'Estagnado') return '■';
+  if (s === 'Abrindo')   return '▲';
+  return '○';
+}
+
 function calcMaturidade(c) {
   const b = c.barreirasContexto || defaultBarreiras();
   const e1 = aplicarBarreira(calcEixoIndicadores(c.indicadores), b.indicadores);
