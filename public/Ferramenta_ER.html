@@ -2149,6 +2149,102 @@ async function exportPPTX() {
       s.addText(evTexts,{x:PAD+1.5,y:evY+0.04,w:W-PAD*2-1.55,h:evH-0.07,fontSize:7,color:C.cinzaM,fontFace:'Calibri',wrap:true,valign:'top'});
     }
     // Ponto 8: removido nome+página do rodapé (conflitava com evidências)
+
+    // ── SLIDE DEDICADO: EIXO 06 — GAPS BA×PPI E EVOLUÇÃO ──────
+    // Renderizado logo após o slide da coalizão somente quando há itens cadastrados.
+    if (imp.totalItens > 0) {
+      const e6 = imp; // já calculado
+      const W=10, H=5.625, PAD=0.28;
+      const colXs  = [PAD, PAD+2.45, PAD+4.10, PAD+5.50, PAD+6.55, PAD+7.65];
+      const colWs2 = [2.40,    1.60,    1.35,    1.00,    1.05,    W - PAD - (PAD+7.65)];
+      const headers = ['Indicador (Eixo 02)', 'Métrica', 'Anos', 'BA → PPI', 'Δ gap', 'Status'];
+      const headerY = 0.92;
+      const headerH = 0.32;
+      const bodyTop = headerY + headerH + 0.04;
+      const bodyBot = H - 0.30;
+      const estLin = (txt, ch) => Math.max(1, Math.ceil((txt||'').length / ch));
+      const linhasH2 = e6.itens.map(it => {
+        const n1 = estLin(it.indicadorTexto || '(sem indicador)', 38);
+        const n2 = estLin(it.metrica || '—', 28);
+        const n  = Math.max(n1, n2);
+        return Math.max(0.50, 0.20 + n * 0.18);
+      });
+      const paginas = [];
+      let atual = { idxs: [], hs: [], total: 0 };
+      e6.itens.forEach((it, i) => {
+        const h = linhasH2[i];
+        if (atual.total + h > (bodyBot - bodyTop) && atual.idxs.length > 0) {
+          paginas.push(atual);
+          atual = { idxs: [], hs: [], total: 0 };
+        }
+        atual.idxs.push(i);
+        atual.hs.push(h);
+        atual.total += h;
+      });
+      if (atual.idxs.length > 0) paginas.push(atual);
+      const impCorHex2 = e6.semItens ? '8A8A8A' : impactoCor(e6.nivel).replace('#','');
+
+      paginas.forEach((pag, pi) => {
+        const eg = pres.addSlide();
+        eg.background = { color: C.creme };
+        // Header
+        eg.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.marrom},line:{color:C.marrom}});
+        const ttlSuf = paginas.length > 1 ? ' (parte '+(pi+1)+'/'+paginas.length+')' : '';
+        eg.addText('Eixo 06 — Gaps BA×PPI · '+c.nome+ttlSuf,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
+        eg.addText('BA = Brancos e Amarelos · PPI = Pretos, Pardos e Indígenas · Série temporal por indicador',{x:PAD,y:0.40,w:W-PAD*2,h:0.20,fontSize:9,color:'FFD8C0',fontFace:'Calibri'});
+        // Faixa do índice
+        eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:W,h:0.22,fill:{color:'F0E8DF'},line:{color:C.begeE}});
+        eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
+        const subT = e6.semItens
+          ? 'Sem itens pontuáveis'
+          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mínimos: '+e6.pontosMinimos+(e6.compensado?'   |   Ajustado por barreira de dados':'');
+        eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:9,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+        // Header tabela
+        headers.forEach((h,i) => {
+          eg.addShape(pres.ShapeType.rect,{x:colXs[i],y:headerY,w:colWs2[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
+          eg.addText(h,{x:colXs[i]+0.06,y:headerY,w:colWs2[i]-0.12,h:headerH,fontSize:9,bold:true,color:C.branco,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+        });
+        // Linhas
+        let y = bodyTop;
+        pag.idxs.forEach((idx, r) => {
+          const it  = e6.itens[idx];
+          const calc = it.calc;
+          const rowH = pag.hs[r];
+          const rowBg = r%2===0 ? C.branco : C.bege;
+          [0,1,2,3,4,5].forEach(i => {
+            eg.addShape(pres.ShapeType.rect,{x:colXs[i],y,w:colWs2[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
+          });
+          // Indicador
+          eg.addText(it.indicadorTexto || '(sem indicador)',{x:colXs[0]+0.06,y:y+0.03,w:colWs2[0]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true});
+          // Métrica
+          const metT = (it.metrica||'—') + (it.unidade ? ' ('+it.unidade+')':'') + '\nDesejado: '+ (it.sentidoDesejado==='descer'?'descer':'subir');
+          eg.addText(metT,{x:colXs[1]+0.06,y:y+0.03,w:colWs2[1]-0.12,h:rowH-0.06,fontSize:7,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:true});
+          // Anos
+          const anosT = calc.anoInicial != null && calc.anoFinal != null
+            ? calc.anoInicial+'→'+calc.anoFinal+'\n('+calc.anos+' pts)'
+            : '(sem série)';
+          eg.addText(anosT,{x:colXs[2]+0.06,y:y+0.03,w:colWs2[2]-0.12,h:rowH-0.06,fontSize:8,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
+          // BA→PPI (último ponto)
+          const ult = (it.serie||[]).slice().sort((a,b)=>a.ano-b.ano).filter(p=>p&&p.valorBA!=null&&p.valorPPI!=null).pop();
+          const baT = ult ? (ult.valorBA+' / '+ult.valorPPI) : '—';
+          eg.addText(baT,{x:colXs[3]+0.06,y:y+0.03,w:colWs2[3]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
+          // Δ gap
+          const dT = calc.variacaoPct != null
+            ? (calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%'
+            : '—';
+          eg.addText(dT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
+          // Status badge
+          const stCor = statusEvolucaoCor(calc.status).replace('#','');
+          const stBg  = calc.status==='Fechando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Abrindo'?'FCE8E8':'EEEAE3';
+          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status;
+          const bH = 0.24;
+          const bY = y + (rowH - bH)/2;
+          eg.addShape(pres.ShapeType.roundRect,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
+          eg.addText(stTxt,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:false,shrinkText:true});
+          y += rowH;
+        });
+      });
+    }
   }
 
   // ── SLIDE SÍNTESE ─────────────────────────────────────────
