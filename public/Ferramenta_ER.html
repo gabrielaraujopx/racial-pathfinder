@@ -1901,6 +1901,7 @@ async function exportPPTX() {
   for (let ci = 0; ci < state.coaliz.length; ci++) {
     const c   = state.coaliz[ci];
     const mat = calcMaturidade(c);
+    const imp = calcEixo6(c.eixo6);
     const W=10, H=5.625, PAD=0.28;
     const s   = pres.addSlide();
     s.background = { color: C.creme };
@@ -1915,8 +1916,23 @@ async function exportPPTX() {
     s.addShape(pres.ShapeType.ellipse,{x:7.63,y:0.175,w:0.1,h:0.1,fill:{color:matCorHex(mat.nivel)},line:{color:matCorHex(mat.nivel)}});
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
+    // Faixa fina: Índice de Impacto em Equidade (BA×PPI) — separado da Maturidade
+    const impH = 0.20;
+    const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
+    const impBg    = imp.semItens ? 'EEEAE3'
+                    : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
+                    : imp.nivel==='Avanço parcial' ? 'D4EDE0'
+                    : imp.nivel==='Pouco avanço'   ? 'FEF3DC'
+                                                   : 'FCE8E8';
+    const impTxt = imp.semItens
+      ? 'Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados'
+      : 'Índice de Impacto em Equidade (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%  ·  cobertura ' + imp.cobertura + '/' + imp.totalItens + (imp.compensado?'  ·  ajustado por barreira de dados':'');
+    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
+    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.08,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
+    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:8,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+
     // ── Faixa Diagnóstico + Visão de Sucesso ──
-    const diagY  = hdrH;
+    const diagY  = hdrH + impH;
     const diagH  = 0.68;
     const visW   = 2.10;
     const diagTW = W - PAD*2 - visW - 0.18;
