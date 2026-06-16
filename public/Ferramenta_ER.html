@@ -2154,6 +2154,9 @@ async function exportPPTX() {
     // Renderizado logo após o slide da coalizão somente quando há itens cadastrados.
     if (imp.totalItens > 0) {
       const e6 = imp; // já calculado
+      const indLookup = {};
+      (c.indicadores || []).forEach((ind, idx) => { indLookup['ind-'+idx] = ind.texto || '(indicador sem nome)'; });
+      const refTxt = ref => indLookup[ref] || '(indicador não localizado)';
       const W=10, H=5.625, PAD=0.28;
       const colXs  = [PAD, PAD+2.45, PAD+4.10, PAD+5.50, PAD+6.55, PAD+7.65];
       const colWs2 = [2.40,    1.60,    1.35,    1.00,    1.05,    W - PAD - (PAD+7.65)];
@@ -2164,7 +2167,7 @@ async function exportPPTX() {
       const bodyBot = H - 0.30;
       const estLin = (txt, ch) => Math.max(1, Math.ceil((txt||'').length / ch));
       const linhasH2 = e6.itens.map(it => {
-        const n1 = estLin(it.indicadorTexto || '(sem indicador)', 38);
+        const n1 = estLin(refTxt(it.indicadorRef), 38);
         const n2 = estLin(it.metrica || '—', 28);
         const n  = Math.max(n1, n2);
         return Math.max(0.50, 0.20 + n * 0.18);
@@ -2215,7 +2218,7 @@ async function exportPPTX() {
             eg.addShape(pres.ShapeType.rect,{x:colXs[i],y,w:colWs2[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
           });
           // Indicador
-          eg.addText(it.indicadorTexto || '(sem indicador)',{x:colXs[0]+0.06,y:y+0.03,w:colWs2[0]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true});
+          eg.addText(refTxt(it.indicadorRef),{x:colXs[0]+0.06,y:y+0.03,w:colWs2[0]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true});
           // Métrica
           const metT = (it.metrica||'—') + (it.unidade ? ' ('+it.unidade+')':'') + '\nDesejado: '+ (it.sentidoDesejado==='descer'?'descer':'subir');
           eg.addText(metT,{x:colXs[1]+0.06,y:y+0.03,w:colWs2[1]-0.12,h:rowH-0.06,fontSize:7,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:true});
