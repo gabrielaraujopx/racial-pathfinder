@@ -2273,7 +2273,7 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mínimos: '+e6.pontosMinimos+(e6.compensado?'   |   Ajustado por barreira de dados':'');
+          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mín.: '+e6.pontosMinimos+'   |   Limiar gap: '+e6.limiarGapAbsoluto+' pts'+(e6.compensado?'   |   Ajustado por barreira de dados':'');
         eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:9,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
         // Header tabela
         headers.forEach((h,i) => {
