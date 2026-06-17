@@ -1477,9 +1477,26 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
       </div>
 
       <div style="margin-top:10px;padding:8px 10px;background:var(--creme);border-radius:5px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
           <span style="font-size:11px;font-weight:700;color:var(--cinza-m)">SÉRIE TEMPORAL · BA × PPI</span>
-          <span style="font-size:11px;font-weight:700;color:${corStatus}">${statusEvolucaoIcone(calc.status)} ${calc.status}${calc.variacaoPct!=null?' · '+(calc.variacaoPct>0?'+':'')+calc.variacaoPct+'% no gap':''}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            ${calc.pontuavel ? `
+              <span title="Inclinação da reta de regressão (pts de gap por ano). Sinal negativo = gap diminuindo." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:${corStatus}1A;color:${corStatus}">
+                inclinação ${(calc.inclinacao>0?'+':'')}${calc.inclinacao} pts/ano
+              </span>
+              <span title="Variação acumulada do gap entre o primeiro e o último ponto da série." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:#EEEAE3;color:#5A4A40">
+                Δ acumulado ${calc.modoAbsoluto
+                  ? ((calc.deltaAbs>0?'+':'')+calc.deltaAbs+' pts')
+                  : ((calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%')}
+              </span>
+              <span title="R² da regressão linear (0–1). Próximo de 1 = tendência consistente." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:#EEEAE3;color:#5A4A40">
+                R² ${calc.r2}
+              </span>
+              ${calc.volatil ? `<span title="Tendência não monotônica (R²&lt;0,5 ou ≥2 reversões). Ver série completa." style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:#FEF3DC;color:#7A5A0A">⚠ Volátil</span>` : ''}
+              ${calc.modoAbsoluto ? `<span title="|gap inicial| menor que o limiar; variação reportada em pontos absolutos para evitar % inflado." style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:#EEF0F4;color:#1A4E7A">modo absoluto</span>` : ''}
+            ` : ''}
+            <span style="font-size:11px;font-weight:700;color:${corStatus}">${statusEvolucaoIcone(calc.status)} ${calc.status}</span>
+          </div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead>
