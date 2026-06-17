@@ -808,6 +808,7 @@ function normalizeBarreiras(b) {
 function defaultEixo6() {
   return {
     pontosMinimos: 3,
+    limiarGapAbsoluto: 1.0,
     barreira: { ativa: false, justificativa: '' },
     itens: [],
   };
@@ -815,6 +816,7 @@ function defaultEixo6() {
 function normalizeEixo6(e) {
   if (!e || typeof e !== 'object') return defaultEixo6();
   const pm = parseInt(e.pontosMinimos, 10);
+  const lg = Number(e.limiarGapAbsoluto);
   const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
   const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
     indicadorRef: String(it.indicadorRef || ''),
@@ -831,6 +833,7 @@ function normalizeEixo6(e) {
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
+    limiarGapAbsoluto: Number.isFinite(lg) && lg > 0 ? lg : 1.0,
     barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
     itens,
   };
