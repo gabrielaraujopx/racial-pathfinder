@@ -1411,6 +1411,11 @@ function renderEixo6Form(c) {
       <input type="number" min="2" max="10" value="${e6.pontosMinimos}" style="width:70px;padding:4px 8px;border:1px solid #D6CFC2;border-radius:4px;font-size:12px"
         onchange="upEixo6Config('pontosMinimos', this.value)">
       <span style="color:var(--cinza-m);font-size:11px">· itens com menos pontos ficam como "Insuficiente" e não pontuam</span>
+      <span style="flex-basis:100%;height:0"></span>
+      <span style="font-weight:600;color:var(--cinza-m)">Limiar de gap absoluto (pts):</span>
+      <input type="number" min="0.1" step="0.1" value="${e6.limiarGapAbsoluto}" style="width:70px;padding:4px 8px;border:1px solid #D6CFC2;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('limiarGapAbsoluto', this.value)">
+      <span style="color:var(--cinza-m);font-size:11px">· quando |gap inicial| &lt; limiar, a variação é exibida em pontos absolutos (evita % inflado em gaps pequenos)</span>
     </div>
 
     <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
@@ -1431,13 +1436,13 @@ function renderEixo6Form(c) {
       ⚠ Cadastre primeiro indicadores no <strong>Eixo Indicadores</strong> acima. Cada gap deste eixo precisa referenciar um indicador existente.
     </div>` : ''}
 
-    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos)).join('')}</div>
+    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto)).join('')}</div>
     <button class="btn-add" ${semIndicadores?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="addEixo6Item()">+ Adicionar gap BA×PPI</button>
   `;
 }
 
-function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos) {
-  const calc = calcItemEixo6(it, pontosMinimos);
+function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto) {
+  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto);
   const corStatus = statusEvolucaoCor(calc.status);
   const sentidoOpts = [
     ['subir',  'Subir é o ideal (ex: % aprovação, proficiência)'],
