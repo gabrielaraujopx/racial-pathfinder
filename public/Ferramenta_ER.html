@@ -980,12 +980,16 @@ function calcEixoIndicadores(indicadores) {
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
 // Para cada item com série temporal suficiente (>= pontosMinimos),
-// calcula o gap atual (BA−PPI ou PPI−BA conforme sentido desejado),
-// a variação relativa do gap entre o 1º e o último ponto e
-// classifica como Fechando / Estagnado / Abrindo. Itens com
-// menos pontos ou dados ausentes são classificados como
-// "Insuficiente" e não pontuam, mas entram na cobertura.
-function calcItemEixo6(item, pontosMinimos) {
+// calcula:
+//   • gap por ponto (BA−PPI ou PPI−BA conforme sentido desejado)
+//   • Δ acumulado (% ou pts absolutos quando |gap inicial| < limiar)
+//   • inclinação anual via regressão linear (mínimos quadrados) + R²
+//   • flag "Volátil" (R² < 0,5 OU ≥ 2 reversões em séries de 4+ pts)
+// O status (Fechando / Estagnado / Abrindo) usa a INCLINAÇÃO como
+// critério primário, comparada a 5% do gap inicial (modo %) ou a
+// 5% do limiarGapAbsoluto (modo absoluto). Itens com menos pontos
+// ou dados ausentes ficam como "Insuficiente" e não pontuam.
+function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
   const serie = (item.serie || [])
     .filter(p => p && p.ano !== '' && p.ano != null
               && p.valorBA != null && !isNaN(p.valorBA)
@@ -994,12 +998,14 @@ function calcItemEixo6(item, pontosMinimos) {
   const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
   const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
   const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
+  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
   if (serie.length < minN) {
     const ult = serie[serie.length - 1];
     return {
       status: 'Insuficiente',
       gapAtual: ult ? +calcGap(ult).toFixed(2) : null,
-      gapInicial: null, variacaoPct: null, velAnual: null,
+      gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      inclinacao: null, r2: null, volatil: false, reversoes: 0,
       anos: serie.length, anoInicial: serie[0]?.ano, anoFinal: ult?.ano,
       pontuavel: false,
     };
@@ -1007,27 +1013,65 @@ function calcItemEixo6(item, pontosMinimos) {
   const ini = serie[0], fim = serie[serie.length - 1];
   const gapIni = calcGap(ini);
   const gapFim = calcGap(fim);
+  const deltaAbs = gapFim - gapIni;
+  const modoAbsoluto = Math.abs(gapIni) < limAbs;
   const denom = Math.abs(gapIni) < 0.0001 ? 0.0001 : Math.abs(gapIni);
-  const variacaoPct = ((gapFim - gapIni) / denom) * 100; // negativo = gap caiu (bom)
-  const anosSpan = Math.max(1, fim.ano - ini.ano);
-  const velAnual = (gapFim - gapIni) / anosSpan;
+  const variacaoPct = (deltaAbs / denom) * 100; // negativo = gap caiu (bom)
+  // Regressão linear (mínimos quadrados) sobre (ano, gap)
+  const gaps = serie.map(calcGap);
+  const xs = serie.map(p => p.ano);
+  const n = serie.length;
+  const sumX = xs.reduce((a, v) => a + v, 0);
+  const sumY = gaps.reduce((a, v) => a + v, 0);
+  const meanX = sumX / n, meanY = sumY / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX, dy = gaps[i] - meanY;
+    sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+  }
+  const m = sxx > 1e-9 ? sxy / sxx : 0;            // pts de gap por ano
+  const b = meanY - m * meanX;
+  let ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const yhat = m * xs[i] + b;
+    ssRes += (gaps[i] - yhat) ** 2;
+  }
+  const r2 = syy > 1e-9 ? Math.max(0, 1 - ssRes / syy) : 1;
+  // Reversões de direção ano a ano
+  let reversoes = 0, prevSign = 0;
+  for (let i = 1; i < n; i++) {
+    const d = gaps[i] - gaps[i - 1];
+    if (Math.abs(d) < 1e-9) continue;
+    const sgn = d > 0 ? 1 : -1;
+    if (prevSign !== 0 && sgn !== prevSign) reversoes++;
+    prevSign = sgn;
+  }
+  const volatil = (r2 < 0.5) || (n >= 4 && reversoes >= 2);
+  // Classificação por inclinação. Threshold: 5% do gap inicial (modo %)
+  // ou 5% do limiar absoluto (modo absoluto, quando gap inicial é pequeno).
+  const thr = modoAbsoluto ? 0.05 * limAbs : 0.05 * Math.abs(gapIni);
   let status;
-  if (variacaoPct <= -5) status = 'Fechando';
-  else if (variacaoPct >= 5) status = 'Abrindo';
+  if (m <= -thr) status = 'Fechando';
+  else if (m >= thr) status = 'Abrindo';
   else status = 'Estagnado';
   return {
     status,
     gapAtual: +gapFim.toFixed(2),
     gapInicial: +gapIni.toFixed(2),
     variacaoPct: +variacaoPct.toFixed(1),
-    velAnual: +velAnual.toFixed(2),
+    deltaAbs: +deltaAbs.toFixed(2),
+    modoAbsoluto,
+    inclinacao: +m.toFixed(3),
+    r2: +r2.toFixed(2),
+    volatil, reversoes,
+    velAnual: +m.toFixed(2), // alias retrocompat
     anos: serie.length, anoInicial: ini.ano, anoFinal: fim.ano,
     pontuavel: true,
   };
 }
 function calcEixo6(eixo6Obj) {
   const e6 = normalizeEixo6(eixo6Obj);
-  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos) }));
+  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
   const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
   const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
