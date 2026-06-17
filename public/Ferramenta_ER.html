@@ -808,6 +808,7 @@ function normalizeBarreiras(b) {
 function defaultEixo6() {
   return {
     pontosMinimos: 3,
+    limiarGapAbsoluto: 1.0,
     barreira: { ativa: false, justificativa: '' },
     itens: [],
   };
@@ -815,6 +816,7 @@ function defaultEixo6() {
 function normalizeEixo6(e) {
   if (!e || typeof e !== 'object') return defaultEixo6();
   const pm = parseInt(e.pontosMinimos, 10);
+  const lg = Number(e.limiarGapAbsoluto);
   const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
   const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
     indicadorRef: String(it.indicadorRef || ''),
@@ -831,6 +833,7 @@ function normalizeEixo6(e) {
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
+    limiarGapAbsoluto: Number.isFinite(lg) && lg > 0 ? lg : 1.0,
     barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
     itens,
   };
@@ -977,12 +980,16 @@ function calcEixoIndicadores(indicadores) {
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
 // Para cada item com série temporal suficiente (>= pontosMinimos),
-// calcula o gap atual (BA−PPI ou PPI−BA conforme sentido desejado),
-// a variação relativa do gap entre o 1º e o último ponto e
-// classifica como Fechando / Estagnado / Abrindo. Itens com
-// menos pontos ou dados ausentes são classificados como
-// "Insuficiente" e não pontuam, mas entram na cobertura.
-function calcItemEixo6(item, pontosMinimos) {
+// calcula:
+//   • gap por ponto (BA−PPI ou PPI−BA conforme sentido desejado)
+//   • Δ acumulado (% ou pts absolutos quando |gap inicial| < limiar)
+//   • inclinação anual via regressão linear (mínimos quadrados) + R²
+//   • flag "Volátil" (R² < 0,5 OU ≥ 2 reversões em séries de 4+ pts)
+// O status (Fechando / Estagnado / Abrindo) usa a INCLINAÇÃO como
+// critério primário, comparada a 5% do gap inicial (modo %) ou a
+// 5% do limiarGapAbsoluto (modo absoluto). Itens com menos pontos
+// ou dados ausentes ficam como "Insuficiente" e não pontuam.
+function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
   const serie = (item.serie || [])
     .filter(p => p && p.ano !== '' && p.ano != null
               && p.valorBA != null && !isNaN(p.valorBA)
@@ -991,12 +998,14 @@ function calcItemEixo6(item, pontosMinimos) {
   const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
   const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
   const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
+  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
   if (serie.length < minN) {
     const ult = serie[serie.length - 1];
     return {
       status: 'Insuficiente',
       gapAtual: ult ? +calcGap(ult).toFixed(2) : null,
-      gapInicial: null, variacaoPct: null, velAnual: null,
+      gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      inclinacao: null, r2: null, volatil: false, reversoes: 0,
       anos: serie.length, anoInicial: serie[0]?.ano, anoFinal: ult?.ano,
       pontuavel: false,
     };
@@ -1004,27 +1013,65 @@ function calcItemEixo6(item, pontosMinimos) {
   const ini = serie[0], fim = serie[serie.length - 1];
   const gapIni = calcGap(ini);
   const gapFim = calcGap(fim);
+  const deltaAbs = gapFim - gapIni;
+  const modoAbsoluto = Math.abs(gapIni) < limAbs;
   const denom = Math.abs(gapIni) < 0.0001 ? 0.0001 : Math.abs(gapIni);
-  const variacaoPct = ((gapFim - gapIni) / denom) * 100; // negativo = gap caiu (bom)
-  const anosSpan = Math.max(1, fim.ano - ini.ano);
-  const velAnual = (gapFim - gapIni) / anosSpan;
+  const variacaoPct = (deltaAbs / denom) * 100; // negativo = gap caiu (bom)
+  // Regressão linear (mínimos quadrados) sobre (ano, gap)
+  const gaps = serie.map(calcGap);
+  const xs = serie.map(p => p.ano);
+  const n = serie.length;
+  const sumX = xs.reduce((a, v) => a + v, 0);
+  const sumY = gaps.reduce((a, v) => a + v, 0);
+  const meanX = sumX / n, meanY = sumY / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX, dy = gaps[i] - meanY;
+    sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+  }
+  const m = sxx > 1e-9 ? sxy / sxx : 0;            // pts de gap por ano
+  const b = meanY - m * meanX;
+  let ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const yhat = m * xs[i] + b;
+    ssRes += (gaps[i] - yhat) ** 2;
+  }
+  const r2 = syy > 1e-9 ? Math.max(0, 1 - ssRes / syy) : 1;
+  // Reversões de direção ano a ano
+  let reversoes = 0, prevSign = 0;
+  for (let i = 1; i < n; i++) {
+    const d = gaps[i] - gaps[i - 1];
+    if (Math.abs(d) < 1e-9) continue;
+    const sgn = d > 0 ? 1 : -1;
+    if (prevSign !== 0 && sgn !== prevSign) reversoes++;
+    prevSign = sgn;
+  }
+  const volatil = (r2 < 0.5) || (n >= 4 && reversoes >= 2);
+  // Classificação por inclinação. Threshold: 5% do gap inicial (modo %)
+  // ou 5% do limiar absoluto (modo absoluto, quando gap inicial é pequeno).
+  const thr = modoAbsoluto ? 0.05 * limAbs : 0.05 * Math.abs(gapIni);
   let status;
-  if (variacaoPct <= -5) status = 'Fechando';
-  else if (variacaoPct >= 5) status = 'Abrindo';
+  if (m <= -thr) status = 'Fechando';
+  else if (m >= thr) status = 'Abrindo';
   else status = 'Estagnado';
   return {
     status,
     gapAtual: +gapFim.toFixed(2),
     gapInicial: +gapIni.toFixed(2),
     variacaoPct: +variacaoPct.toFixed(1),
-    velAnual: +velAnual.toFixed(2),
+    deltaAbs: +deltaAbs.toFixed(2),
+    modoAbsoluto,
+    inclinacao: +m.toFixed(3),
+    r2: +r2.toFixed(2),
+    volatil, reversoes,
+    velAnual: +m.toFixed(2), // alias retrocompat
     anos: serie.length, anoInicial: ini.ano, anoFinal: fim.ano,
     pontuavel: true,
   };
 }
 function calcEixo6(eixo6Obj) {
   const e6 = normalizeEixo6(eixo6Obj);
-  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos) }));
+  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
   const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
   const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
@@ -1062,6 +1109,7 @@ function calcEixo6(eixo6Obj) {
     cobertura: pontuaveis.length,
     totalItens: itens.length,
     pontosMinimos: e6.pontosMinimos,
+    limiarGapAbsoluto: e6.limiarGapAbsoluto,
     barreira: e6.barreira,
     semItens: itens.length === 0,
   };
@@ -1363,6 +1411,11 @@ function renderEixo6Form(c) {
       <input type="number" min="2" max="10" value="${e6.pontosMinimos}" style="width:70px;padding:4px 8px;border:1px solid #D6CFC2;border-radius:4px;font-size:12px"
         onchange="upEixo6Config('pontosMinimos', this.value)">
       <span style="color:var(--cinza-m);font-size:11px">· itens com menos pontos ficam como "Insuficiente" e não pontuam</span>
+      <span style="flex-basis:100%;height:0"></span>
+      <span style="font-weight:600;color:var(--cinza-m)">Limiar de gap absoluto (pts):</span>
+      <input type="number" min="0.1" step="0.1" value="${e6.limiarGapAbsoluto}" style="width:70px;padding:4px 8px;border:1px solid #D6CFC2;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('limiarGapAbsoluto', this.value)">
+      <span style="color:var(--cinza-m);font-size:11px">· quando |gap inicial| &lt; limiar, a variação é exibida em pontos absolutos (evita % inflado em gaps pequenos)</span>
     </div>
 
     <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
@@ -1383,13 +1436,13 @@ function renderEixo6Form(c) {
       ⚠ Cadastre primeiro indicadores no <strong>Eixo Indicadores</strong> acima. Cada gap deste eixo precisa referenciar um indicador existente.
     </div>` : ''}
 
-    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos)).join('')}</div>
+    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto)).join('')}</div>
     <button class="btn-add" ${semIndicadores?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="addEixo6Item()">+ Adicionar gap BA×PPI</button>
   `;
 }
 
-function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos) {
-  const calc = calcItemEixo6(it, pontosMinimos);
+function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto) {
+  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto);
   const corStatus = statusEvolucaoCor(calc.status);
   const sentidoOpts = [
     ['subir',  'Subir é o ideal (ex: % aprovação, proficiência)'],
@@ -1424,9 +1477,26 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos) {
       </div>
 
       <div style="margin-top:10px;padding:8px 10px;background:var(--creme);border-radius:5px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
           <span style="font-size:11px;font-weight:700;color:var(--cinza-m)">SÉRIE TEMPORAL · BA × PPI</span>
-          <span style="font-size:11px;font-weight:700;color:${corStatus}">${statusEvolucaoIcone(calc.status)} ${calc.status}${calc.variacaoPct!=null?' · '+(calc.variacaoPct>0?'+':'')+calc.variacaoPct+'% no gap':''}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            ${calc.pontuavel ? `
+              <span title="Inclinação da reta de regressão (pts de gap por ano). Sinal negativo = gap diminuindo." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:${corStatus}1A;color:${corStatus}">
+                inclinação ${(calc.inclinacao>0?'+':'')}${calc.inclinacao} pts/ano
+              </span>
+              <span title="Variação acumulada do gap entre o primeiro e o último ponto da série." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:#EEEAE3;color:#5A4A40">
+                Δ acumulado ${calc.modoAbsoluto
+                  ? ((calc.deltaAbs>0?'+':'')+calc.deltaAbs+' pts')
+                  : ((calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%')}
+              </span>
+              <span title="R² da regressão linear (0–1). Próximo de 1 = tendência consistente." style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;background:#EEEAE3;color:#5A4A40">
+                R² ${calc.r2}
+              </span>
+              ${calc.volatil ? `<span title="Tendência não monotônica (R²&lt;0,5 ou ≥2 reversões). Ver série completa." style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:#FEF3DC;color:#7A5A0A">⚠ Volátil</span>` : ''}
+              ${calc.modoAbsoluto ? `<span title="|gap inicial| menor que o limiar; variação reportada em pontos absolutos para evitar % inflado." style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:#EEF0F4;color:#1A4E7A">modo absoluto</span>` : ''}
+            ` : ''}
+            <span style="font-size:11px;font-weight:700;color:${corStatus}">${statusEvolucaoIcone(calc.status)} ${calc.status}</span>
+          </div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead>
@@ -1751,6 +1821,9 @@ function upEixo6Config(campo, val) {
   if (campo === 'pontosMinimos') {
     const n = parseInt(val, 10);
     e6.pontosMinimos = Number.isFinite(n) && n >= 2 ? n : 3;
+  } else if (campo === 'limiarGapAbsoluto') {
+    const v = Number(val);
+    e6.limiarGapAbsoluto = Number.isFinite(v) && v > 0 ? v : 1.0;
   }
   saveState(); renderCoalizao();
 }
@@ -2158,9 +2231,9 @@ async function exportPPTX() {
       (c.indicadores || []).forEach((ind, idx) => { indLookup['ind-'+idx] = ind.texto || '(indicador sem nome)'; });
       const refTxt = ref => indLookup[ref] || '(indicador não localizado)';
       const W=10, H=5.625, PAD=0.28;
-      const colXs  = [PAD, PAD+2.45, PAD+4.10, PAD+5.50, PAD+6.55, PAD+7.65];
-      const colWs2 = [2.40,    1.60,    1.35,    1.00,    1.05,    W - PAD - (PAD+7.65)];
-      const headers = ['Indicador (Eixo 02)', 'Métrica', 'Anos', 'BA → PPI', 'Δ gap', 'Status'];
+      const colXs  = [PAD, PAD+2.30, PAD+3.80, PAD+4.80, PAD+5.80, PAD+6.90, PAD+8.05];
+      const colWs2 = [2.25,    1.45,    0.95,    0.95,    1.05,    1.10,    W - PAD - (PAD+8.05)];
+      const headers = ['Indicador (Eixo 02)', 'Métrica', 'Anos', 'BA → PPI', 'Inclin./ano', 'Δ acumulado', 'Status'];
       const headerY = 0.92;
       const headerH = 0.32;
       const bodyTop = headerY + headerH + 0.04;
@@ -2200,7 +2273,7 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mínimos: '+e6.pontosMinimos+(e6.compensado?'   |   Ajustado por barreira de dados':'');
+          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mín.: '+e6.pontosMinimos+'   |   Limiar gap: '+e6.limiarGapAbsoluto+' pts'+(e6.compensado?'   |   Ajustado por barreira de dados':'');
         eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:9,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
         // Header tabela
         headers.forEach((h,i) => {
@@ -2214,7 +2287,7 @@ async function exportPPTX() {
           const calc = it.calc;
           const rowH = pag.hs[r];
           const rowBg = r%2===0 ? C.branco : C.bege;
-          [0,1,2,3,4,5].forEach(i => {
+          [0,1,2,3,4,5,6].forEach(i => {
             eg.addShape(pres.ShapeType.rect,{x:colXs[i],y,w:colWs2[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
           });
           // Indicador
@@ -2231,19 +2304,27 @@ async function exportPPTX() {
           const ult = (it.serie||[]).slice().sort((a,b)=>a.ano-b.ano).filter(p=>p&&p.valorBA!=null&&p.valorPPI!=null).pop();
           const baT = ult ? (ult.valorBA+' / '+ult.valorPPI) : '—';
           eg.addText(baT,{x:colXs[3]+0.06,y:y+0.03,w:colWs2[3]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
-          // Δ gap
-          const dT = calc.variacaoPct != null
-            ? (calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%'
+          // Inclinação/ano + R²
+          const incT = calc.inclinacao != null
+            ? ((calc.inclinacao>0?'+':'')+calc.inclinacao+' pts\nR² '+calc.r2)
             : '—';
-          eg.addText(dT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
-          // Status badge
+          eg.addText(incT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
+          // Δ acumulado (% ou pts absolutos)
+          let dT = '—';
+          if (calc.pontuavel) {
+            dT = calc.modoAbsoluto
+              ? ((calc.deltaAbs>0?'+':'')+calc.deltaAbs+' pts')
+              : ((calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%');
+          }
+          eg.addText(dT,{x:colXs[5]+0.06,y:y+0.03,w:colWs2[5]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
+          // Status badge (+ flag Volátil)
           const stCor = statusEvolucaoCor(calc.status).replace('#','');
           const stBg  = calc.status==='Fechando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Abrindo'?'FCE8E8':'EEEAE3';
-          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status;
-          const bH = 0.24;
+          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?'\n⚠ Volátil':'');
+          const bH = calc.volatil ? 0.36 : 0.24;
           const bY = y + (rowH - bH)/2;
-          eg.addShape(pres.ShapeType.roundRect,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
-          eg.addText(stTxt,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:false,shrinkText:true});
+          eg.addShape(pres.ShapeType.roundRect,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
+          eg.addText(stTxt,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:true,shrinkText:true});
           y += rowH;
         });
       });
