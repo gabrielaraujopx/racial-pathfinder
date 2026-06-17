@@ -2231,9 +2231,9 @@ async function exportPPTX() {
       (c.indicadores || []).forEach((ind, idx) => { indLookup['ind-'+idx] = ind.texto || '(indicador sem nome)'; });
       const refTxt = ref => indLookup[ref] || '(indicador não localizado)';
       const W=10, H=5.625, PAD=0.28;
-      const colXs  = [PAD, PAD+2.45, PAD+4.10, PAD+5.50, PAD+6.55, PAD+7.65];
-      const colWs2 = [2.40,    1.60,    1.35,    1.00,    1.05,    W - PAD - (PAD+7.65)];
-      const headers = ['Indicador (Eixo 02)', 'Métrica', 'Anos', 'BA → PPI', 'Δ gap', 'Status'];
+      const colXs  = [PAD, PAD+2.30, PAD+3.80, PAD+4.80, PAD+5.80, PAD+6.90, PAD+8.05];
+      const colWs2 = [2.25,    1.45,    0.95,    0.95,    1.05,    1.10,    W - PAD - (PAD+8.05)];
+      const headers = ['Indicador (Eixo 02)', 'Métrica', 'Anos', 'BA → PPI', 'Inclin./ano', 'Δ acumulado', 'Status'];
       const headerY = 0.92;
       const headerH = 0.32;
       const bodyTop = headerY + headerH + 0.04;
@@ -2287,7 +2287,7 @@ async function exportPPTX() {
           const calc = it.calc;
           const rowH = pag.hs[r];
           const rowBg = r%2===0 ? C.branco : C.bege;
-          [0,1,2,3,4,5].forEach(i => {
+          [0,1,2,3,4,5,6].forEach(i => {
             eg.addShape(pres.ShapeType.rect,{x:colXs[i],y,w:colWs2[i],h:rowH,fill:{color:rowBg},line:{color:C.begeE}});
           });
           // Indicador
@@ -2304,19 +2304,27 @@ async function exportPPTX() {
           const ult = (it.serie||[]).slice().sort((a,b)=>a.ano-b.ano).filter(p=>p&&p.valorBA!=null&&p.valorPPI!=null).pop();
           const baT = ult ? (ult.valorBA+' / '+ult.valorPPI) : '—';
           eg.addText(baT,{x:colXs[3]+0.06,y:y+0.03,w:colWs2[3]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
-          // Δ gap
-          const dT = calc.variacaoPct != null
-            ? (calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%'
+          // Inclinação/ano + R²
+          const incT = calc.inclinacao != null
+            ? ((calc.inclinacao>0?'+':'')+calc.inclinacao+' pts\nR² '+calc.r2)
             : '—';
-          eg.addText(dT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
-          // Status badge
+          eg.addText(incT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
+          // Δ acumulado (% ou pts absolutos)
+          let dT = '—';
+          if (calc.pontuavel) {
+            dT = calc.modoAbsoluto
+              ? ((calc.deltaAbs>0?'+':'')+calc.deltaAbs+' pts')
+              : ((calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%');
+          }
+          eg.addText(dT,{x:colXs[5]+0.06,y:y+0.03,w:colWs2[5]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
+          // Status badge (+ flag Volátil)
           const stCor = statusEvolucaoCor(calc.status).replace('#','');
           const stBg  = calc.status==='Fechando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Abrindo'?'FCE8E8':'EEEAE3';
-          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status;
-          const bH = 0.24;
+          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?'\n⚠ Volátil':'');
+          const bH = calc.volatil ? 0.36 : 0.24;
           const bY = y + (rowH - bH)/2;
-          eg.addShape(pres.ShapeType.roundRect,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
-          eg.addText(stTxt,{x:colXs[5]+0.06,y:bY,w:colWs2[5]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:false,shrinkText:true});
+          eg.addShape(pres.ShapeType.roundRect,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
+          eg.addText(stTxt,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:true,shrinkText:true});
           y += rowH;
         });
       });
