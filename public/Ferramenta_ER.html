@@ -809,6 +809,13 @@ function defaultEixo6() {
   return {
     pontosMinimos: 3,
     limiarGapAbsoluto: 1.0,
+    // Recorte de anos que aparece nas tabelas do PPT (não afeta cálculo).
+    // null = usa toda a série preenchida.
+    pptAnoInicial: null,
+    pptAnoFinal: null,
+    // Último ano em que a coalizão ainda NÃO atuava de forma consistente.
+    // Usado como ponto de sobreposição entre as janelas "Antes" e "Depois".
+    coalizaoAnoInicio: null,
     barreira: { ativa: false, justificativa: '' },
     itens: [],
   };
@@ -817,6 +824,11 @@ function normalizeEixo6(e) {
   if (!e || typeof e !== 'object') return defaultEixo6();
   const pm = parseInt(e.pontosMinimos, 10);
   const lg = Number(e.limiarGapAbsoluto);
+  const _yr = v => {
+    if (v === '' || v == null) return null;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+  };
   const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
   const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
     indicadorRef: String(it.indicadorRef || ''),
@@ -830,10 +842,17 @@ function normalizeEixo6(e) {
       fonte: String(p.fonte || ''),
     })) : [],
     observacoes: String(it.observacoes || ''),
+    // Overrides opcionais por indicador (null = herda da coalizão).
+    pptAnoInicialOverride: _yr(it.pptAnoInicialOverride),
+    pptAnoFinalOverride:   _yr(it.pptAnoFinalOverride),
+    coalizaoAnoInicioOverride: _yr(it.coalizaoAnoInicioOverride),
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
     limiarGapAbsoluto: Number.isFinite(lg) && lg > 0 ? lg : 1.0,
+    pptAnoInicial: _yr(e.pptAnoInicial),
+    pptAnoFinal:   _yr(e.pptAnoFinal),
+    coalizaoAnoInicio: _yr(e.coalizaoAnoInicio),
     barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
     itens,
   };
