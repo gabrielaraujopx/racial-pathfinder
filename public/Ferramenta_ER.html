@@ -1524,18 +1524,54 @@ function renderEixo6Form(c) {
       ⚠ Cadastre primeiro indicadores no <strong>Eixo Indicadores</strong> acima. Cada gap deste eixo precisa referenciar um indicador existente.
     </div>` : ''}
 
-    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto)).join('')}</div>
+    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto, {
+      pptAnoInicial: e6.pptAnoInicial, pptAnoFinal: e6.pptAnoFinal, coalizaoAnoInicio: e6.coalizaoAnoInicio
+    })).join('')}</div>
     <button class="btn-add" ${semIndicadores?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="addEixo6Item()">+ Adicionar gap BA×PPI</button>
   `;
 }
 
-function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto) {
-  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto);
+function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto, ctx) {
+  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto, ctx || {});
   const corStatus = statusEvolucaoCor(calc.status);
   const sentidoOpts = [
     ['subir',  'Subir é o ideal (ex: % aprovação, proficiência)'],
     ['descer', 'Descer é o ideal (ex: evasão, reprovação)'],
   ];
+  const fmtJanela = (j, label, destaque) => {
+    if (!j) return '';
+    const bg = destaque ? '#FFF4E6' : '#F4F1EA';
+    const brd = destaque ? '2px solid #C8860A' : '1px solid #E0D9C8';
+    const cor = statusEvolucaoCor(j.status);
+    if (!j.pontuavel) {
+      return `<div style="flex:1;min-width:150px;padding:6px 8px;background:${bg};border:${brd};border-radius:5px;font-size:10px">
+        <div style="font-weight:700;color:#5A4A40;letter-spacing:.3px;margin-bottom:3px">${label}${destaque?' ★':''}</div>
+        <div style="color:var(--cinza-m);font-style:italic">amostra insuficiente (${j.anos} pt${j.anos===1?'':'s'})</div>
+      </div>`;
+    }
+    const delta = j.modoAbsoluto
+      ? ((j.deltaAbs>0?'+':'')+j.deltaAbs+' pts')
+      : ((j.variacaoPct>0?'+':'')+j.variacaoPct+'%');
+    return `<div style="flex:1;min-width:150px;padding:6px 8px;background:${bg};border:${brd};border-radius:5px;font-size:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <span style="font-weight:700;color:#5A4A40;letter-spacing:.3px">${label}${destaque?' ★':''}</span>
+        <span style="font-weight:700;color:${cor}">${statusEvolucaoIcone(j.status)} ${j.status}</span>
+      </div>
+      <div style="color:var(--cinza);line-height:1.5">
+        <span title="Inclinação anual">incl. <strong>${(j.inclinacao>0?'+':'')}${j.inclinacao}</strong>/ano</span> ·
+        <span title="Δ acumulado">Δ <strong>${delta}</strong></span> ·
+        <span title="R²">R² <strong>${j.r2}</strong></span>
+        ${j.volatil?'<span style="color:#7A5A0A;font-weight:700"> · ⚠ Volátil</span>':''}
+        ${j.modoAbsoluto?'<span style="color:#1A4E7A"> · abs</span>':''}
+      </div>
+      <div style="color:var(--cinza-m);font-size:9px;margin-top:2px">${j.anoInicial}→${j.anoFinal} · ${j.anos} pts</div>
+    </div>`;
+  };
+  const c2 = ctx || {};
+  const heredadoPpt = c2.pptAnoInicial != null || c2.pptAnoFinal != null
+    ? `(coalizão: ${c2.pptAnoInicial ?? '—'}→${c2.pptAnoFinal ?? '—'})` : '(coalizão: toda a série)';
+  const heredadoMarco = c2.coalizaoAnoInicio != null
+    ? `(coalizão: ${c2.coalizaoAnoInicio})` : '(coalizão: não definido)';
   return `<div class="item-card" style="border-left:3px solid ${corStatus}">
     <div class="item-card-content">
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
@@ -1563,6 +1599,29 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
           </select>
         </div>
       </div>
+
+      <div style="margin-top:10px;padding:8px 10px;background:#FAF8F2;border:1px dashed #D6CFC2;border-radius:5px;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+        <span style="font-weight:700;color:var(--cinza-m);font-size:10px;letter-spacing:.3px">SOBRESCREVER PARA ESTE INDICADOR (opcional)</span>
+        <span style="color:var(--cinza-m);font-size:10px">PPT de</span>
+        <input type="number" min="1900" max="2100" value="${it.pptAnoInicialOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'pptAnoInicialOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:10px">até</span>
+        <input type="number" min="1900" max="2100" value="${it.pptAnoFinalOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'pptAnoFinalOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:9px">${heredadoPpt}</span>
+        <span style="color:var(--cinza-m);font-size:10px;margin-left:8px">marco</span>
+        <input type="number" min="1900" max="2100" value="${it.coalizaoAnoInicioOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'coalizaoAnoInicioOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:9px">${heredadoMarco}</span>
+      </div>
+
+      ${(calc.geral || calc.antes || calc.depois) ? `
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
+        ${fmtJanela(calc.geral, 'GERAL', false)}
+        ${fmtJanela(calc.antes, 'ANTES da coalizão', false)}
+        ${fmtJanela(calc.depois, 'DEPOIS da coalizão', true)}
+        ${calc.marcoAno != null ? `<div style="flex-basis:100%;font-size:10px;color:var(--cinza-m);padding-left:4px">Marco efetivo: <strong>${calc.marcoAno}</strong> (ponto de sobreposição entre Antes e Depois)</div>` : ''}
+      </div>` : ''}
 
       <div style="margin-top:10px;padding:8px 10px;background:var(--creme);border-radius:5px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
