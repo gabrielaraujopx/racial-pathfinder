@@ -809,6 +809,13 @@ function defaultEixo6() {
   return {
     pontosMinimos: 3,
     limiarGapAbsoluto: 1.0,
+    // Recorte de anos que aparece nas tabelas do PPT (não afeta cálculo).
+    // null = usa toda a série preenchida.
+    pptAnoInicial: null,
+    pptAnoFinal: null,
+    // Último ano em que a coalizão ainda NÃO atuava de forma consistente.
+    // Usado como ponto de sobreposição entre as janelas "Antes" e "Depois".
+    coalizaoAnoInicio: null,
     barreira: { ativa: false, justificativa: '' },
     itens: [],
   };
@@ -817,6 +824,11 @@ function normalizeEixo6(e) {
   if (!e || typeof e !== 'object') return defaultEixo6();
   const pm = parseInt(e.pontosMinimos, 10);
   const lg = Number(e.limiarGapAbsoluto);
+  const _yr = v => {
+    if (v === '' || v == null) return null;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+  };
   const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
   const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
     indicadorRef: String(it.indicadorRef || ''),
@@ -830,10 +842,17 @@ function normalizeEixo6(e) {
       fonte: String(p.fonte || ''),
     })) : [],
     observacoes: String(it.observacoes || ''),
+    // Overrides opcionais por indicador (null = herda da coalizão).
+    pptAnoInicialOverride: _yr(it.pptAnoInicialOverride),
+    pptAnoFinalOverride:   _yr(it.pptAnoFinalOverride),
+    coalizaoAnoInicioOverride: _yr(it.coalizaoAnoInicioOverride),
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
     limiarGapAbsoluto: Number.isFinite(lg) && lg > 0 ? lg : 1.0,
+    pptAnoInicial: _yr(e.pptAnoInicial),
+    pptAnoFinal:   _yr(e.pptAnoFinal),
+    coalizaoAnoInicio: _yr(e.coalizaoAnoInicio),
     barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
     itens,
   };
@@ -980,47 +999,50 @@ function calcEixoIndicadores(indicadores) {
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
 // Para cada item com série temporal suficiente (>= pontosMinimos),
-// calcula:
-//   • gap por ponto (BA−PPI ou PPI−BA conforme sentido desejado)
-//   • Δ acumulado (% ou pts absolutos quando |gap inicial| < limiar)
-//   • inclinação anual via regressão linear (mínimos quadrados) + R²
-//   • flag "Volátil" (R² < 0,5 OU ≥ 2 reversões em séries de 4+ pts)
-// O status (Fechando / Estagnado / Abrindo) usa a INCLINAÇÃO como
-// critério primário, comparada a 5% do gap inicial (modo %) ou a
-// 5% do limiarGapAbsoluto (modo absoluto). Itens com menos pontos
-// ou dados ausentes ficam como "Insuficiente" e não pontuam.
-function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
-  const serie = (item.serie || [])
-    .filter(p => p && p.ano !== '' && p.ano != null
-              && p.valorBA != null && !isNaN(p.valorBA)
-              && p.valorPPI != null && !isNaN(p.valorPPI))
-    .slice().sort((a, b) => a.ano - b.ano);
-  const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+// calcula sobre TRÊS janelas:
+//   • geral  — todos os anos preenchidos
+//   • antes  — anos ≤ marco da coalizão (ponto de sobreposição)
+//   • depois — anos ≥ marco da coalizão
+// Em cada janela: gap por ponto, Δ acumulado (% ou pts absolutos
+// quando |gap inicial| < limiar), inclinação anual via regressão
+// linear (mínimos quadrados) + R², e flag "Volátil" (R²<0,5 OU
+// ≥2 reversões em séries de 4+ pts). O status (Fechando/Estagnado/
+// Abrindo) usa a INCLINAÇÃO como critério primário, comparada a
+// 5% do gap inicial (modo %) ou 5% do limiarGapAbsoluto (modo abs).
+// O status oficial do indicador (usado na agregação do eixo) vem
+// SEMPRE da janela "geral", para estabilidade da pontuação.
+function _calcJanelaEixo6(pontos, sent, limAbs, minN, exigeMin) {
+  // pontos: já ordenados e filtrados (BA/PPI válidos)
   const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
-  const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
-  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
-  if (serie.length < minN) {
-    const ult = serie[serie.length - 1];
+  const n = pontos.length;
+  if (n === 0) {
     return {
       status: 'Insuficiente',
-      gapAtual: ult ? +calcGap(ult).toFixed(2) : null,
-      gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      gapAtual: null, gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
       inclinacao: null, r2: null, volatil: false, reversoes: 0,
-      anos: serie.length, anoInicial: serie[0]?.ano, anoFinal: ult?.ano,
-      pontuavel: false,
+      anos: 0, anoInicial: null, anoFinal: null, pontuavel: false,
     };
   }
-  const ini = serie[0], fim = serie[serie.length - 1];
+  const ini = pontos[0], fim = pontos[n - 1];
   const gapIni = calcGap(ini);
   const gapFim = calcGap(fim);
+  // Para 1 ponto OU abaixo do mínimo da janela: devolve apenas snapshot, sem tendência.
+  if (n < 2 || (exigeMin && n < minN)) {
+    return {
+      status: 'Insuficiente',
+      gapAtual: +gapFim.toFixed(2),
+      gapInicial: n >= 1 ? +gapIni.toFixed(2) : null,
+      variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      inclinacao: null, r2: null, volatil: false, reversoes: 0,
+      anos: n, anoInicial: ini.ano, anoFinal: fim.ano, pontuavel: false,
+    };
+  }
   const deltaAbs = gapFim - gapIni;
   const modoAbsoluto = Math.abs(gapIni) < limAbs;
   const denom = Math.abs(gapIni) < 0.0001 ? 0.0001 : Math.abs(gapIni);
-  const variacaoPct = (deltaAbs / denom) * 100; // negativo = gap caiu (bom)
-  // Regressão linear (mínimos quadrados) sobre (ano, gap)
-  const gaps = serie.map(calcGap);
-  const xs = serie.map(p => p.ano);
-  const n = serie.length;
+  const variacaoPct = (deltaAbs / denom) * 100;
+  const gaps = pontos.map(calcGap);
+  const xs = pontos.map(p => p.ano);
   const sumX = xs.reduce((a, v) => a + v, 0);
   const sumY = gaps.reduce((a, v) => a + v, 0);
   const meanX = sumX / n, meanY = sumY / n;
@@ -1029,7 +1051,7 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     const dx = xs[i] - meanX, dy = gaps[i] - meanY;
     sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
   }
-  const m = sxx > 1e-9 ? sxy / sxx : 0;            // pts de gap por ano
+  const m = sxx > 1e-9 ? sxy / sxx : 0;
   const b = meanY - m * meanX;
   let ssRes = 0;
   for (let i = 0; i < n; i++) {
@@ -1037,7 +1059,6 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     ssRes += (gaps[i] - yhat) ** 2;
   }
   const r2 = syy > 1e-9 ? Math.max(0, 1 - ssRes / syy) : 1;
-  // Reversões de direção ano a ano
   let reversoes = 0, prevSign = 0;
   for (let i = 1; i < n; i++) {
     const d = gaps[i] - gaps[i - 1];
@@ -1047,8 +1068,6 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     prevSign = sgn;
   }
   const volatil = (r2 < 0.5) || (n >= 4 && reversoes >= 2);
-  // Classificação por inclinação. Threshold: 5% do gap inicial (modo %)
-  // ou 5% do limiar absoluto (modo absoluto, quando gap inicial é pequeno).
   const thr = modoAbsoluto ? 0.05 * limAbs : 0.05 * Math.abs(gapIni);
   let status;
   if (m <= -thr) status = 'Fechando';
@@ -1064,14 +1083,63 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     inclinacao: +m.toFixed(3),
     r2: +r2.toFixed(2),
     volatil, reversoes,
-    velAnual: +m.toFixed(2), // alias retrocompat
-    anos: serie.length, anoInicial: ini.ano, anoFinal: fim.ano,
+    velAnual: +m.toFixed(2),
+    anos: n, anoInicial: ini.ano, anoFinal: fim.ano,
     pontuavel: true,
   };
 }
+function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
+  ctx = ctx || {};
+  const serie = (item.serie || [])
+    .filter(p => p && p.ano !== '' && p.ano != null
+              && p.valorBA != null && !isNaN(p.valorBA)
+              && p.valorPPI != null && !isNaN(p.valorPPI))
+    .slice().sort((a, b) => a.ano - b.ano);
+  const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+  const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
+  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
+  // Janela GERAL — exige pontosMinimos para ser pontuável (define status oficial).
+  const geral = _calcJanelaEixo6(serie, sent, limAbs, minN, true);
+  // Resolve marco efetivo (override > coalizão). Usa o ano medido mais
+  // próximo (≤ marcoBruto) como ponto de sobreposição.
+  const marcoBruto = item.coalizaoAnoInicioOverride != null
+    ? item.coalizaoAnoInicioOverride
+    : (ctx.coalizaoAnoInicio != null ? ctx.coalizaoAnoInicio : null);
+  let marcoEfetivo = null;
+  if (marcoBruto != null && serie.length > 0) {
+    const antesOuIgual = serie.filter(p => p.ano <= marcoBruto);
+    if (antesOuIgual.length > 0) marcoEfetivo = antesOuIgual[antesOuIgual.length - 1].ano;
+    else marcoEfetivo = serie[0].ano; // marco antes da série: tudo é "depois"
+  }
+  let antes = null, depois = null;
+  if (marcoEfetivo != null && serie.length > 0) {
+    const ptsAntes  = serie.filter(p => p.ano <= marcoEfetivo);
+    const ptsDepois = serie.filter(p => p.ano >= marcoEfetivo);
+    antes  = _calcJanelaEixo6(ptsAntes,  sent, limAbs, minN, false);
+    depois = _calcJanelaEixo6(ptsDepois, sent, limAbs, minN, false);
+  }
+  // Recorte do PPT (override > coalizão > toda série)
+  const pptDe  = item.pptAnoInicialOverride != null ? item.pptAnoInicialOverride
+               : (ctx.pptAnoInicial != null ? ctx.pptAnoInicial : null);
+  const pptAte = item.pptAnoFinalOverride   != null ? item.pptAnoFinalOverride
+               : (ctx.pptAnoFinal   != null ? ctx.pptAnoFinal   : null);
+  // Retorno: expõe campos da janela "geral" no topo (retrocompat) +
+  // referências completas das três janelas e do recorte/marco.
+  return Object.assign({}, geral, {
+    geral, antes, depois,
+    marcoAno: marcoEfetivo,
+    marcoBruto: marcoBruto,
+    recortePpt: { de: pptDe, ate: pptAte },
+  });
+}
 function calcEixo6(eixo6Obj) {
   const e6 = normalizeEixo6(eixo6Obj);
-  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto) }));
+  const ctx = {
+    pptAnoInicial: e6.pptAnoInicial,
+    pptAnoFinal:   e6.pptAnoFinal,
+    coalizaoAnoInicio: e6.coalizaoAnoInicio,
+  };
+  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto, ctx) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
   const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
   const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
@@ -1110,6 +1178,9 @@ function calcEixo6(eixo6Obj) {
     totalItens: itens.length,
     pontosMinimos: e6.pontosMinimos,
     limiarGapAbsoluto: e6.limiarGapAbsoluto,
+    pptAnoInicial: e6.pptAnoInicial,
+    pptAnoFinal:   e6.pptAnoFinal,
+    coalizaoAnoInicio: e6.coalizaoAnoInicio,
     barreira: e6.barreira,
     semItens: itens.length === 0,
   };
@@ -1418,6 +1489,23 @@ function renderEixo6Form(c) {
       <span style="color:var(--cinza-m);font-size:11px">· quando |gap inicial| &lt; limiar, a variação é exibida em pontos absolutos (evita % inflado em gaps pequenos)</span>
     </div>
 
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#EEF0F4;border-left:3px solid #3A5A7A;border-radius:5px;font-size:12px;">
+      <span style="font-weight:700;color:#1A4E7A;font-size:11px;letter-spacing:.3px">RECORTE & SEGMENTAÇÃO TEMPORAL</span>
+      <span style="flex-basis:100%;height:0"></span>
+      <span style="font-weight:600;color:var(--cinza-m)" title="Anos exibidos nas tabelas/PPT (não altera cálculo). Em branco = toda a série.">Recorte do PPT — ano inicial:</span>
+      <input type="number" min="1900" max="2100" value="${e6.pptAnoInicial ?? ''}" placeholder="—" style="width:80px;padding:4px 8px;border:1px solid #B5BCC9;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('pptAnoInicial', this.value)">
+      <span style="font-weight:600;color:var(--cinza-m)">final:</span>
+      <input type="number" min="1900" max="2100" value="${e6.pptAnoFinal ?? ''}" placeholder="—" style="width:80px;padding:4px 8px;border:1px solid #B5BCC9;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('pptAnoFinal', this.value)">
+      <span style="color:var(--cinza-m);font-size:11px">· em branco = toda a série</span>
+      <span style="flex-basis:100%;height:0"></span>
+      <span style="font-weight:600;color:var(--cinza-m)" title="Último ano em que a coalizão ainda NÃO atuava de forma consistente. Esse ano aparece como ponto de sobreposição entre 'Antes' e 'Depois'.">Marco da coalizão (último ano sem atuação consistente):</span>
+      <input type="number" min="1900" max="2100" value="${e6.coalizaoAnoInicio ?? ''}" placeholder="—" style="width:80px;padding:4px 8px;border:1px solid #B5BCC9;border-radius:4px;font-size:12px"
+        onchange="upEixo6Config('coalizaoAnoInicio', this.value)">
+      <span style="color:var(--cinza-m);font-size:11px">· o ano marcado aparece como último ponto do "Antes" E primeiro ponto do "Depois" (continuidade visual)</span>
+    </div>
+
     <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:var(--cinza)">
         <input type="checkbox" ${b.ativa?'checked':''} style="margin-top:3px"
@@ -1436,18 +1524,54 @@ function renderEixo6Form(c) {
       ⚠ Cadastre primeiro indicadores no <strong>Eixo Indicadores</strong> acima. Cada gap deste eixo precisa referenciar um indicador existente.
     </div>` : ''}
 
-    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto)).join('')}</div>
+    <div class="items-lista" id="lista-eixo6">${e6.itens.map((it,i) => renderItemEixo6(it, i, indicadoresRefs, e6.pontosMinimos, e6.limiarGapAbsoluto, {
+      pptAnoInicial: e6.pptAnoInicial, pptAnoFinal: e6.pptAnoFinal, coalizaoAnoInicio: e6.coalizaoAnoInicio
+    })).join('')}</div>
     <button class="btn-add" ${semIndicadores?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="addEixo6Item()">+ Adicionar gap BA×PPI</button>
   `;
 }
 
-function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto) {
-  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto);
+function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsoluto, ctx) {
+  const calc = calcItemEixo6(it, pontosMinimos, limiarGapAbsoluto, ctx || {});
   const corStatus = statusEvolucaoCor(calc.status);
   const sentidoOpts = [
     ['subir',  'Subir é o ideal (ex: % aprovação, proficiência)'],
     ['descer', 'Descer é o ideal (ex: evasão, reprovação)'],
   ];
+  const fmtJanela = (j, label, destaque) => {
+    if (!j) return '';
+    const bg = destaque ? '#FFF4E6' : '#F4F1EA';
+    const brd = destaque ? '2px solid #C8860A' : '1px solid #E0D9C8';
+    const cor = statusEvolucaoCor(j.status);
+    if (!j.pontuavel) {
+      return `<div style="flex:1;min-width:150px;padding:6px 8px;background:${bg};border:${brd};border-radius:5px;font-size:10px">
+        <div style="font-weight:700;color:#5A4A40;letter-spacing:.3px;margin-bottom:3px">${label}${destaque?' ★':''}</div>
+        <div style="color:var(--cinza-m);font-style:italic">amostra insuficiente (${j.anos} pt${j.anos===1?'':'s'})</div>
+      </div>`;
+    }
+    const delta = j.modoAbsoluto
+      ? ((j.deltaAbs>0?'+':'')+j.deltaAbs+' pts')
+      : ((j.variacaoPct>0?'+':'')+j.variacaoPct+'%');
+    return `<div style="flex:1;min-width:150px;padding:6px 8px;background:${bg};border:${brd};border-radius:5px;font-size:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <span style="font-weight:700;color:#5A4A40;letter-spacing:.3px">${label}${destaque?' ★':''}</span>
+        <span style="font-weight:700;color:${cor}">${statusEvolucaoIcone(j.status)} ${j.status}</span>
+      </div>
+      <div style="color:var(--cinza);line-height:1.5">
+        <span title="Inclinação anual">incl. <strong>${(j.inclinacao>0?'+':'')}${j.inclinacao}</strong>/ano</span> ·
+        <span title="Δ acumulado">Δ <strong>${delta}</strong></span> ·
+        <span title="R²">R² <strong>${j.r2}</strong></span>
+        ${j.volatil?'<span style="color:#7A5A0A;font-weight:700"> · ⚠ Volátil</span>':''}
+        ${j.modoAbsoluto?'<span style="color:#1A4E7A"> · abs</span>':''}
+      </div>
+      <div style="color:var(--cinza-m);font-size:9px;margin-top:2px">${j.anoInicial}→${j.anoFinal} · ${j.anos} pts</div>
+    </div>`;
+  };
+  const c2 = ctx || {};
+  const heredadoPpt = c2.pptAnoInicial != null || c2.pptAnoFinal != null
+    ? `(coalizão: ${c2.pptAnoInicial ?? '—'}→${c2.pptAnoFinal ?? '—'})` : '(coalizão: toda a série)';
+  const heredadoMarco = c2.coalizaoAnoInicio != null
+    ? `(coalizão: ${c2.coalizaoAnoInicio})` : '(coalizão: não definido)';
   return `<div class="item-card" style="border-left:3px solid ${corStatus}">
     <div class="item-card-content">
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
@@ -1475,6 +1599,29 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
           </select>
         </div>
       </div>
+
+      <div style="margin-top:10px;padding:8px 10px;background:#FAF8F2;border:1px dashed #D6CFC2;border-radius:5px;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+        <span style="font-weight:700;color:var(--cinza-m);font-size:10px;letter-spacing:.3px">SOBRESCREVER PARA ESTE INDICADOR (opcional)</span>
+        <span style="color:var(--cinza-m);font-size:10px">PPT de</span>
+        <input type="number" min="1900" max="2100" value="${it.pptAnoInicialOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'pptAnoInicialOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:10px">até</span>
+        <input type="number" min="1900" max="2100" value="${it.pptAnoFinalOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'pptAnoFinalOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:9px">${heredadoPpt}</span>
+        <span style="color:var(--cinza-m);font-size:10px;margin-left:8px">marco</span>
+        <input type="number" min="1900" max="2100" value="${it.coalizaoAnoInicioOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
+          onchange="upEixo6Item(${i},'coalizaoAnoInicioOverride',this.value)">
+        <span style="color:var(--cinza-m);font-size:9px">${heredadoMarco}</span>
+      </div>
+
+      ${(calc.geral || calc.antes || calc.depois) ? `
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:stretch">
+        ${fmtJanela(calc.geral, 'GERAL', false)}
+        ${fmtJanela(calc.antes, 'ANTES da coalizão', false)}
+        ${fmtJanela(calc.depois, 'DEPOIS da coalizão', true)}
+        ${calc.marcoAno != null ? `<div style="flex-basis:100%;font-size:10px;color:var(--cinza-m);padding-left:4px">Marco efetivo: <strong>${calc.marcoAno}</strong> (ponto de sobreposição entre Antes e Depois)</div>` : ''}
+      </div>` : ''}
 
       <div style="margin-top:10px;padding:8px 10px;background:var(--creme);border-radius:5px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
@@ -1824,6 +1971,13 @@ function upEixo6Config(campo, val) {
   } else if (campo === 'limiarGapAbsoluto') {
     const v = Number(val);
     e6.limiarGapAbsoluto = Number.isFinite(v) && v > 0 ? v : 1.0;
+  } else if (campo === 'pptAnoInicial' || campo === 'pptAnoFinal' || campo === 'coalizaoAnoInicio') {
+    if (val === '' || val == null) {
+      e6[campo] = null;
+    } else {
+      const n = parseInt(val, 10);
+      e6[campo] = Number.isFinite(n) ? n : null;
+    }
   }
   saveState(); renderCoalizao();
 }
@@ -1849,6 +2003,15 @@ function removeEixo6Item(i) {
 }
 function upEixo6Item(i, campo, val) {
   const it = _e6().itens[i]; if (!it) return;
+  if (campo === 'pptAnoInicialOverride' || campo === 'pptAnoFinalOverride' || campo === 'coalizaoAnoInicioOverride') {
+    if (val === '' || val == null) it[campo] = null;
+    else {
+      const n = parseInt(val, 10);
+      it[campo] = Number.isFinite(n) ? n : null;
+    }
+    saveState(); renderCoalizao();
+    return;
+  }
   it[campo] = val;
   saveState(); refreshImpacto();
 }
@@ -2243,7 +2406,8 @@ async function exportPPTX() {
         const n1 = estLin(refTxt(it.indicadorRef), 38);
         const n2 = estLin(it.metrica || '—', 28);
         const n  = Math.max(n1, n2);
-        return Math.max(0.50, 0.20 + n * 0.18);
+        // Reserva 3 sub-linhas (G/A/D) nas colunas analíticas.
+        return Math.max(0.78, 0.20 + Math.max(n, 3) * 0.20);
       });
       const paginas = [];
       let atual = { idxs: [], hs: [], total: 0 };
@@ -2273,7 +2437,10 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura pontuável: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mín.: '+e6.pontosMinimos+'   |   Limiar gap: '+e6.limiarGapAbsoluto+' pts'+(e6.compensado?'   |   Ajustado por barreira de dados':'');
+          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mín.: '+e6.pontosMinimos+'   |   Limiar: '+e6.limiarGapAbsoluto+' pts'
+              +(e6.coalizaoAnoInicio!=null?'   |   Marco coalizão: '+e6.coalizaoAnoInicio:'')
+              +((e6.pptAnoInicial!=null||e6.pptAnoFinal!=null)?'   |   Recorte: '+(e6.pptAnoInicial??'—')+'→'+(e6.pptAnoFinal??'—'):'')
+              +(e6.compensado?'   |   Ajustado por barreira':'');
         eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:9,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
         // Header tabela
         headers.forEach((h,i) => {
@@ -2295,28 +2462,55 @@ async function exportPPTX() {
           // Métrica
           const metT = (it.metrica||'—') + (it.unidade ? ' ('+it.unidade+')':'') + '\nDesejado: '+ (it.sentidoDesejado==='descer'?'descer':'subir');
           eg.addText(metT,{x:colXs[1]+0.06,y:y+0.03,w:colWs2[1]-0.12,h:rowH-0.06,fontSize:7,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:true});
-          // Anos
-          const anosT = calc.anoInicial != null && calc.anoFinal != null
-            ? calc.anoInicial+'→'+calc.anoFinal+'\n('+calc.anos+' pts)'
-            : '(sem série)';
+          // Anos — respeita recorte do PPT, se houver
+          const rec = calc.recortePpt || { de:null, ate:null };
+          const sortedSerie = (it.serie||[]).slice().sort((a,b)=>a.ano-b.ano).filter(p=>p&&p.valorBA!=null&&p.valorPPI!=null);
+          const serieRec = sortedSerie.filter(p =>
+            (rec.de == null || p.ano >= rec.de) && (rec.ate == null || p.ano <= rec.ate)
+          );
+          const exibe = (rec.de!=null||rec.ate!=null) ? serieRec : sortedSerie;
+          const anoIni = exibe[0]?.ano, anoFim = exibe[exibe.length-1]?.ano;
+          const recAtivo = (rec.de!=null||rec.ate!=null);
+          const anosT = anoIni != null
+            ? anoIni+'→'+anoFim+'\n('+exibe.length+' pts'+(recAtivo?' rec.':'')+')'
+            : (recAtivo ? '(sem pts no recorte)' : '(sem série)');
           eg.addText(anosT,{x:colXs[2]+0.06,y:y+0.03,w:colWs2[2]-0.12,h:rowH-0.06,fontSize:8,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
-          // BA→PPI (último ponto)
-          const ult = (it.serie||[]).slice().sort((a,b)=>a.ano-b.ano).filter(p=>p&&p.valorBA!=null&&p.valorPPI!=null).pop();
+          // BA→PPI — último ponto exibido
+          const ult = exibe[exibe.length-1];
           const baT = ult ? (ult.valorBA+' / '+ult.valorPPI) : '—';
           eg.addText(baT,{x:colXs[3]+0.06,y:y+0.03,w:colWs2[3]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
-          // Inclinação/ano + R²
-          const incT = calc.inclinacao != null
-            ? ((calc.inclinacao>0?'+':'')+calc.inclinacao+' pts\nR² '+calc.r2)
-            : '—';
-          eg.addText(incT,{x:colXs[4]+0.06,y:y+0.03,w:colWs2[4]-0.12,h:rowH-0.06,fontSize:8,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
-          // Δ acumulado (% ou pts absolutos)
-          let dT = '—';
-          if (calc.pontuavel) {
-            dT = calc.modoAbsoluto
-              ? ((calc.deltaAbs>0?'+':'')+calc.deltaAbs+' pts')
-              : ((calc.variacaoPct>0?'+':'')+calc.variacaoPct+'%');
-          }
-          eg.addText(dT,{x:colXs[5]+0.06,y:y+0.03,w:colWs2[5]-0.12,h:rowH-0.06,fontSize:9,bold:true,color:C.cinza,fontFace:'Calibri',valign:'middle',align:'center'});
+          // Inclinação/ano + R² — três sub-linhas G/A/D (Depois em destaque)
+          const fmtIncl = j => {
+            if (!j) return '—';
+            if (!j.pontuavel) return '(<'+(j.anos||0)+' pts)';
+            return ((j.inclinacao>0?'+':'')+j.inclinacao)+'  R²'+j.r2+(j.volatil?' ⚠':'');
+          };
+          const inclRuns = [
+            {text:'G: ',options:{fontSize:7,bold:true,color:C.cinzaM,fontFace:'Calibri'}},
+            {text:fmtIncl(calc.geral)+'\n',options:{fontSize:8,color:C.cinza,fontFace:'Calibri'}},
+            {text:'A: ',options:{fontSize:7,bold:true,color:C.cinzaM,fontFace:'Calibri'}},
+            {text:fmtIncl(calc.antes)+'\n',options:{fontSize:8,color:C.cinza,fontFace:'Calibri'}},
+            {text:'D: ',options:{fontSize:7,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
+            {text:fmtIncl(calc.depois),options:{fontSize:8,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
+          ];
+          eg.addText(inclRuns,{x:colXs[4]+0.04,y:y+0.03,w:colWs2[4]-0.08,h:rowH-0.06,valign:'middle',align:'left',wrap:true,shrinkText:true});
+          // Δ acumulado — três sub-linhas G/A/D
+          const fmtDelta = j => {
+            if (!j) return '—';
+            if (!j.pontuavel) return '(<'+(j.anos||0)+' pts)';
+            return j.modoAbsoluto
+              ? ((j.deltaAbs>0?'+':'')+j.deltaAbs+' pts')
+              : ((j.variacaoPct>0?'+':'')+j.variacaoPct+'%');
+          };
+          const dRuns = [
+            {text:'G: ',options:{fontSize:7,bold:true,color:C.cinzaM,fontFace:'Calibri'}},
+            {text:fmtDelta(calc.geral)+'\n',options:{fontSize:8,color:C.cinza,fontFace:'Calibri'}},
+            {text:'A: ',options:{fontSize:7,bold:true,color:C.cinzaM,fontFace:'Calibri'}},
+            {text:fmtDelta(calc.antes)+'\n',options:{fontSize:8,color:C.cinza,fontFace:'Calibri'}},
+            {text:'D: ',options:{fontSize:7,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
+            {text:fmtDelta(calc.depois),options:{fontSize:8,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
+          ];
+          eg.addText(dRuns,{x:colXs[5]+0.04,y:y+0.03,w:colWs2[5]-0.08,h:rowH-0.06,valign:'middle',align:'left',wrap:true,shrinkText:true});
           // Status badge (+ flag Volátil)
           const stCor = statusEvolucaoCor(calc.status).replace('#','');
           const stBg  = calc.status==='Fechando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Abrindo'?'FCE8E8':'EEEAE3';

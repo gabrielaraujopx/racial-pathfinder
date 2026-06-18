@@ -1,89 +1,85 @@
-# Plano — Refinar análise temporal do Eixo 06
+# Plano — Recorte temporal e análise segmentada no Eixo 06
 
-## Objetivo
-Tornar a análise de evolução do gap BA×PPI mais fiel à série histórica, evitando duas distorções da lógica atual (que só compara primeiro vs último ano):
-1. Ignora oscilações intermediárias e a velocidade real do fechamento.
-2. Gera percentuais inflados quando o gap inicial é muito pequeno.
+Aprimora o Eixo 06 com dois recursos complementares: controle de quais anos da série aparecem no PPT e segmentação da análise estatística em três janelas (Geral, Antes e Depois do início da atuação consistente da coalizão).
 
-## O que muda no cálculo (`calcItemEixo6`)
+## 1. Novos parâmetros no Eixo 06
 
-### 1. Dupla métrica de tendência
-Para cada item com ≥ pontos mínimos, calcular e expor **as duas métricas lado a lado**:
+Adicionados na configuração geral do Eixo 06 (nível coalizão) e replicáveis por indicador:
 
-- **Δ acumulado (%)** — mantém o cálculo atual `(gap_final − gap_inicial) / |gap_inicial| × 100`. É a síntese "de ponta a ponta".
-- **Inclinação anual** — regressão linear simples (mínimos quadrados) sobre todos os pontos `(ano, gap)`. Resultado em "pontos de gap por ano" + R² (0–1) como medida de aderência da reta.
+- **Recorte para o PPT** — `pptAnoInicial` e `pptAnoFinal` (globais da coalizão).
+- **Marco da coalizão** — `coalizaoAnoInicio`: último ano em que a atuação consistente da coalizão **ainda não existia** (ex.: se a atuação começou em 2020, o marco é 2019, último ponto pré-atuação).
 
-O **status** (Fechando / Estagnado / Abrindo) passa a usar a **inclinação anual** como critério primário (mais fiel à tendência real), mantendo o Δ acumulado como informação complementar exibida em todos os relatórios.
+Cada indicador ganha campos opcionais de override:
+- `pptAnoInicialOverride`, `pptAnoFinalOverride`
+- `coalizaoAnoInicioOverride`
 
-Limiares do status (configuráveis por coalizão, herdam defaults):
-- Inclinação ≤ −5% do gap inicial por ano → Fechando
-- Entre −5% e +5% → Estagnado
-- ≥ +5% → Abrindo
+Quando o override está vazio, herda o valor da coalizão. UI mostra "(herdado: 2019)" como hint.
 
-### 2. Tratamento de gap inicial pequeno
-Novo parâmetro por coalizão: `limiarGapAbsoluto` (default: 1,0 ponto).
+## 2. Segmentação Antes / Depois (ponto de sobreposição)
 
-- Se `|gap_inicial| < limiarGapAbsoluto`: reportar **Δ absoluto** (em pontos do indicador) em vez de Δ%. O status é classificado pela mesma regra, mas sobre o delta absoluto comparado ao limiar.
-- A UI e relatórios mostram a unidade correta ("−0,3 pts" vs "−12%") com tooltip explicando por que mudou de unidade.
+Dado o marco `M` (ano medido mais próximo ao início da atuação consistente):
 
-### 3. Flag "Volátil"
-Calcular após a regressão:
-- Contar **reversões de direção** ano a ano (sinal do Δ anual muda).
-- Se `R² < 0,5` **ou** ≥ 2 reversões em séries de 4+ pontos → marcar item como `volatil: true`.
+- **Antes** = pontos com `ano ≤ M`
+- **Depois** = pontos com `ano ≥ M`
+- O ponto `M` aparece nos dois períodos (continuidade visual e estatística).
 
-A flag **não altera** o status nem a pontuação — apenas adiciona um aviso visual ("⚠ Volátil") na UI, PPT e DOCX, com tooltip "tendência não monotônica; ver série completa".
+Cada período exige ao menos 2 pontos para calcular inclinação/Δ; com 1 ponto só, exibe "—" e nota "amostra insuficiente".
 
-## O que muda na UI (formulário Eixo 06)
-- Cabeçalho de cada item: chips com **Inclinação/ano**, **Δ acumulado**, **R²** e flag **Volátil** quando aplicável.
-- Campo configurável `limiarGapAbsoluto` no bloco de parâmetros do Eixo 06 (junto com `pontosMinimos`).
-- Mini-sparkline opcional ao lado da tabela da série, mostrando a reta de regressão sobre os pontos.
+## 3. Três análises por indicador
 
-## O que muda nos relatórios
+O `calcItemEixo6` passa a devolver três blocos com a mesma estrutura já existente (inclinação, R², Δ acumulado %, modo absoluto, volátil, status):
 
-### PPT (slides dedicados Eixo 06)
-Tabela de itens ganha colunas: **Inclinação/ano**, **Δ acumulado**, **Status**, **Flag**. Coluna "Δ gap" atual é substituída pelas duas métricas.
+- **geral** — todos os anos preenchidos.
+- **antes** — anos ≤ marco.
+- **depois** — anos ≥ marco.
 
-### DOCX (seção Eixo 06)
-- Texto descritivo cita ambas as métricas.
-- Lista de itens "Volátil" aparece em destaque no resumo da coalizão.
+O status oficial do indicador (para pontuação/agregação do Eixo 06) continua vindo do bloco **geral**, mantendo a fórmula atual intacta.
 
-### Documento de lógica (`Sistematizacao_ER_Logica_v4.docx`)
-Nova seção 6.x explicando:
-- Fórmula da regressão linear (com exemplo numérico do IDEB pré-escolar: pontos 2019–2025 → inclinação ≈ −1,35 pts/ano, R² ≈ 0,99, Δ acumulado −73%).
-- Quando o sistema troca % por pontos absolutos.
-- Como interpretar a flag Volátil.
-- Exemplo contrastante: gap pequeno (0,4 → 0,1) → mostra "−0,3 pts" em vez de "−75%".
+## 4. UI da ferramenta (Eixo 06)
 
-## Dados de teste
-Atualizar `ER_dados_teste_variabilidade_v6.json` → `v7`:
-- 1 coalizão com série monotônica clara (R² alto, sem flag).
-- 1 coalizão com série volátil (oscilações, dispara flag).
-- 1 indicador com gap inicial < 1 ponto (dispara modo absoluto).
+No cabeçalho do Eixo 06:
+- Inputs para `pptAnoInicial`, `pptAnoFinal`, `coalizaoAnoInicio`, com tooltip explicando o ponto de sobreposição.
+
+Em cada card de indicador:
+- Linha de overrides opcionais (3 inputs pequenos, em branco = herdado).
+- Três chips/blocos lado a lado: **Geral**, **Antes**, **Depois com destaque** (borda/fundo mais forte), cada um com inclin./ano, Δ acumulado (ou Δ absoluto), R² e flag Volátil.
+
+## 5. PPT — slides do Eixo 06
+
+Para cada indicador:
+- **Tabela da série** filtrada ao recorte (`pptAnoInicial`–`pptAnoFinal` efetivos).
+- **Três blocos lado a lado** com Inclinação/ano, Δ acumulado, R² e Volátil — **Depois** destacado (cor de fundo da coalizão / borda mais grossa).
+- Linha-legenda: "Marco da atuação consistente: <ano>".
+
+Se o recorte do PPT exclui o marco, mostra aviso textual "Marco fora do recorte exibido".
+
+## 6. Documento de lógica
+
+Nova subseção 6.x explicando:
+- Como o recorte do PPT é apenas visual (não afeta cálculo).
+- Como Antes/Depois são definidos com ponto de sobreposição.
+- Por que o status oficial usa "Geral" (estabilidade da pontuação).
+- Exemplo numérico com IDEB pré-escolar dividido em duas janelas.
 
 ## Detalhes técnicos
 
-**Arquivo:** `public/Ferramenta_ER.html` (monolítico, vanilla JS).
+Arquivo: `public/Ferramenta_ER.html`.
 
-**Funções afetadas:**
-- `calcItemEixo6` — adicionar regressão, dual-metric, detecção de volatilidade e modo absoluto.
-- `calcEixo6` — agregação mantém a mesma estrutura (média de status × cobertura), apenas usa o novo status baseado na inclinação.
-- `defaultEixo6` / `normalizeEixo6` — incluir `limiarGapAbsoluto` (default 1.0).
-- `refreshImpacto` e renderização do formulário Eixo 06 — exibir novos chips.
-- Geração de PPT (`dimsSint`, slides dedicados) e DOCX — novas colunas/campos.
+Funções afetadas:
+- `defaultEixo6`, `normalizeEixo6` — novos campos coalizão + override por indicador.
+- `calcItemEixo6` — refatorar para função interna `_calcJanela(pontos)` reutilizada por geral/antes/depois; retornar `{ geral, antes, depois, recortePpt: {de, ate}, marco }`.
+- `refreshImpacto` (render Eixo 06) — novos inputs + três blocos por card.
+- Geração de PPT — novas tabelas/colunas e destaque visual do "Depois".
+- Geração de DOCX/relatório (se aplicável) — refletir três janelas resumidas.
 
-**Cálculo da regressão (mínimos quadrados):**
-```text
-n  = nº de pontos válidos
-x  = anos, y = gaps
-m  = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)   ← inclinação (pts/ano)
-b  = (Σy − m·Σx) / n
-ŷᵢ = m·xᵢ + b
-R² = 1 − Σ(yᵢ − ŷᵢ)² / Σ(yᵢ − ȳ)²
-```
+Regras:
+- Recorte do PPT **não** altera cálculos (são feitos sobre a série completa, conforme janela).
+- Override em branco = herda.
+- Validações: ano inicial ≤ final; marco dentro da série; mensagens amigáveis sem bloquear o uso.
 
-**Compatibilidade:** dados v6 existentes continuam carregando; campos novos preenchem com defaults na normalização.
+## Fora do escopo
 
-## Fora de escopo
-- Mudar a fórmula de agregação do índice de impacto (mantém média × cobertura).
-- Alterar Eixos 1–5 ou Eixo 7.
-- Gráficos interativos novos além da sparkline opcional.
+- Mudar a fórmula de agregação do Eixo 06.
+- Tocar em Eixos 1–5.
+- Recorte/segmentação em outros eixos.
+- Gráficos interativos novos (a tabela + chips continuam sendo a representação).
