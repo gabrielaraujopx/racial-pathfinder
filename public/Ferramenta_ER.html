@@ -999,47 +999,50 @@ function calcEixoIndicadores(indicadores) {
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
 // Para cada item com série temporal suficiente (>= pontosMinimos),
-// calcula:
-//   • gap por ponto (BA−PPI ou PPI−BA conforme sentido desejado)
-//   • Δ acumulado (% ou pts absolutos quando |gap inicial| < limiar)
-//   • inclinação anual via regressão linear (mínimos quadrados) + R²
-//   • flag "Volátil" (R² < 0,5 OU ≥ 2 reversões em séries de 4+ pts)
-// O status (Fechando / Estagnado / Abrindo) usa a INCLINAÇÃO como
-// critério primário, comparada a 5% do gap inicial (modo %) ou a
-// 5% do limiarGapAbsoluto (modo absoluto). Itens com menos pontos
-// ou dados ausentes ficam como "Insuficiente" e não pontuam.
-function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
-  const serie = (item.serie || [])
-    .filter(p => p && p.ano !== '' && p.ano != null
-              && p.valorBA != null && !isNaN(p.valorBA)
-              && p.valorPPI != null && !isNaN(p.valorPPI))
-    .slice().sort((a, b) => a.ano - b.ano);
-  const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+// calcula sobre TRÊS janelas:
+//   • geral  — todos os anos preenchidos
+//   • antes  — anos ≤ marco da coalizão (ponto de sobreposição)
+//   • depois — anos ≥ marco da coalizão
+// Em cada janela: gap por ponto, Δ acumulado (% ou pts absolutos
+// quando |gap inicial| < limiar), inclinação anual via regressão
+// linear (mínimos quadrados) + R², e flag "Volátil" (R²<0,5 OU
+// ≥2 reversões em séries de 4+ pts). O status (Fechando/Estagnado/
+// Abrindo) usa a INCLINAÇÃO como critério primário, comparada a
+// 5% do gap inicial (modo %) ou 5% do limiarGapAbsoluto (modo abs).
+// O status oficial do indicador (usado na agregação do eixo) vem
+// SEMPRE da janela "geral", para estabilidade da pontuação.
+function _calcJanelaEixo6(pontos, sent, limAbs, minN, exigeMin) {
+  // pontos: já ordenados e filtrados (BA/PPI válidos)
   const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
-  const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
-  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
-  if (serie.length < minN) {
-    const ult = serie[serie.length - 1];
+  const n = pontos.length;
+  if (n === 0) {
     return {
       status: 'Insuficiente',
-      gapAtual: ult ? +calcGap(ult).toFixed(2) : null,
-      gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      gapAtual: null, gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
       inclinacao: null, r2: null, volatil: false, reversoes: 0,
-      anos: serie.length, anoInicial: serie[0]?.ano, anoFinal: ult?.ano,
-      pontuavel: false,
+      anos: 0, anoInicial: null, anoFinal: null, pontuavel: false,
     };
   }
-  const ini = serie[0], fim = serie[serie.length - 1];
+  const ini = pontos[0], fim = pontos[n - 1];
   const gapIni = calcGap(ini);
   const gapFim = calcGap(fim);
+  // Para 1 ponto OU abaixo do mínimo da janela: devolve apenas snapshot, sem tendência.
+  if (n < 2 || (exigeMin && n < minN)) {
+    return {
+      status: 'Insuficiente',
+      gapAtual: +gapFim.toFixed(2),
+      gapInicial: n >= 1 ? +gapIni.toFixed(2) : null,
+      variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      inclinacao: null, r2: null, volatil: false, reversoes: 0,
+      anos: n, anoInicial: ini.ano, anoFinal: fim.ano, pontuavel: false,
+    };
+  }
   const deltaAbs = gapFim - gapIni;
   const modoAbsoluto = Math.abs(gapIni) < limAbs;
   const denom = Math.abs(gapIni) < 0.0001 ? 0.0001 : Math.abs(gapIni);
-  const variacaoPct = (deltaAbs / denom) * 100; // negativo = gap caiu (bom)
-  // Regressão linear (mínimos quadrados) sobre (ano, gap)
-  const gaps = serie.map(calcGap);
-  const xs = serie.map(p => p.ano);
-  const n = serie.length;
+  const variacaoPct = (deltaAbs / denom) * 100;
+  const gaps = pontos.map(calcGap);
+  const xs = pontos.map(p => p.ano);
   const sumX = xs.reduce((a, v) => a + v, 0);
   const sumY = gaps.reduce((a, v) => a + v, 0);
   const meanX = sumX / n, meanY = sumY / n;
@@ -1048,7 +1051,7 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     const dx = xs[i] - meanX, dy = gaps[i] - meanY;
     sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
   }
-  const m = sxx > 1e-9 ? sxy / sxx : 0;            // pts de gap por ano
+  const m = sxx > 1e-9 ? sxy / sxx : 0;
   const b = meanY - m * meanX;
   let ssRes = 0;
   for (let i = 0; i < n; i++) {
@@ -1056,7 +1059,6 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     ssRes += (gaps[i] - yhat) ** 2;
   }
   const r2 = syy > 1e-9 ? Math.max(0, 1 - ssRes / syy) : 1;
-  // Reversões de direção ano a ano
   let reversoes = 0, prevSign = 0;
   for (let i = 1; i < n; i++) {
     const d = gaps[i] - gaps[i - 1];
@@ -1066,8 +1068,6 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     prevSign = sgn;
   }
   const volatil = (r2 < 0.5) || (n >= 4 && reversoes >= 2);
-  // Classificação por inclinação. Threshold: 5% do gap inicial (modo %)
-  // ou 5% do limiar absoluto (modo absoluto, quando gap inicial é pequeno).
   const thr = modoAbsoluto ? 0.05 * limAbs : 0.05 * Math.abs(gapIni);
   let status;
   if (m <= -thr) status = 'Fechando';
@@ -1083,10 +1083,54 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto) {
     inclinacao: +m.toFixed(3),
     r2: +r2.toFixed(2),
     volatil, reversoes,
-    velAnual: +m.toFixed(2), // alias retrocompat
-    anos: serie.length, anoInicial: ini.ano, anoFinal: fim.ano,
+    velAnual: +m.toFixed(2),
+    anos: n, anoInicial: ini.ano, anoFinal: fim.ano,
     pontuavel: true,
   };
+}
+function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
+  ctx = ctx || {};
+  const serie = (item.serie || [])
+    .filter(p => p && p.ano !== '' && p.ano != null
+              && p.valorBA != null && !isNaN(p.valorBA)
+              && p.valorPPI != null && !isNaN(p.valorPPI))
+    .slice().sort((a, b) => a.ano - b.ano);
+  const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+  const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
+  const limAbs = Number.isFinite(+limiarGapAbsoluto) && +limiarGapAbsoluto > 0 ? +limiarGapAbsoluto : 1.0;
+  // Janela GERAL — exige pontosMinimos para ser pontuável (define status oficial).
+  const geral = _calcJanelaEixo6(serie, sent, limAbs, minN, true);
+  // Resolve marco efetivo (override > coalizão). Usa o ano medido mais
+  // próximo (≤ marcoBruto) como ponto de sobreposição.
+  const marcoBruto = item.coalizaoAnoInicioOverride != null
+    ? item.coalizaoAnoInicioOverride
+    : (ctx.coalizaoAnoInicio != null ? ctx.coalizaoAnoInicio : null);
+  let marcoEfetivo = null;
+  if (marcoBruto != null && serie.length > 0) {
+    const antesOuIgual = serie.filter(p => p.ano <= marcoBruto);
+    if (antesOuIgual.length > 0) marcoEfetivo = antesOuIgual[antesOuIgual.length - 1].ano;
+    else marcoEfetivo = serie[0].ano; // marco antes da série: tudo é "depois"
+  }
+  let antes = null, depois = null;
+  if (marcoEfetivo != null && serie.length > 0) {
+    const ptsAntes  = serie.filter(p => p.ano <= marcoEfetivo);
+    const ptsDepois = serie.filter(p => p.ano >= marcoEfetivo);
+    antes  = _calcJanelaEixo6(ptsAntes,  sent, limAbs, minN, false);
+    depois = _calcJanelaEixo6(ptsDepois, sent, limAbs, minN, false);
+  }
+  // Recorte do PPT (override > coalizão > toda série)
+  const pptDe  = item.pptAnoInicialOverride != null ? item.pptAnoInicialOverride
+               : (ctx.pptAnoInicial != null ? ctx.pptAnoInicial : null);
+  const pptAte = item.pptAnoFinalOverride   != null ? item.pptAnoFinalOverride
+               : (ctx.pptAnoFinal   != null ? ctx.pptAnoFinal   : null);
+  // Retorno: expõe campos da janela "geral" no topo (retrocompat) +
+  // referências completas das três janelas e do recorte/marco.
+  return Object.assign({}, geral, {
+    geral, antes, depois,
+    marcoAno: marcoEfetivo,
+    marcoBruto: marcoBruto,
+    recortePpt: { de: pptDe, ate: pptAte },
+  });
 }
 function calcEixo6(eixo6Obj) {
   const e6 = normalizeEixo6(eixo6Obj);
