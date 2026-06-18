@@ -1134,7 +1134,12 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
 }
 function calcEixo6(eixo6Obj) {
   const e6 = normalizeEixo6(eixo6Obj);
-  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto) }));
+  const ctx = {
+    pptAnoInicial: e6.pptAnoInicial,
+    pptAnoFinal:   e6.pptAnoFinal,
+    coalizaoAnoInicio: e6.coalizaoAnoInicio,
+  };
+  const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto, ctx) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
   const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
   const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
@@ -1173,6 +1178,9 @@ function calcEixo6(eixo6Obj) {
     totalItens: itens.length,
     pontosMinimos: e6.pontosMinimos,
     limiarGapAbsoluto: e6.limiarGapAbsoluto,
+    pptAnoInicial: e6.pptAnoInicial,
+    pptAnoFinal:   e6.pptAnoFinal,
+    coalizaoAnoInicio: e6.coalizaoAnoInicio,
     barreira: e6.barreira,
     semItens: itens.length === 0,
   };
