@@ -1971,6 +1971,13 @@ function upEixo6Config(campo, val) {
   } else if (campo === 'limiarGapAbsoluto') {
     const v = Number(val);
     e6.limiarGapAbsoluto = Number.isFinite(v) && v > 0 ? v : 1.0;
+  } else if (campo === 'pptAnoInicial' || campo === 'pptAnoFinal' || campo === 'coalizaoAnoInicio') {
+    if (val === '' || val == null) {
+      e6[campo] = null;
+    } else {
+      const n = parseInt(val, 10);
+      e6[campo] = Number.isFinite(n) ? n : null;
+    }
   }
   saveState(); renderCoalizao();
 }
