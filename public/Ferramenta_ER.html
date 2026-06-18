@@ -2003,6 +2003,15 @@ function removeEixo6Item(i) {
 }
 function upEixo6Item(i, campo, val) {
   const it = _e6().itens[i]; if (!it) return;
+  if (campo === 'pptAnoInicialOverride' || campo === 'pptAnoFinalOverride' || campo === 'coalizaoAnoInicioOverride') {
+    if (val === '' || val == null) it[campo] = null;
+    else {
+      const n = parseInt(val, 10);
+      it[campo] = Number.isFinite(n) ? n : null;
+    }
+    saveState(); renderCoalizao();
+    return;
+  }
   it[campo] = val;
   saveState(); refreshImpacto();
 }
