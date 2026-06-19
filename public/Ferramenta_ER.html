@@ -2312,7 +2312,11 @@ async function exportPPTX() {
       // Ponto 2: fontSize 8, shrinkText, sem wrap → nunca quebra linha
       s.addText(statTxt,{x:sX,y:labY,w:sW,h:labH1,fontSize:7,bold:true,color:statCor,align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     };
-    addEixoHeader(0,      '02 — INDICADORES', C.azul,    mat.e1);
+    const _e1c = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : null;
+    const _e1lblExtra = (_e1c && _e1c.gerais > 0 && _e1c.cobertos < _e1c.gerais)
+      ? ` · ⚠${_e1c.cobertos}/${_e1c.gerais}`
+      : '';
+    addEixoHeader(0,      '02 — INDICADORES' + _e1lblExtra, C.azul,    mat.e1);
     addEixoHeader(colW,   '03 — ESTRATÉGIAS', C.marrom,  mat.e2);
     addEixoHeader(colW*2, '04 — LACUNAS',      C.amarelo, mat.e3, true);
 
