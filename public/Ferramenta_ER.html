@@ -982,8 +982,30 @@ function calcEixoLacunas(lacunas, estadoDecl) {
   return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Não mapeado', estado };
 }
 
-function calcEixoIndicadores(indicadores) {
-  if (!indicadores || indicadores.length === 0) return { pct: 0, nivel: 'Incipiente' };
+// Verifica se um indicador (índice idx em c.indicadores) tem ao menos um item
+// do Eixo 6 referenciando-o com pelo menos um ponto válido (BA e PPI numéricos).
+function _indicadorTemRecorteRacial(idx, eixo6) {
+  if (!eixo6 || !Array.isArray(eixo6.itens)) return false;
+  const ref = 'ind-' + idx;
+  return eixo6.itens.some(it => it && it.indicadorRef === ref &&
+    Array.isArray(it.serie) && it.serie.some(p =>
+      p && p.valorBA != null && p.valorPPI != null &&
+      !isNaN(p.valorBA) && !isNaN(p.valorPPI)));
+}
+
+// Eixo 02 (Indicadores da visão de sucesso):
+//   nota_qualidade = média (Q + RSN² + RN)/3 × robustez(n_indicadores)
+//   cobertura_racial = #(tipo 'geral' com recorte trabalhado no Eixo 6)
+//                    ÷ #(tipo 'geral'); sem 'geral' algum → 1 (não penaliza)
+//   nota_final = nota_qualidade × cobertura_racial
+// Indicadores 'especifico_racial' (já são recorte racial) não entram no
+// denominador da cobertura — sua presença no Eixo 6 é monitoramento, não
+// pré-requisito de maturidade.
+function calcEixoIndicadores(indicadores, eixo6) {
+  const covVazio = { gerais: 0, cobertos: 0, pct: 1, idxLacuna: [], pctQualidade: 0 };
+  if (!indicadores || indicadores.length === 0) {
+    return { pct: 0, nivel: 'Incipiente', cobertura: covVazio };
+  }
   const somaNotas = indicadores.reduce((acc, ind) => {
     const statusVal = ind.statusQualidade === 'Tem' ? 2 : ind.statusQualidade === 'Tem parcialmente' ? 1 : 0;
     const estadosVal = ind.resultadoEstados === 'S' ? 2 : ind.resultadoEstados === 'P' ? 1 : 0;
@@ -992,13 +1014,30 @@ function calcEixoIndicadores(indicadores) {
   }, 0);
   const media = somaNotas / indicadores.length; // 0 a 2
   const pctQualidade = (media / 2) * 100;
-  // Fator de robustez com saturação em n_ref=3:
-  // 1 indicador = 58%, 2 = 82%, 3+ = 100% (a partir daí, eixo = pura qualidade).
   const nRef = 3;
   const robustez = Math.min(1, Math.sqrt(indicadores.length / nRef));
-  const pct = Math.round(pctQualidade * robustez);
+  const pctQualBruta = pctQualidade * robustez;
+  // Cobertura racial
+  const geraisIdx = [];
+  indicadores.forEach((ind, i) => {
+    if ((ind.tipoRacial || 'geral') === 'geral') geraisIdx.push(i);
+  });
+  const cobertosIdx = geraisIdx.filter(i => _indicadorTemRecorteRacial(i, eixo6));
+  const idxLacuna   = geraisIdx.filter(i => !_indicadorTemRecorteRacial(i, eixo6));
+  const covPct = geraisIdx.length === 0 ? 1 : (cobertosIdx.length / geraisIdx.length);
+  const pct = Math.round(pctQualBruta * covPct);
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
-  return { pct, nivel };
+  return {
+    pct,
+    nivel,
+    cobertura: {
+      gerais: geraisIdx.length,
+      cobertos: cobertosIdx.length,
+      pct: covPct,
+      idxLacuna,
+      pctQualidade: Math.round(pctQualBruta),
+    },
+  };
 }
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
