@@ -2367,6 +2367,8 @@ async function exportPPTX() {
                         : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
                         :          {bg:'FCE8E8',cor:'C0392B'};
     let yI = startYByCol.indicadores;
+    const e1cov = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : { idxLacuna: [] };
+    const lacunaSet = new Set(e1cov.idxLacuna || []);
     c.indicadores.slice(0,8).forEach((ind,idx) => {
       const txt    = ind.texto||'—';
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
@@ -2374,8 +2376,10 @@ async function exportPPTX() {
       if (yI + totalH > colBot) return;
       const cX  = PAD*0.6;
       const tX  = cX + leftZone;
-      s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:C.azul},line:{color:C.azul}});
-      s.addText(String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
+      const emLac = lacunaSet.has(idx);
+      const corBol = emLac ? C.vermelho : C.azul;
+      s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:corBol},line:{color:corBol}});
+      s.addText(emLac ? '⚠' : String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:emLac?8:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
       s.addText(txt,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
       // 3 mini-badges à direita do texto, alinhadas com a bolinha
       const bdgs = [
