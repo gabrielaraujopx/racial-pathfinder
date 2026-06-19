@@ -873,7 +873,11 @@ function normalizeCoalizoes(dados) {
       nome: c.nome || COALIZ_NOMES[i] || '',
       diagnostico: diagnosticoBruto.map(d => typeof d === 'string' ? { texto: d } : { texto: d.texto || d.descricao || d.contexto || '' }),
       visaoSucesso: c.visaoSucesso || '',
-      indicadores: Array.isArray(c.indicadores) ? c.indicadores : [],
+      indicadores: Array.isArray(c.indicadores) ? c.indicadores.map(ind => ({
+        ...ind,
+        // tipoRacial: 'geral' (racializável) | 'especifico_racial' (já é recorte racial por construção)
+        tipoRacial: (ind.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral',
+      })) : [],
       estrategias: Array.isArray(c.estrategias) ? c.estrategias : [],
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
@@ -978,8 +982,30 @@ function calcEixoLacunas(lacunas, estadoDecl) {
   return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Não mapeado', estado };
 }
 
-function calcEixoIndicadores(indicadores) {
-  if (!indicadores || indicadores.length === 0) return { pct: 0, nivel: 'Incipiente' };
+// Verifica se um indicador (índice idx em c.indicadores) tem ao menos um item
+// do Eixo 6 referenciando-o com pelo menos um ponto válido (BA e PPI numéricos).
+function _indicadorTemRecorteRacial(idx, eixo6) {
+  if (!eixo6 || !Array.isArray(eixo6.itens)) return false;
+  const ref = 'ind-' + idx;
+  return eixo6.itens.some(it => it && it.indicadorRef === ref &&
+    Array.isArray(it.serie) && it.serie.some(p =>
+      p && p.valorBA != null && p.valorPPI != null &&
+      !isNaN(p.valorBA) && !isNaN(p.valorPPI)));
+}
+
+// Eixo 02 (Indicadores da visão de sucesso):
+//   nota_qualidade = média (Q + RSN² + RN)/3 × robustez(n_indicadores)
+//   cobertura_racial = #(tipo 'geral' com recorte trabalhado no Eixo 6)
+//                    ÷ #(tipo 'geral'); sem 'geral' algum → 1 (não penaliza)
+//   nota_final = nota_qualidade × cobertura_racial
+// Indicadores 'especifico_racial' (já são recorte racial) não entram no
+// denominador da cobertura — sua presença no Eixo 6 é monitoramento, não
+// pré-requisito de maturidade.
+function calcEixoIndicadores(indicadores, eixo6) {
+  const covVazio = { gerais: 0, cobertos: 0, pct: 1, idxLacuna: [], pctQualidade: 0 };
+  if (!indicadores || indicadores.length === 0) {
+    return { pct: 0, nivel: 'Incipiente', cobertura: covVazio };
+  }
   const somaNotas = indicadores.reduce((acc, ind) => {
     const statusVal = ind.statusQualidade === 'Tem' ? 2 : ind.statusQualidade === 'Tem parcialmente' ? 1 : 0;
     const estadosVal = ind.resultadoEstados === 'S' ? 2 : ind.resultadoEstados === 'P' ? 1 : 0;
@@ -988,13 +1014,30 @@ function calcEixoIndicadores(indicadores) {
   }, 0);
   const media = somaNotas / indicadores.length; // 0 a 2
   const pctQualidade = (media / 2) * 100;
-  // Fator de robustez com saturação em n_ref=3:
-  // 1 indicador = 58%, 2 = 82%, 3+ = 100% (a partir daí, eixo = pura qualidade).
   const nRef = 3;
   const robustez = Math.min(1, Math.sqrt(indicadores.length / nRef));
-  const pct = Math.round(pctQualidade * robustez);
+  const pctQualBruta = pctQualidade * robustez;
+  // Cobertura racial
+  const geraisIdx = [];
+  indicadores.forEach((ind, i) => {
+    if ((ind.tipoRacial || 'geral') === 'geral') geraisIdx.push(i);
+  });
+  const cobertosIdx = geraisIdx.filter(i => _indicadorTemRecorteRacial(i, eixo6));
+  const idxLacuna   = geraisIdx.filter(i => !_indicadorTemRecorteRacial(i, eixo6));
+  const covPct = geraisIdx.length === 0 ? 1 : (cobertosIdx.length / geraisIdx.length);
+  const pct = Math.round(pctQualBruta * covPct);
   const nivel = pct >= 80 ? 'Consolidado' : pct >= 60 ? 'Avançado' : pct >= 35 ? 'Em desenvolvimento' : 'Incipiente';
-  return { pct, nivel };
+  return {
+    pct,
+    nivel,
+    cobertura: {
+      gerais: geraisIdx.length,
+      cobertos: cobertosIdx.length,
+      pct: covPct,
+      idxLacuna,
+      pctQualidade: Math.round(pctQualBruta),
+    },
+  };
 }
 
 // ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
@@ -1207,7 +1250,10 @@ function statusEvolucaoIcone(s) {
 
 function calcMaturidade(c) {
   const b = c.barreirasContexto || defaultBarreiras();
-  const e1 = aplicarBarreira(calcEixoIndicadores(c.indicadores), b.indicadores);
+  const e1raw = calcEixoIndicadores(c.indicadores, c.eixo6);
+  const e1 = aplicarBarreira(e1raw, b.indicadores);
+  // preserva cobertura mesmo após aplicarBarreira (que faz spread)
+  if (e1raw.cobertura) e1.cobertura = e1raw.cobertura;
   const e2 = aplicarBarreira(calcEixo(c.estrategias, 'estrategias'), b.estrategias);
   const e3raw = calcEixoLacunas(c.lacunas, c.estadoLacunas);
   const e3 = aplicarBarreira(e3raw, b.lacunas);
@@ -1385,11 +1431,14 @@ function renderCoalizao() {
 
     <!-- Indicadores -->
     ${renderSecao(1, 'Indicadores', '#1A4E7A', `
-      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
-        📊 Adicione indicadores de equidade racial. A nota do eixo é a média das notas individuais (escala 0–2).
+      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;line-height:1.5">
+        📊 Liste aqui os indicadores da <strong>visão de sucesso</strong> da coalizão que <strong>podem receber recorte racial</strong> (gerais racializáveis ou já racializados).
+        A nota mede qualidade do indicador (Status / Estados / Nacional, escala 0–2) <strong>multiplicada pela cobertura racial</strong>: indicadores do tipo "Geral racializável" sem contrapartida no <strong>Eixo Gaps BA×PPI</strong> são tratados como lacuna e reduzem a nota proporcionalmente.<br>
+        <span style="color:var(--cinza-m)">Tipos: <strong>Geral racializável</strong> = exige recorte racial; <strong>Específico já racializado</strong> (ex.: % diretores PPI) = não cobra contrapartida, mas pode ser monitorado no Eixo 6.</span>
       </div>
+      ${renderCoberturaRacialBlock(c)}
       ${renderBarreiraBlock('indicadores', c.barreirasContexto)}
-      <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i)).join('')}</div>
+      <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i,c.eixo6)).join('')}</div>
       <button class="btn-add" onclick="addItem('indicadores')">+ Adicionar indicador</button>
     `)}
 
@@ -1739,16 +1788,51 @@ function renderItemEstrategia(it, i) {
   </div>`;
 }
 
-function renderItemIndicador(it, i) {
+function renderCoberturaRacialBlock(c) {
+  const e = calcEixoIndicadores(c.indicadores || [], c.eixo6);
+  const cv = e.cobertura || { gerais: 0, cobertos: 0, pct: 1, idxLacuna: [], pctQualidade: 0 };
+  if (cv.gerais === 0) {
+    return `<div style="font-size:11px;color:#7A6A60;margin-bottom:10px;padding:8px 12px;background:#F3EFE7;border-left:3px solid #8A8A8A;border-radius:5px">
+      Nenhum indicador marcado como <strong>"Geral racializável"</strong> — cobertura racial não aplicável (multiplicador = 1).
+    </div>`;
+  }
+  const pctCov = Math.round(cv.pct * 100);
+  const cor = pctCov >= 80 ? '#2D7A4F' : pctCov >= 50 ? '#C8860A' : '#C0392B';
+  const bg  = pctCov >= 80 ? '#E8F4EE' : pctCov >= 50 ? '#FEF3DC' : '#FCE8E8';
+  const penalAplicada = Math.max(0, cv.pctQualidade - e.pct);
+  return `<div style="font-size:12px;color:#2A2420;margin-bottom:10px;padding:10px 12px;background:${bg};border-left:3px solid ${cor};border-radius:5px;line-height:1.5">
+    <strong style="color:${cor}">Cobertura racial: ${cv.cobertos}/${cv.gerais} indicadores (${pctCov}%)</strong>
+    · qualidade bruta ${cv.pctQualidade}% × cobertura ${pctCov}% = <strong>${e.pct}%</strong>${penalAplicada>0?` <span style="color:${cor}">(−${penalAplicada} p.p. por lacuna)</span>`:''}
+    ${cv.idxLacuna.length ? `<br><span style="color:#7A6A60;font-size:11px">⚠ Indicadores em lacuna (sem item correspondente no Eixo Gaps BA×PPI): ${cv.idxLacuna.map(i=>'#'+(i+1)).join(', ')}</span>`:''}
+  </div>`;
+}
+
+function renderItemIndicador(it, i, eixo6) {
   const tipoOpts = ['Alcance','Transformação'];
   const statusOpts = [['Tem',2],['Tem parcialmente',1]];
-  return `<div class="item-card">
+  const tipoRacial = (it.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral';
+  const temRecorte = _indicadorTemRecorteRacial(i, eixo6);
+  const emLacuna = tipoRacial === 'geral' && !temRecorte;
+  const badgeLacuna = emLacuna
+    ? `<div title="Esse indicador é 'Geral racializável' mas não tem nenhum item correspondente preenchido no Eixo Gaps BA×PPI. Isso reduz a nota do eixo." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem recorte racial trabalhado</div>`
+    : '';
+  return `<div class="item-card" ${emLacuna?'style="border-left:3px solid #C0392B"':''}>
     <div class="item-card-content">
+      ${badgeLacuna}
       <div class="item-card-row">
         <textarea class="item-texto-input" rows="2" oninput="upItem('indicadores',${i},'texto',this.value)" placeholder="Nome/descrição do indicador...">${it.texto||''}</textarea>
         <select class="item-select" onchange="upItem('indicadores',${i},'tipo',this.value)">
           ${tipoOpts.map(o => `<option value="${o}" ${it.tipo===o?'selected':''}>${o}</option>`).join('')}
         </select>
+      </div>
+      <div class="item-card-row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:220px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600" title="Define se o indicador exige contrapartida no Eixo Gaps BA×PPI. 'Geral racializável' cobra cobertura; 'Específico já racializado' já é um recorte racial por construção.">Tipo do indicador (recorte racial)</span>
+          <select class="item-select" onchange="upItem('indicadores',${i},'tipoRacial',this.value);renderCoalizao()">
+            <option value="geral" ${tipoRacial==='geral'?'selected':''}>Geral racializável (exige Eixo 6)</option>
+            <option value="especifico_racial" ${tipoRacial==='especifico_racial'?'selected':''}>Específico já racializado</option>
+          </select>
+        </div>
       </div>
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px">
@@ -1833,7 +1917,7 @@ function renderSintese() {
     { label: 'Maturidade Geral', fn: c => { const m = calcMaturidade(c); return { tag: m.nivel, cl: matClass(m.nivel) }; } },
     { label: 'Diagnóstico (dados)', fn: c => c.diagnostico.stat1 ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
     { label: 'Visão de Sucesso', fn: c => c.visaoSucesso ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
-    { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
+    { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores, c.eixo6); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
     { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':e.nivel==='Pouco avanço'?'mat-desenv':e.nivel==='Sem avanço'?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
@@ -1944,7 +2028,7 @@ function upItem(tipo, idx, campo, val) {
 function addItem(tipo) {
   const defaults = {
     diagnostico: { texto: '' },
-    indicadores: { texto: '', tipo: 'Alcance', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
+    indicadores: { texto: '', tipo: 'Alcance', tipoRacial: 'geral', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
     estrategias: { texto: '', status: 'Em desenvolvimento' },
     lacunas: { texto: '', criticidade: 'Média', encaminhamento: 'nao', recomendacao: '' },
     evidencias: { texto: '' },
@@ -2228,7 +2312,11 @@ async function exportPPTX() {
       // Ponto 2: fontSize 8, shrinkText, sem wrap → nunca quebra linha
       s.addText(statTxt,{x:sX,y:labY,w:sW,h:labH1,fontSize:7,bold:true,color:statCor,align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     };
-    addEixoHeader(0,      '02 — INDICADORES', C.azul,    mat.e1);
+    const _e1c = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : null;
+    const _e1lblExtra = (_e1c && _e1c.gerais > 0 && _e1c.cobertos < _e1c.gerais)
+      ? ` · ⚠${_e1c.cobertos}/${_e1c.gerais}`
+      : '';
+    addEixoHeader(0,      '02 — INDICADORES' + _e1lblExtra, C.azul,    mat.e1);
     addEixoHeader(colW,   '03 — ESTRATÉGIAS', C.marrom,  mat.e2);
     addEixoHeader(colW*2, '04 — LACUNAS',      C.amarelo, mat.e3, true);
 
@@ -2283,6 +2371,8 @@ async function exportPPTX() {
                         : v==='P' ?{bg:'FEF3DC',cor:'C8860A'}
                         :          {bg:'FCE8E8',cor:'C0392B'};
     let yI = startYByCol.indicadores;
+    const e1cov = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : { idxLacuna: [] };
+    const lacunaSet = new Set(e1cov.idxLacuna || []);
     c.indicadores.slice(0,8).forEach((ind,idx) => {
       const txt    = ind.texto||'—';
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
@@ -2290,8 +2380,10 @@ async function exportPPTX() {
       if (yI + totalH > colBot) return;
       const cX  = PAD*0.6;
       const tX  = cX + leftZone;
-      s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:C.azul},line:{color:C.azul}});
-      s.addText(String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
+      const emLac = lacunaSet.has(idx);
+      const corBol = emLac ? C.vermelho : C.azul;
+      s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:corBol},line:{color:corBol}});
+      s.addText(emLac ? '⚠' : String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:emLac?8:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
       s.addText(txt,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
       // 3 mini-badges à direita do texto, alinhadas com a bolinha
       const bdgs = [
@@ -2550,7 +2642,7 @@ async function exportPPTX() {
 
     const dimsSint = [
       { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
-      { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
+      { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
       { label:'Impacto (BA×PPI)',  fn: c => { const e=calcEixo6(c.eixo6); if (e.semItens) return {nivel:'Sem dados', pct:null, bg:'EEEAE3', cor:'8A8A8A'}; const bg = e.nivel==='Reduzindo gaps'?'E8F4EE':e.nivel==='Avanço parcial'?'D4EDE0':e.nivel==='Pouco avanço'?'FEF3DC':'FCE8E8'; return {nivel:e.nivel, pct:e.pct+'%', bg, cor:impactoCor(e.nivel).replace('#','')}; }},
