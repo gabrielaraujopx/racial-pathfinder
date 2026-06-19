@@ -1788,16 +1788,51 @@ function renderItemEstrategia(it, i) {
   </div>`;
 }
 
-function renderItemIndicador(it, i) {
+function renderCoberturaRacialBlock(c) {
+  const e = calcEixoIndicadores(c.indicadores || [], c.eixo6);
+  const cv = e.cobertura || { gerais: 0, cobertos: 0, pct: 1, idxLacuna: [], pctQualidade: 0 };
+  if (cv.gerais === 0) {
+    return `<div style="font-size:11px;color:#7A6A60;margin-bottom:10px;padding:8px 12px;background:#F3EFE7;border-left:3px solid #8A8A8A;border-radius:5px">
+      Nenhum indicador marcado como <strong>"Geral racializável"</strong> — cobertura racial não aplicável (multiplicador = 1).
+    </div>`;
+  }
+  const pctCov = Math.round(cv.pct * 100);
+  const cor = pctCov >= 80 ? '#2D7A4F' : pctCov >= 50 ? '#C8860A' : '#C0392B';
+  const bg  = pctCov >= 80 ? '#E8F4EE' : pctCov >= 50 ? '#FEF3DC' : '#FCE8E8';
+  const penalAplicada = Math.max(0, cv.pctQualidade - e.pct);
+  return `<div style="font-size:12px;color:#2A2420;margin-bottom:10px;padding:10px 12px;background:${bg};border-left:3px solid ${cor};border-radius:5px;line-height:1.5">
+    <strong style="color:${cor}">Cobertura racial: ${cv.cobertos}/${cv.gerais} indicadores (${pctCov}%)</strong>
+    · qualidade bruta ${cv.pctQualidade}% × cobertura ${pctCov}% = <strong>${e.pct}%</strong>${penalAplicada>0?` <span style="color:${cor}">(−${penalAplicada} p.p. por lacuna)</span>`:''}
+    ${cv.idxLacuna.length ? `<br><span style="color:#7A6A60;font-size:11px">⚠ Indicadores em lacuna (sem item correspondente no Eixo Gaps BA×PPI): ${cv.idxLacuna.map(i=>'#'+(i+1)).join(', ')}</span>`:''}
+  </div>`;
+}
+
+function renderItemIndicador(it, i, eixo6) {
   const tipoOpts = ['Alcance','Transformação'];
   const statusOpts = [['Tem',2],['Tem parcialmente',1]];
-  return `<div class="item-card">
+  const tipoRacial = (it.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral';
+  const temRecorte = _indicadorTemRecorteRacial(i, eixo6);
+  const emLacuna = tipoRacial === 'geral' && !temRecorte;
+  const badgeLacuna = emLacuna
+    ? `<div title="Esse indicador é 'Geral racializável' mas não tem nenhum item correspondente preenchido no Eixo Gaps BA×PPI. Isso reduz a nota do eixo." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem recorte racial trabalhado</div>`
+    : '';
+  return `<div class="item-card" ${emLacuna?'style="border-left:3px solid #C0392B"':''}>
     <div class="item-card-content">
+      ${badgeLacuna}
       <div class="item-card-row">
         <textarea class="item-texto-input" rows="2" oninput="upItem('indicadores',${i},'texto',this.value)" placeholder="Nome/descrição do indicador...">${it.texto||''}</textarea>
         <select class="item-select" onchange="upItem('indicadores',${i},'tipo',this.value)">
           ${tipoOpts.map(o => `<option value="${o}" ${it.tipo===o?'selected':''}>${o}</option>`).join('')}
         </select>
+      </div>
+      <div class="item-card-row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:220px">
+          <span style="font-size:10px;color:var(--cinza-m);font-weight:600" title="Define se o indicador exige contrapartida no Eixo Gaps BA×PPI. 'Geral racializável' cobra cobertura; 'Específico já racializado' já é um recorte racial por construção.">Tipo do indicador (recorte racial)</span>
+          <select class="item-select" onchange="upItem('indicadores',${i},'tipoRacial',this.value);renderCoalizao()">
+            <option value="geral" ${tipoRacial==='geral'?'selected':''}>Geral racializável (exige Eixo 6)</option>
+            <option value="especifico_racial" ${tipoRacial==='especifico_racial'?'selected':''}>Específico já racializado</option>
+          </select>
+        </div>
       </div>
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:130px">
