@@ -1,85 +1,88 @@
-# Plano — Recorte temporal e análise segmentada no Eixo 06
+## Reformulação do Eixo 2 — Indicadores da Visão de Sucesso
 
-Aprimora o Eixo 06 com dois recursos complementares: controle de quais anos da série aparecem no PPT e segmentação da análise estatística em três janelas (Geral, Antes e Depois do início da atuação consistente da coalizão).
+### 1. Mudança conceitual
 
-## 1. Novos parâmetros no Eixo 06
+Hoje o Eixo 2 mede a qualidade de indicadores específicos de ER. Passa a medir a **maturidade operacional da coalizão em ER** a partir dos indicadores da própria visão de sucesso que **admitem recorte racial**, conectando-se diretamente ao Eixo 6 (gaps BA×PPI).
 
-Adicionados na configuração geral do Eixo 06 (nível coalizão) e replicáveis por indicador:
+- **Eixo 2 = catálogo** de todos os indicadores da visão de sucesso com possibilidade de recorte racial (gerais racializáveis + já racializados).
+- **Eixo 6 = aplicação** do recorte racial sobre indicadores escolhidos do Eixo 2.
+- Lacuna entre os dois = "falha de olhar racial" e **penaliza a nota do Eixo 2**.
 
-- **Recorte para o PPT** — `pptAnoInicial` e `pptAnoFinal` (globais da coalizão).
-- **Marco da coalizão** — `coalizaoAnoInicio`: último ano em que a atuação consistente da coalizão **ainda não existia** (ex.: se a atuação começou em 2020, o marco é 2019, último ponto pré-atuação).
+### 2. Novo campo no Eixo 2: Tipo do indicador
 
-Cada indicador ganha campos opcionais de override:
-- `pptAnoInicialOverride`, `pptAnoFinalOverride`
-- `coalizaoAnoInicioOverride`
+Cada indicador passa a ter um campo **Tipo**:
 
-Quando o override está vazio, herda o valor da coalizão. UI mostra "(herdado: 2019)" como hint.
+| Tipo | Exemplo | Esperado no Eixo 6 | Cobra penalidade? |
+|---|---|---|---|
+| **Geral racializável** | Crianças alfabetizadas na idade certa | Sim, para apurar gap BA×PPI | **Sim** |
+| **Específico já racializado** | % diretores PPI | Sim, para monitorar evolução do gap | **Não** (já é um recorte racial por construção) |
 
-## 2. Segmentação Antes / Depois (ponto de sobreposição)
+Os "Específicos já racializados" entram no monitoramento do Eixo 6, mas **não contam no denominador da cobertura**, pois não há "lacuna de olhar racial" a cobrar.
 
-Dado o marco `M` (ano medido mais próximo ao início da atuação consistente):
+### 3. Campos atuais (mantidos, recontextualizados)
 
-- **Antes** = pontos com `ano ≤ M`
-- **Depois** = pontos com `ano ≥ M`
-- O ponto `M` aparece nos dois períodos (continuidade visual e estatística).
+Os três campos hoje existentes seguem como **dimensões de qualidade do indicador na visão de sucesso da coalizão**, com rótulos/tooltips reescritos para deixar claro que medem **a robustez do indicador**, não o recorte racial em si:
 
-Cada período exige ao menos 2 pontos para calcular inclinação/Δ; com 1 ponto só, exibe "—" e nota "amostra insuficiente".
+- **Status / Qualidade do dado** (Tem / Tem parcialmente / Não tem)
+- **Resultados nos Estados** (S / P / N)
+- **Resultado Nacional** (S / P / N)
 
-## 3. Três análises por indicador
+O recorte racial vira **dimensão separada**, vinda automaticamente do Eixo 6.
 
-O `calcItemEixo6` passa a devolver três blocos com a mesma estrutura já existente (inclinação, R², Δ acumulado %, modo absoluto, volátil, status):
+### 4. Nova fórmula do Eixo 2
 
-- **geral** — todos os anos preenchidos.
-- **antes** — anos ≤ marco.
-- **depois** — anos ≥ marco.
+```text
+nota_qualidade = média atual (Q + RSN² + RN)/3 × robustez por nº indicadores
+cobertura_racial = (indicadores tipo "Geral racializável" referenciados em ≥1 item do Eixo 6)
+                  ÷ (total de indicadores tipo "Geral racializável")
+nota_final_eixo2 = nota_qualidade × cobertura_racial
+```
 
-O status oficial do indicador (para pontuação/agregação do Eixo 06) continua vindo do bloco **geral**, mantendo a fórmula atual intacta.
+Regras de borda:
+- Coalizão sem nenhum "Geral racializável" → cobertura = 1 (não penaliza; todos seriam já-racializados).
+- Coalizão com "Geral racializável" e zero referência no Eixo 6 → cobertura = 0 → eixo vai a Incipiente.
+- Faixas de nível (Incipiente / Em desenvolvimento / Avançado / Consolidado) continuam pelas mesmas notas de corte (35 / 60 / 80).
 
-## 4. UI da ferramenta (Eixo 06)
+### 5. Vínculo Eixo 6 → Eixo 2
 
-No cabeçalho do Eixo 06:
-- Inputs para `pptAnoInicial`, `pptAnoFinal`, `coalizaoAnoInicio`, com tooltip explicando o ponto de sobreposição.
+Um indicador é considerado **com recorte racial trabalhado** quando existe pelo menos um item do Eixo 6 com `indicadorRef` apontando para ele E com no mínimo 1 ponto de série temporal preenchido (BA e PPI). Sem ponto preenchido = referência vazia = ainda em lacuna.
 
-Em cada card de indicador:
-- Linha de overrides opcionais (3 inputs pequenos, em branco = herdado).
-- Três chips/blocos lado a lado: **Geral**, **Antes**, **Depois com destaque** (borda/fundo mais forte), cada um com inclin./ano, Δ acumulado (ou Δ absoluto), R² e flag Volátil.
+### 6. Sinalização visual
 
-## 5. PPT — slides do Eixo 06
+**No formulário do Eixo 2** — em cada card de indicador "Geral racializável" sem contrapartida válida no Eixo 6:
+- Badge vermelho ⚠ **"Sem recorte racial trabalhado"** no topo do card.
+- Tooltip explicando que isso reduz a nota do eixo e direcionando ao Eixo 6.
+- Resumo no topo do eixo: "Cobertura racial: X/Y indicadores (Z%)".
 
-Para cada indicador:
-- **Tabela da série** filtrada ao recorte (`pptAnoInicial`–`pptAnoFinal` efetivos).
-- **Três blocos lado a lado** com Inclinação/ano, Δ acumulado, R² e Volátil — **Depois** destacado (cor de fundo da coalizão / borda mais grossa).
-- Linha-legenda: "Marco da atuação consistente: <ano>".
+**No PPT do Eixo 2**:
+- Subtítulo do slide ganha a linha "Cobertura racial: X/Y · Penalidade aplicada: -W%".
+- Coluna nova ou ícone na tabela existente marcando os indicadores em lacuna.
+- Bloco textual ao final listando nominalmente os "Indicadores em lacuna de recorte racial" (apenas se houver ≥1).
 
-Se o recorte do PPT exclui o marco, mostra aviso textual "Marco fora do recorte exibido".
+### 7. Migração de dados existentes
 
-## 6. Documento de lógica
+Coalizões já cadastradas: todos os indicadores existentes recebem **Tipo = "Geral racializável"** por padrão (escolha conservadora, que cobra contrapartida). A coalizão pode reclassificar manualmente como "Específico já racializado" caso aplicável. Nenhuma perda de dado.
 
-Nova subseção 6.x explicando:
-- Como o recorte do PPT é apenas visual (não afeta cálculo).
-- Como Antes/Depois são definidos com ponto de sobreposição.
-- Por que o status oficial usa "Geral" (estabilidade da pontuação).
-- Exemplo numérico com IDEB pré-escolar dividido em duas janelas.
+### 8. Documento de lógica
 
-## Detalhes técnicos
+Atualizar a seção do Eixo 2 explicando:
+- Novo escopo (indicadores da visão de sucesso com possibilidade de recorte racial).
+- Definição dos dois Tipos.
+- Fórmula `nota_qualidade × cobertura_racial` com exemplos numéricos.
+- Como o Eixo 6 sinaliza "recorte trabalhado".
+- Justificativa: por que a coalizão pode ter bons indicadores e ainda assim ficar Incipiente no Eixo 2 (= não olha para os gaps).
 
-Arquivo: `public/Ferramenta_ER.html`.
+### 9. Detalhes técnicos (arquivo único `public/Ferramenta_ER.html`)
 
-Funções afetadas:
-- `defaultEixo6`, `normalizeEixo6` — novos campos coalizão + override por indicador.
-- `calcItemEixo6` — refatorar para função interna `_calcJanela(pontos)` reutilizada por geral/antes/depois; retornar `{ geral, antes, depois, recortePpt: {de, ate}, marco }`.
-- `refreshImpacto` (render Eixo 06) — novos inputs + três blocos por card.
-- Geração de PPT — novas tabelas/colunas e destaque visual do "Depois".
-- Geração de DOCX/relatório (se aplicável) — refletir três janelas resumidas.
+- `defaultIndicador` e `normalizeIndicador`: adicionar campo `tipo` com default `'geral'`.
+- `calcEixoIndicadores(indicadores, eixo6)`: receber também a lista do Eixo 6 e aplicar o multiplicador de cobertura.
+- Todos os callers (`refreshImpacto`, dashboard, PPT, DOCX) passam `c.eixo6` adjacente.
+- Render do card do Eixo 2: novo `<select>` para Tipo + badge condicional + bloco de resumo no topo do eixo.
+- PPT (`addEixoIndicadoresSlide` equivalente): subtítulo, marcação na tabela e bloco "Indicadores em lacuna".
+- DOCX: mesmas adições resumidas.
 
-Regras:
-- Recorte do PPT **não** altera cálculos (são feitos sobre a série completa, conforme janela).
-- Override em branco = herda.
-- Validações: ano inicial ≤ final; marco dentro da série; mensagens amigáveis sem bloquear o uso.
+### 10. Fora de escopo
 
-## Fora do escopo
-
-- Mudar a fórmula de agregação do Eixo 06.
-- Tocar em Eixos 1–5.
-- Recorte/segmentação em outros eixos.
-- Gráficos interativos novos (a tabela + chips continuam sendo a representação).
+- Alterar Eixos 1, 3, 4, 5.
+- Mexer na fórmula interna do Eixo 6 (continua como ficou após a última refatoração).
+- Recalcular automaticamente indicadores antigos como "Específicos já racializados" — fica como ação manual da coalizão.
