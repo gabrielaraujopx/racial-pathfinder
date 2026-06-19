@@ -1250,7 +1250,10 @@ function statusEvolucaoIcone(s) {
 
 function calcMaturidade(c) {
   const b = c.barreirasContexto || defaultBarreiras();
-  const e1 = aplicarBarreira(calcEixoIndicadores(c.indicadores), b.indicadores);
+  const e1raw = calcEixoIndicadores(c.indicadores, c.eixo6);
+  const e1 = aplicarBarreira(e1raw, b.indicadores);
+  // preserva cobertura mesmo após aplicarBarreira (que faz spread)
+  if (e1raw.cobertura) e1.cobertura = e1raw.cobertura;
   const e2 = aplicarBarreira(calcEixo(c.estrategias, 'estrategias'), b.estrategias);
   const e3raw = calcEixoLacunas(c.lacunas, c.estadoLacunas);
   const e3 = aplicarBarreira(e3raw, b.lacunas);
