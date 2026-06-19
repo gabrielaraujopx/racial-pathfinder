@@ -1431,11 +1431,14 @@ function renderCoalizao() {
 
     <!-- Indicadores -->
     ${renderSecao(1, 'Indicadores', '#1A4E7A', `
-      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
-        📊 Adicione indicadores de equidade racial. A nota do eixo é a média das notas individuais (escala 0–2).
+      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;line-height:1.5">
+        📊 Liste aqui os indicadores da <strong>visão de sucesso</strong> da coalizão que <strong>podem receber recorte racial</strong> (gerais racializáveis ou já racializados).
+        A nota mede qualidade do indicador (Status / Estados / Nacional, escala 0–2) <strong>multiplicada pela cobertura racial</strong>: indicadores do tipo "Geral racializável" sem contrapartida no <strong>Eixo Gaps BA×PPI</strong> são tratados como lacuna e reduzem a nota proporcionalmente.<br>
+        <span style="color:var(--cinza-m)">Tipos: <strong>Geral racializável</strong> = exige recorte racial; <strong>Específico já racializado</strong> (ex.: % diretores PPI) = não cobra contrapartida, mas pode ser monitorado no Eixo 6.</span>
       </div>
+      ${renderCoberturaRacialBlock(c)}
       ${renderBarreiraBlock('indicadores', c.barreirasContexto)}
-      <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i)).join('')}</div>
+      <div class="items-lista" id="lista-indicadores">${c.indicadores.map((it,i) => renderItemIndicador(it,i,c.eixo6)).join('')}</div>
       <button class="btn-add" onclick="addItem('indicadores')">+ Adicionar indicador</button>
     `)}
 
