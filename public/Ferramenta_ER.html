@@ -873,7 +873,11 @@ function normalizeCoalizoes(dados) {
       nome: c.nome || COALIZ_NOMES[i] || '',
       diagnostico: diagnosticoBruto.map(d => typeof d === 'string' ? { texto: d } : { texto: d.texto || d.descricao || d.contexto || '' }),
       visaoSucesso: c.visaoSucesso || '',
-      indicadores: Array.isArray(c.indicadores) ? c.indicadores : [],
+      indicadores: Array.isArray(c.indicadores) ? c.indicadores.map(ind => ({
+        ...ind,
+        // tipoRacial: 'geral' (racializável) | 'especifico_racial' (já é recorte racial por construção)
+        tipoRacial: (ind.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral',
+      })) : [],
       estrategias: Array.isArray(c.estrategias) ? c.estrategias : [],
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
