@@ -1501,18 +1501,8 @@ function renderCoalizao() {
       <button class="btn-add" onclick="addItem('lacunas')">+ Adicionar lacuna</button>
     `)}
 
-    <!-- Evidências -->
-    ${renderSecao(4, 'Evidências (registro)', '#7A6A60', `
-      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
-        📋 Registro informativo — não influencia o cálculo de maturidade<br>
-        <span style="color:#C8860A;font-weight:600">⚠ PPT: máx. 3 itens · máx. 100 caracteres por item (faixa compacta no rodapé)</span>
-      </div>
-      <div class="items-lista" id="lista-evidencias">${c.evidencias.map((it,i) => renderItemEvidencia(it,i)).join('')}</div>
-      <button class="btn-add" onclick="addItem('evidencias')">+ Adicionar evidência</button>
-    `)}
-
-    <!-- Eixo 06 — Gaps BA×PPI e Evolução -->
-    ${renderSecao(5, 'Gaps BA×PPI e Evolução', '#3A5A7A', renderEixo6Form(c))}
+    <!-- Eixo 05 — Gaps BA×PPI e Evolução -->
+    ${renderSecao(4, 'Gaps BA×PPI e Evolução', '#3A5A7A', renderEixo6Form(c))}
   `;
 }
 
