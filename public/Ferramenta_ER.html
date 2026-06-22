@@ -2259,7 +2259,7 @@ async function exportPPTX() {
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
     // Faixa fina: Índice de Impacto em Equidade (BA×PPI) — separado da Maturidade
-    const impH = 0.20;
+    const impH = 0.42;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
                     : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
@@ -2270,8 +2270,8 @@ async function exportPPTX() {
       ? 'Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados'
       : 'Índice de Impacto em Equidade (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%  ·  cobertura ' + imp.cobertura + '/' + imp.totalItens + (imp.compensado?'  ·  ajustado por barreira de dados':'');
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
-    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.08,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
-    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:8,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.12,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
+    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
     const diagY  = hdrH + impH;
@@ -2284,7 +2284,11 @@ async function exportPPTX() {
 
     if (c.diagnostico && c.diagnostico.length > 0) {
       const diagTexto = c.diagnostico
-        .map(d => (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem))
+        .map(d => {
+          const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
+          const f = (d.fonte||'').trim();
+          return f ? `${t} (Fonte: ${f})` : t;
+        })
         .filter(Boolean).join('  ·  ');
       s.addText(diagTexto,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,fontSize:7,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
     }
@@ -2297,7 +2301,7 @@ async function exportPPTX() {
     }
 
     // ── Layout colunas — ponto 5: sem rodapé marrom ──
-    const evH  = 0.44;
+    const evH  = 0;  // Faixa "Evidências" removida — espaço redistribuído.
     const colY = diagY + diagH;
     const colH = H - colY - evH;
     const colW = W / 3;
@@ -2373,7 +2377,7 @@ async function exportPPTX() {
     const circR      = 0.16;   // bolinha numerada
     const bdgH       = 0.115;  // altura do badge de status
     const bdgW       = 0.90;   // badge à direita do texto — largura fixa
-    const itemFS     = 10;     // fonte 10 para texto dos itens
+    const itemFS     = 11;     // fonte 11 (espaço extra liberado pela remoção das Evidências)
     const itmGap     = 0.05;   // gap compacto entre itens
     const leftZone   = circR + 0.06; // só a bolinha + gap
     const colBot     = colY + colH - 0.03;
@@ -2395,8 +2399,9 @@ async function exportPPTX() {
     let yI = startYByCol.indicadores;
     const e1cov = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : { idxLacuna: [] };
     const lacunaSet = new Set(e1cov.idxLacuna || []);
-    c.indicadores.slice(0,8).forEach((ind,idx) => {
-      const txt    = ind.texto||'—';
+    c.indicadores.slice(0,10).forEach((ind,idx) => {
+      const fonteTxt = (ind.fonte||'').trim();
+      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
       const totalH = tH + itmGap;
       if (yI + totalH > colBot) return;
@@ -2426,7 +2431,7 @@ async function exportPPTX() {
     // ── Col 2: Estratégias ──
     const eTW = colW - PAD*0.6 - leftZone - bdgW - PAD*0.4;
     let yE = startYByCol.estrategias;
-    c.estrategias.slice(0,8).forEach((est,idx) => {
+    c.estrategias.slice(0,10).forEach((est,idx) => {
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
       const totalH = tH + itmGap;
@@ -2451,7 +2456,7 @@ async function exportPPTX() {
     const lLeftW = leftZone;  // mesma zona esq das outras colunas
     const lTW    = colW - PAD*0.6 - lLeftW - PAD*0.4 - 0.04;
     let yL = startYByCol.lacunas;
-    c.lacunas.slice(0,6).forEach((lac,idx) => {
+    c.lacunas.slice(0,8).forEach((lac,idx) => {
       const txt    = lac.texto||'—';
       const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
       const tH     = estH(txt, lTW, itemFS);
