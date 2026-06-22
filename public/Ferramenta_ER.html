@@ -1435,12 +1435,18 @@ function renderCoalizao() {
       <div class="items-lista" id="lista-diagnostico">${c.diagnostico.map((it,i) => {
         const lim = 140; const len = (it.texto||'').length;
         const cor = len > lim ? '#C0392B' : len > lim*0.85 ? '#C8860A' : '#7A6A60';
-        return `<div class="item-card">
+        const fonteOk = !!(it.fonte && String(it.fonte).trim());
+        const badgeFonte = fonteOk ? '' : `<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:4px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem fonte</div>`;
+        return `<div class="item-card" ${fonteOk?'':'style="border-left:3px solid #C0392B"'}>
           <div class="item-card-content">
+            ${badgeFonte}
             <textarea class="item-texto-input" rows="2" maxlength="${lim}"
               oninput="upDiag(${i},this.value);updateCharCount(this,'char-diag-${i}',${lim})"
               placeholder="Ex: 40% dos estudantes pretos possuem aprendizagem adequada em Matemática, vs 67% dos brancos de alto NSE.">${it.texto||''}</textarea>
             <div class="char-count" id="char-diag-${i}" style="color:${cor}">${len}/${lim}</div>
+            <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB 2023, IBGE/PNAD 2022, Coalizão...)"
+              oninput="upDiagFonte(${i},this.value)"
+              style="width:100%;margin-top:6px;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
           </div>
           <button class="item-remove" onclick="removeItem('diagnostico',${i})">×</button>
         </div>`;
