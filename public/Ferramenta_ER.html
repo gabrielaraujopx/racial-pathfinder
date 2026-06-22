@@ -1841,14 +1841,22 @@ function renderItemIndicador(it, i, eixo6) {
   const badgeLacuna = emLacuna
     ? `<div title="Esse indicador é 'Geral racializável' mas não tem nenhum item correspondente preenchido no Eixo Gaps BA×PPI. Isso reduz a nota do eixo." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem recorte racial trabalhado</div>`
     : '';
-  return `<div class="item-card" ${emLacuna?'style="border-left:3px solid #C0392B"':''}>
+  const fonteOk = !!(it.fonte && String(it.fonte).trim());
+  const badgeFonte = fonteOk ? '' : `<div title="Fonte do indicador é obrigatória." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;margin-left:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem fonte</div>`;
+  const borderCol = emLacuna ? '#C0392B' : (fonteOk ? '' : '#C0392B');
+  return `<div class="item-card" ${borderCol?`style="border-left:3px solid ${borderCol}"`:''}>
     <div class="item-card-content">
-      ${badgeLacuna}
+      ${badgeLacuna}${badgeFonte}
       <div class="item-card-row">
         <textarea class="item-texto-input" rows="2" oninput="upItem('indicadores',${i},'texto',this.value)" placeholder="Nome/descrição do indicador...">${it.texto||''}</textarea>
         <select class="item-select" onchange="upItem('indicadores',${i},'tipo',this.value)">
           ${tipoOpts.map(o => `<option value="${o}" ${it.tipo===o?'selected':''}>${o}</option>`).join('')}
         </select>
+      </div>
+      <div class="item-card-row" style="margin-top:4px">
+        <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB/INEP, PNAD Contínua, Coalizão...)"
+          oninput="upItem('indicadores',${i},'fonte',this.value);renderCoalizao()"
+          style="width:100%;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
       </div>
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:220px">
