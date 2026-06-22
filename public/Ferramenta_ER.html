@@ -770,7 +770,6 @@ function defaultCoalizoes() {
     estrategias: [],
     lacunas: [],
     estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
-    evidencias: [],
     barreirasContexto: defaultBarreiras(),
     eixo6: defaultEixo6(),
   }));
@@ -871,17 +870,19 @@ function normalizeCoalizoes(dados) {
     const diagnosticoBruto = Array.isArray(c.diagnostico) ? c.diagnostico : (Array.isArray(c['diagnóstico']) ? c['diagnóstico'] : []);
     return {
       nome: c.nome || COALIZ_NOMES[i] || '',
-      diagnostico: diagnosticoBruto.map(d => typeof d === 'string' ? { texto: d } : { texto: d.texto || d.descricao || d.contexto || '' }),
+      diagnostico: diagnosticoBruto.map(d => typeof d === 'string'
+        ? { texto: d, fonte: '' }
+        : { texto: d.texto || d.descricao || d.contexto || '', fonte: String(d.fonte || '') }),
       visaoSucesso: c.visaoSucesso || '',
       indicadores: Array.isArray(c.indicadores) ? c.indicadores.map(ind => ({
         ...ind,
+        fonte: String(ind.fonte || ''),
         // tipoRacial: 'geral' (racializável) | 'especifico_racial' (já é recorte racial por construção)
         tipoRacial: (ind.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral',
       })) : [],
       estrategias: Array.isArray(c.estrategias) ? c.estrategias : [],
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
-      evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
       barreirasContexto: normalizeBarreiras(c.barreirasContexto),
       eixo6: normalizeEixo6(c.eixo6),
     };
