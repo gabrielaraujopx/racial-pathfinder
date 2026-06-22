@@ -770,7 +770,6 @@ function defaultCoalizoes() {
     estrategias: [],
     lacunas: [],
     estadoLacunas: 'nao_realizado', // 'mapeadas' | 'nao_identificadas' | 'em_mapeamento' | 'nao_realizado'
-    evidencias: [],
     barreirasContexto: defaultBarreiras(),
     eixo6: defaultEixo6(),
   }));
@@ -871,17 +870,19 @@ function normalizeCoalizoes(dados) {
     const diagnosticoBruto = Array.isArray(c.diagnostico) ? c.diagnostico : (Array.isArray(c['diagnóstico']) ? c['diagnóstico'] : []);
     return {
       nome: c.nome || COALIZ_NOMES[i] || '',
-      diagnostico: diagnosticoBruto.map(d => typeof d === 'string' ? { texto: d } : { texto: d.texto || d.descricao || d.contexto || '' }),
+      diagnostico: diagnosticoBruto.map(d => typeof d === 'string'
+        ? { texto: d, fonte: '' }
+        : { texto: d.texto || d.descricao || d.contexto || '', fonte: String(d.fonte || '') }),
       visaoSucesso: c.visaoSucesso || '',
       indicadores: Array.isArray(c.indicadores) ? c.indicadores.map(ind => ({
         ...ind,
+        fonte: String(ind.fonte || ''),
         // tipoRacial: 'geral' (racializável) | 'especifico_racial' (já é recorte racial por construção)
         tipoRacial: (ind.tipoRacial === 'especifico_racial') ? 'especifico_racial' : 'geral',
       })) : [],
       estrategias: Array.isArray(c.estrategias) ? c.estrategias : [],
       lacunas: Array.isArray(c.lacunas) ? c.lacunas : [],
       estadoLacunas: c.estadoLacunas || 'nao_realizado',
-      evidencias: Array.isArray(c.evidencias) ? c.evidencias : [],
       barreirasContexto: normalizeBarreiras(c.barreirasContexto),
       eixo6: normalizeEixo6(c.eixo6),
     };
@@ -1166,10 +1167,38 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
                : (ctx.pptAnoInicial != null ? ctx.pptAnoInicial : null);
   const pptAte = item.pptAnoFinalOverride   != null ? item.pptAnoFinalOverride
                : (ctx.pptAnoFinal   != null ? ctx.pptAnoFinal   : null);
-  // Retorno: expõe campos da janela "geral" no topo (retrocompat) +
-  // referências completas das três janelas e do recorte/marco.
+  // ── Status efetivo = comparação direta ANTES vs DEPOIS da coalizão ──
+  // Mede o IMPACTO da coalizão: gap médio depois - gap médio antes.
+  // Fallback: sem baseline válido (sem antes E depois ambos com ≥1 ponto),
+  // mantém o status da janela "geral" (regressão linear) e marca semBaseline.
+  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  let statusEfetivo = geral.status;
+  let semBaseline = true;
+  let gapAntesMedio = null, gapDepoisMedio = null, deltaImpacto = null;
+  if (marcoEfetivo != null && serie.length > 0) {
+    // "antes" = estritamente anterior ao marco; "depois" = a partir do marco (inclusive).
+    const ptsAntesStrict  = serie.filter(p => p.ano <  marcoEfetivo);
+    const ptsDepoisStrict = serie.filter(p => p.ano >= marcoEfetivo);
+    if (ptsAntesStrict.length >= 1 && ptsDepoisStrict.length >= 1) {
+      semBaseline = false;
+      const avg = arr => arr.reduce((a,p)=>a+calcGap(p),0) / arr.length;
+      gapAntesMedio  = +avg(ptsAntesStrict).toFixed(2);
+      gapDepoisMedio = +avg(ptsDepoisStrict).toFixed(2);
+      deltaImpacto   = +(gapDepoisMedio - gapAntesMedio).toFixed(2);
+      const thr = Math.max(0.05 * Math.abs(gapAntesMedio), 0.05 * limAbs);
+      if (geral.pontuavel) {
+        if (deltaImpacto <= -thr)      statusEfetivo = 'Fechando';
+        else if (deltaImpacto >=  thr) statusEfetivo = 'Abrindo';
+        else                            statusEfetivo = 'Estagnado';
+      }
+    }
+  }
+  // Retorno: status efetivo (antes×depois) no topo, retrocompat com `geral`.
   return Object.assign({}, geral, {
+    status: statusEfetivo,
     geral, antes, depois,
+    semBaseline,
+    gapAntesMedio, gapDepoisMedio, deltaImpacto,
     marcoAno: marcoEfetivo,
     marcoBruto: marcoBruto,
     recortePpt: { de: pptDe, ate: pptAte },
@@ -1406,12 +1435,18 @@ function renderCoalizao() {
       <div class="items-lista" id="lista-diagnostico">${c.diagnostico.map((it,i) => {
         const lim = 140; const len = (it.texto||'').length;
         const cor = len > lim ? '#C0392B' : len > lim*0.85 ? '#C8860A' : '#7A6A60';
-        return `<div class="item-card">
+        const fonteOk = !!(it.fonte && String(it.fonte).trim());
+        const badgeFonte = fonteOk ? '' : `<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:4px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem fonte</div>`;
+        return `<div class="item-card" ${fonteOk?'':'style="border-left:3px solid #C0392B"'}>
           <div class="item-card-content">
+            ${badgeFonte}
             <textarea class="item-texto-input" rows="2" maxlength="${lim}"
               oninput="upDiag(${i},this.value);updateCharCount(this,'char-diag-${i}',${lim})"
               placeholder="Ex: 40% dos estudantes pretos possuem aprendizagem adequada em Matemática, vs 67% dos brancos de alto NSE.">${it.texto||''}</textarea>
             <div class="char-count" id="char-diag-${i}" style="color:${cor}">${len}/${lim}</div>
+            <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB 2023, IBGE/PNAD 2022, Coalizão...)"
+              oninput="upDiagFonte(${i},this.value)"
+              style="width:100%;margin-top:6px;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
           </div>
           <button class="item-remove" onclick="removeItem('diagnostico',${i})">×</button>
         </div>`;
@@ -1466,18 +1501,8 @@ function renderCoalizao() {
       <button class="btn-add" onclick="addItem('lacunas')">+ Adicionar lacuna</button>
     `)}
 
-    <!-- Evidências -->
-    ${renderSecao(4, 'Evidências (registro)', '#7A6A60', `
-      <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;">
-        📋 Registro informativo — não influencia o cálculo de maturidade<br>
-        <span style="color:#C8860A;font-weight:600">⚠ PPT: máx. 3 itens · máx. 100 caracteres por item (faixa compacta no rodapé)</span>
-      </div>
-      <div class="items-lista" id="lista-evidencias">${c.evidencias.map((it,i) => renderItemEvidencia(it,i)).join('')}</div>
-      <button class="btn-add" onclick="addItem('evidencias')">+ Adicionar evidência</button>
-    `)}
-
-    <!-- Eixo 06 — Gaps BA×PPI e Evolução -->
-    ${renderSecao(5, 'Gaps BA×PPI e Evolução', '#3A5A7A', renderEixo6Form(c))}
+    <!-- Eixo 05 — Gaps BA×PPI e Evolução -->
+    ${renderSecao(4, 'Gaps BA×PPI e Evolução', '#3A5A7A', renderEixo6Form(c))}
   `;
 }
 
@@ -1493,7 +1518,7 @@ function renderImpactoCard(imp) {
     <div>
       <div class="mat-geral-label">Índice de Impacto em Equidade</div>
       <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
-      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 06 · ${imp.pct}% · cobertura ${imp.cobertura}/${imp.totalItens} ${imp.totalItens===1?'item':'itens'}</div>
+      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 05 · ${imp.pct}% · cobertura ${imp.cobertura}/${imp.totalItens} ${imp.totalItens===1?'item':'itens'}</div>
       ${ajusteNota}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;min-width:240px">
@@ -1816,14 +1841,22 @@ function renderItemIndicador(it, i, eixo6) {
   const badgeLacuna = emLacuna
     ? `<div title="Esse indicador é 'Geral racializável' mas não tem nenhum item correspondente preenchido no Eixo Gaps BA×PPI. Isso reduz a nota do eixo." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem recorte racial trabalhado</div>`
     : '';
-  return `<div class="item-card" ${emLacuna?'style="border-left:3px solid #C0392B"':''}>
+  const fonteOk = !!(it.fonte && String(it.fonte).trim());
+  const badgeFonte = fonteOk ? '' : `<div title="Fonte do indicador é obrigatória." style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-bottom:6px;margin-left:6px;background:#FCE8E8;color:#C0392B;border-radius:10px;font-size:10px;font-weight:700">⚠ Sem fonte</div>`;
+  const borderCol = emLacuna ? '#C0392B' : (fonteOk ? '' : '#C0392B');
+  return `<div class="item-card" ${borderCol?`style="border-left:3px solid ${borderCol}"`:''}>
     <div class="item-card-content">
-      ${badgeLacuna}
+      ${badgeLacuna}${badgeFonte}
       <div class="item-card-row">
         <textarea class="item-texto-input" rows="2" oninput="upItem('indicadores',${i},'texto',this.value)" placeholder="Nome/descrição do indicador...">${it.texto||''}</textarea>
         <select class="item-select" onchange="upItem('indicadores',${i},'tipo',this.value)">
           ${tipoOpts.map(o => `<option value="${o}" ${it.tipo===o?'selected':''}>${o}</option>`).join('')}
         </select>
+      </div>
+      <div class="item-card-row" style="margin-top:4px">
+        <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB/INEP, PNAD Contínua, Coalizão...)"
+          oninput="upItem('indicadores',${i},'fonte',this.value);renderCoalizao()"
+          style="width:100%;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
       </div>
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:220px">
@@ -1892,21 +1925,6 @@ function renderItemLacuna(it, i) {
   </div>`;
 }
 
-function renderItemEvidencia(it, i) {
-  const lim = 100;
-  const len = (it.texto||'').length;
-  const cor = len > lim ? '#C0392B' : len > lim*0.85 ? '#C8860A' : '#7A6A60';
-  return `<div class="item-card">
-    <div class="item-card-content">
-      <textarea class="item-texto-input" rows="2" maxlength="${lim}"
-        oninput="upItem('evidencias',${i},'texto',this.value);updateCharCount(this,'char-ev-${i}',${lim})"
-        placeholder="Descreva a evidência...">${it.texto||''}</textarea>
-      <div class="char-count" id="char-ev-${i}" style="color:${cor}">${len}/${lim}</div>
-    </div>
-    <button class="item-remove" onclick="removeItem('evidencias',${i})">×</button>
-  </div>`;
-}
-
 // ══════════════════════════════════════════════════════════════
 // RENDER SÍNTESE
 // ══════════════════════════════════════════════════════════════
@@ -1921,7 +1939,6 @@ function renderSintese() {
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
     { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':e.nivel==='Pouco avanço'?'mat-desenv':e.nivel==='Sem avanço'?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
-    { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
 
   main.innerHTML = `
@@ -1985,6 +2002,12 @@ function upDiag(idx, val) {
   state.coaliz[state.currentCoalizao].diagnostico[idx].texto = val;
   saveState(); refreshMat();
 }
+function upDiagFonte(idx, val) {
+  const it = state.coaliz[state.currentCoalizao].diagnostico[idx];
+  if (!it) return;
+  it.fonte = String(val||'');
+  saveState(); renderCoalizao();
+}
 function upVisao(val) {
   state.coaliz[state.currentCoalizao].visaoSucesso = val;
   saveState(); refreshMat();
@@ -2027,11 +2050,10 @@ function upItem(tipo, idx, campo, val) {
 }
 function addItem(tipo) {
   const defaults = {
-    diagnostico: { texto: '' },
-    indicadores: { texto: '', tipo: 'Alcance', tipoRacial: 'geral', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
+    diagnostico: { texto: '', fonte: '' },
+    indicadores: { texto: '', fonte: '', tipo: 'Alcance', tipoRacial: 'geral', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
     estrategias: { texto: '', status: 'Em desenvolvimento' },
     lacunas: { texto: '', criticidade: 'Média', encaminhamento: 'nao', recomendacao: '' },
-    evidencias: { texto: '' },
   };
   state.coaliz[state.currentCoalizao][tipo].push({ ...defaults[tipo] });
   saveState(); renderCoalizao();
@@ -2237,7 +2259,7 @@ async function exportPPTX() {
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
     // Faixa fina: Índice de Impacto em Equidade (BA×PPI) — separado da Maturidade
-    const impH = 0.20;
+    const impH = 0.42;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
                     : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
@@ -2248,8 +2270,8 @@ async function exportPPTX() {
       ? 'Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados'
       : 'Índice de Impacto em Equidade (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%  ·  cobertura ' + imp.cobertura + '/' + imp.totalItens + (imp.compensado?'  ·  ajustado por barreira de dados':'');
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
-    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.08,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
-    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:8,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+    s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.12,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
+    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
     const diagY  = hdrH + impH;
@@ -2262,7 +2284,11 @@ async function exportPPTX() {
 
     if (c.diagnostico && c.diagnostico.length > 0) {
       const diagTexto = c.diagnostico
-        .map(d => (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem))
+        .map(d => {
+          const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
+          const f = (d.fonte||'').trim();
+          return f ? `${t} (Fonte: ${f})` : t;
+        })
         .filter(Boolean).join('  ·  ');
       s.addText(diagTexto,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,fontSize:7,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
     }
@@ -2275,7 +2301,7 @@ async function exportPPTX() {
     }
 
     // ── Layout colunas — ponto 5: sem rodapé marrom ──
-    const evH  = 0.44;
+    const evH  = 0;  // Faixa "Evidências" removida — espaço redistribuído.
     const colY = diagY + diagH;
     const colH = H - colY - evH;
     const colW = W / 3;
@@ -2351,7 +2377,7 @@ async function exportPPTX() {
     const circR      = 0.16;   // bolinha numerada
     const bdgH       = 0.115;  // altura do badge de status
     const bdgW       = 0.90;   // badge à direita do texto — largura fixa
-    const itemFS     = 10;     // fonte 10 para texto dos itens
+    const itemFS     = 11;     // fonte 11 (espaço extra liberado pela remoção das Evidências)
     const itmGap     = 0.05;   // gap compacto entre itens
     const leftZone   = circR + 0.06; // só a bolinha + gap
     const colBot     = colY + colH - 0.03;
@@ -2373,8 +2399,9 @@ async function exportPPTX() {
     let yI = startYByCol.indicadores;
     const e1cov = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : { idxLacuna: [] };
     const lacunaSet = new Set(e1cov.idxLacuna || []);
-    c.indicadores.slice(0,8).forEach((ind,idx) => {
-      const txt    = ind.texto||'—';
+    c.indicadores.slice(0,10).forEach((ind,idx) => {
+      const fonteTxt = (ind.fonte||'').trim();
+      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
       const totalH = tH + itmGap;
       if (yI + totalH > colBot) return;
@@ -2404,7 +2431,7 @@ async function exportPPTX() {
     // ── Col 2: Estratégias ──
     const eTW = colW - PAD*0.6 - leftZone - bdgW - PAD*0.4;
     let yE = startYByCol.estrategias;
-    c.estrategias.slice(0,8).forEach((est,idx) => {
+    c.estrategias.slice(0,10).forEach((est,idx) => {
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
       const totalH = tH + itmGap;
@@ -2429,7 +2456,7 @@ async function exportPPTX() {
     const lLeftW = leftZone;  // mesma zona esq das outras colunas
     const lTW    = colW - PAD*0.6 - lLeftW - PAD*0.4 - 0.04;
     let yL = startYByCol.lacunas;
-    c.lacunas.slice(0,6).forEach((lac,idx) => {
+    c.lacunas.slice(0,8).forEach((lac,idx) => {
       const txt    = lac.texto||'—';
       const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
       const tH     = estH(txt, lTW, itemFS);
@@ -2464,18 +2491,7 @@ async function exportPPTX() {
       yL += totalH;
     });
 
-    // ── Faixa Evidências ──
-    const evY = H - evH;
-    s.addShape(pres.ShapeType.rect,{x:0,y:evY,w:W,h:evH,fill:{color:'F0E8DF'},line:{color:C.begeE}});
-    s.addShape(pres.ShapeType.rect,{x:0,y:evY,w:W,h:0.022,fill:{color:C.cinzaM},line:{color:C.cinzaM}});
-    s.addText('05 — EVIDÊNCIAS',{x:PAD,y:evY+0.05,w:1.45,h:0.19,fontSize:10,bold:true,color:C.cinzaM,charSpacing:0.3,fontFace:'Calibri'});
-    if (c.evidencias && c.evidencias.length > 0) {
-      const evTexts = c.evidencias.slice(0, CHAR_LIMITS.evidenciaMax)
-        .map((e,i) => `${i+1}. ${(e.texto||'').slice(0, CHAR_LIMITS.evidenciaItem)}`)
-        .join('    ');
-      // Ponto 5: fonte 9 para evidências (mais compacto, não estoura)
-      s.addText(evTexts,{x:PAD+1.5,y:evY+0.04,w:W-PAD*2-1.55,h:evH-0.07,fontSize:7,color:C.cinzaM,fontFace:'Calibri',wrap:true,valign:'top'});
-    }
+    // ── Faixa Evidências removida — espaço redistribuído para Impacto e colunas ──
     // Ponto 8: removido nome+página do rodapé (conflitava com evidências)
 
     // ── SLIDE DEDICADO: EIXO 06 — GAPS BA×PPI E EVOLUÇÃO ──────
@@ -2522,7 +2538,7 @@ async function exportPPTX() {
         // Header
         eg.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.marrom},line:{color:C.marrom}});
         const ttlSuf = paginas.length > 1 ? ' (parte '+(pi+1)+'/'+paginas.length+')' : '';
-        eg.addText('Eixo 06 — Gaps BA×PPI · '+c.nome+ttlSuf,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
+        eg.addText('Eixo 05 — Gaps BA×PPI · '+c.nome+ttlSuf,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
         eg.addText('BA = Brancos e Amarelos · PPI = Pretos, Pardos e Indígenas · Série temporal por indicador',{x:PAD,y:0.40,w:W-PAD*2,h:0.20,fontSize:9,color:'FFD8C0',fontFace:'Calibri'});
         // Faixa do índice
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:W,h:0.22,fill:{color:'F0E8DF'},line:{color:C.begeE}});
