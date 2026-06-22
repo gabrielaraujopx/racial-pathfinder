@@ -1167,10 +1167,38 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
                : (ctx.pptAnoInicial != null ? ctx.pptAnoInicial : null);
   const pptAte = item.pptAnoFinalOverride   != null ? item.pptAnoFinalOverride
                : (ctx.pptAnoFinal   != null ? ctx.pptAnoFinal   : null);
-  // Retorno: expõe campos da janela "geral" no topo (retrocompat) +
-  // referências completas das três janelas e do recorte/marco.
+  // ── Status efetivo = comparação direta ANTES vs DEPOIS da coalizão ──
+  // Mede o IMPACTO da coalizão: gap médio depois - gap médio antes.
+  // Fallback: sem baseline válido (sem antes E depois ambos com ≥1 ponto),
+  // mantém o status da janela "geral" (regressão linear) e marca semBaseline.
+  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  let statusEfetivo = geral.status;
+  let semBaseline = true;
+  let gapAntesMedio = null, gapDepoisMedio = null, deltaImpacto = null;
+  if (marcoEfetivo != null && serie.length > 0) {
+    // "antes" = estritamente anterior ao marco; "depois" = a partir do marco (inclusive).
+    const ptsAntesStrict  = serie.filter(p => p.ano <  marcoEfetivo);
+    const ptsDepoisStrict = serie.filter(p => p.ano >= marcoEfetivo);
+    if (ptsAntesStrict.length >= 1 && ptsDepoisStrict.length >= 1) {
+      semBaseline = false;
+      const avg = arr => arr.reduce((a,p)=>a+calcGap(p),0) / arr.length;
+      gapAntesMedio  = +avg(ptsAntesStrict).toFixed(2);
+      gapDepoisMedio = +avg(ptsDepoisStrict).toFixed(2);
+      deltaImpacto   = +(gapDepoisMedio - gapAntesMedio).toFixed(2);
+      const thr = Math.max(0.05 * Math.abs(gapAntesMedio), 0.05 * limAbs);
+      if (geral.pontuavel) {
+        if (deltaImpacto <= -thr)      statusEfetivo = 'Fechando';
+        else if (deltaImpacto >=  thr) statusEfetivo = 'Abrindo';
+        else                            statusEfetivo = 'Estagnado';
+      }
+    }
+  }
+  // Retorno: status efetivo (antes×depois) no topo, retrocompat com `geral`.
   return Object.assign({}, geral, {
+    status: statusEfetivo,
     geral, antes, depois,
+    semBaseline,
+    gapAntesMedio, gapDepoisMedio, deltaImpacto,
     marcoAno: marcoEfetivo,
     marcoBruto: marcoBruto,
     recortePpt: { de: pptDe, ate: pptAte },
