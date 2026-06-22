@@ -1925,21 +1925,6 @@ function renderItemLacuna(it, i) {
   </div>`;
 }
 
-function renderItemEvidencia(it, i) {
-  const lim = 100;
-  const len = (it.texto||'').length;
-  const cor = len > lim ? '#C0392B' : len > lim*0.85 ? '#C8860A' : '#7A6A60';
-  return `<div class="item-card">
-    <div class="item-card-content">
-      <textarea class="item-texto-input" rows="2" maxlength="${lim}"
-        oninput="upItem('evidencias',${i},'texto',this.value);updateCharCount(this,'char-ev-${i}',${lim})"
-        placeholder="Descreva a evidência...">${it.texto||''}</textarea>
-      <div class="char-count" id="char-ev-${i}" style="color:${cor}">${len}/${lim}</div>
-    </div>
-    <button class="item-remove" onclick="removeItem('evidencias',${i})">×</button>
-  </div>`;
-}
-
 // ══════════════════════════════════════════════════════════════
 // RENDER SÍNTESE
 // ══════════════════════════════════════════════════════════════
@@ -1954,7 +1939,6 @@ function renderSintese() {
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
     { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':e.nivel==='Pouco avanço'?'mat-desenv':e.nivel==='Sem avanço'?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
-    { label: 'Evidências registradas', fn: c => c.evidencias.length > 0 ? { tag: c.evidencias.length+' registradas', cl: 'mat-media' } : { tag: 'Nenhuma', cl: 'mat-vazia' } },
   ];
 
   main.innerHTML = `
@@ -2018,6 +2002,12 @@ function upDiag(idx, val) {
   state.coaliz[state.currentCoalizao].diagnostico[idx].texto = val;
   saveState(); refreshMat();
 }
+function upDiagFonte(idx, val) {
+  const it = state.coaliz[state.currentCoalizao].diagnostico[idx];
+  if (!it) return;
+  it.fonte = String(val||'');
+  saveState(); renderCoalizao();
+}
 function upVisao(val) {
   state.coaliz[state.currentCoalizao].visaoSucesso = val;
   saveState(); refreshMat();
@@ -2060,11 +2050,10 @@ function upItem(tipo, idx, campo, val) {
 }
 function addItem(tipo) {
   const defaults = {
-    diagnostico: { texto: '' },
-    indicadores: { texto: '', tipo: 'Alcance', tipoRacial: 'geral', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
+    diagnostico: { texto: '', fonte: '' },
+    indicadores: { texto: '', fonte: '', tipo: 'Alcance', tipoRacial: 'geral', statusQualidade: '', resultadoEstados: '', resultadoNacional: '' },
     estrategias: { texto: '', status: 'Em desenvolvimento' },
     lacunas: { texto: '', criticidade: 'Média', encaminhamento: 'nao', recomendacao: '' },
-    evidencias: { texto: '' },
   };
   state.coaliz[state.currentCoalizao][tipo].push({ ...defaults[tipo] });
   saveState(); renderCoalizao();
