@@ -2538,7 +2538,7 @@ async function exportPPTX() {
         // Header
         eg.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.marrom},line:{color:C.marrom}});
         const ttlSuf = paginas.length > 1 ? ' (parte '+(pi+1)+'/'+paginas.length+')' : '';
-        eg.addText('Eixo 06 — Gaps BA×PPI · '+c.nome+ttlSuf,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
+        eg.addText('Eixo 05 — Gaps BA×PPI · '+c.nome+ttlSuf,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
         eg.addText('BA = Brancos e Amarelos · PPI = Pretos, Pardos e Indígenas · Série temporal por indicador',{x:PAD,y:0.40,w:W-PAD*2,h:0.20,fontSize:9,color:'FFD8C0',fontFace:'Calibri'});
         // Faixa do índice
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:W,h:0.22,fill:{color:'F0E8DF'},line:{color:C.begeE}});
