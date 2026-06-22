@@ -2491,18 +2491,7 @@ async function exportPPTX() {
       yL += totalH;
     });
 
-    // ── Faixa Evidências ──
-    const evY = H - evH;
-    s.addShape(pres.ShapeType.rect,{x:0,y:evY,w:W,h:evH,fill:{color:'F0E8DF'},line:{color:C.begeE}});
-    s.addShape(pres.ShapeType.rect,{x:0,y:evY,w:W,h:0.022,fill:{color:C.cinzaM},line:{color:C.cinzaM}});
-    s.addText('05 — EVIDÊNCIAS',{x:PAD,y:evY+0.05,w:1.45,h:0.19,fontSize:10,bold:true,color:C.cinzaM,charSpacing:0.3,fontFace:'Calibri'});
-    if (c.evidencias && c.evidencias.length > 0) {
-      const evTexts = c.evidencias.slice(0, CHAR_LIMITS.evidenciaMax)
-        .map((e,i) => `${i+1}. ${(e.texto||'').slice(0, CHAR_LIMITS.evidenciaItem)}`)
-        .join('    ');
-      // Ponto 5: fonte 9 para evidências (mais compacto, não estoura)
-      s.addText(evTexts,{x:PAD+1.5,y:evY+0.04,w:W-PAD*2-1.55,h:evH-0.07,fontSize:7,color:C.cinzaM,fontFace:'Calibri',wrap:true,valign:'top'});
-    }
+    // ── Faixa Evidências removida — espaço redistribuído para Impacto e colunas ──
     // Ponto 8: removido nome+página do rodapé (conflitava com evidências)
 
     // ── SLIDE DEDICADO: EIXO 06 — GAPS BA×PPI E EVOLUÇÃO ──────
