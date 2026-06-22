@@ -1,0 +1,1660 @@
+[
+  {
+    "nome": "Pré-escola",
+    "diagnostico": [
+      {
+        "texto": "Apenas 53% das crianças PPI de 4-5 anos estão matriculadas, vs 71% das BA (PNAD).",
+        "fonte": "PNAD Contínua 2022"
+      },
+      {
+        "texto": "Desigualdade de acesso à creche é maior no Nordeste (delta 25 p.p.).",
+        "fonte": "IBGE/SIS 2023"
+      },
+      {
+        "texto": "Profissionais negras representam 32% das docentes, mas 12% da gestão.",
+        "fonte": "INEP Censo Escolar 2023"
+      },
+      {
+        "texto": "Investimento por aluno PPI é 18% inferior à média BA.",
+        "fonte": "FNDE/SIOPE 2022"
+      },
+      {
+        "texto": "Coalizão atua em 5 municípios prioritários desde 2017.",
+        "fonte": "Relatório interno Educação Já 2024"
+      }
+    ],
+    "visaoSucesso": "Universalizar acesso à pré-escola com paridade racial em matrícula e gestão até 2028.",
+    "indicadores": [
+      {
+        "texto": "Taxa de matrícula líquida na pré-escola (4-5 anos)",
+        "fonte": "PNAD Contínua/IBGE",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de docentes PPI na educação infantil",
+        "fonte": "INEP/Censo Escolar",
+        "tipo": "Alcance",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Investimento per capita por aluno na pré-escola",
+        "fonte": "FNDE/SIOPE",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de gestoras escolares PPI na educação infantil",
+        "fonte": "INEP/Censo Escolar",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Taxa de creches com plano de equidade racial implementado",
+        "fonte": "Coalizão (rede própria)",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "S",
+        "resultadoNacional": "P"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Programa \"Creches Equitativas\" em 5 municípios",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Formação antirracista para 1200 educadoras",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Diagnóstico racial nas Secretarias de Educação",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Bolsa-formação para gestoras PPI",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Observatório de matrícula com recorte racial",
+        "status": "Em desenvolvimento"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Ausência de dados raciais por território nas redes municipais",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Articular com IBGE e INEP para divulgação trimestral."
+      },
+      {
+        "texto": "Cobertura de creche pública em áreas periféricas",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Ampliar 40% de vagas até 2027."
+      },
+      {
+        "texto": "Formação continuada não chega às auxiliares",
+        "criticidade": "Média",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      },
+      {
+        "texto": "Sistema de monitoramento ainda manual",
+        "criticidade": "Baixa",
+        "encaminhamento": "sim",
+        "recomendacao": "Migrar para BI integrado em 2026."
+      }
+    ],
+    "estadoLacunas": "mapeadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": 2015,
+      "pptAnoFinal": 2024,
+      "coalizaoAnoInicio": 2018,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "Matrícula líquida pré-escola",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2015,
+              "valorBA": 70,
+              "valorPPI": 52,
+              "fonte": "PNAD 2015"
+            },
+            {
+              "ano": 2016,
+              "valorBA": 71,
+              "valorPPI": 53,
+              "fonte": "PNAD 2016"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 72,
+              "valorPPI": 54,
+              "fonte": "PNAD 2017"
+            },
+            {
+              "ano": 2018,
+              "valorBA": 72,
+              "valorPPI": 56,
+              "fonte": "PNAD 2018"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 73,
+              "valorPPI": 58,
+              "fonte": "PNAD 2019"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 73,
+              "valorPPI": 60,
+              "fonte": "PNAD 2020"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 74,
+              "valorPPI": 63,
+              "fonte": "PNAD 2021"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 75,
+              "valorPPI": 67,
+              "fonte": "PNAD 2022"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-2",
+          "metrica": "Investimento per capita",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2015,
+              "valorBA": 4200,
+              "valorPPI": 3100,
+              "fonte": "SIOPE"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 4300,
+              "valorPPI": 3300,
+              "fonte": "SIOPE"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 4500,
+              "valorPPI": 3700,
+              "fonte": "SIOPE"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 4700,
+              "valorPPI": 4100,
+              "fonte": "SIOPE"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 4900,
+              "valorPPI": 4600,
+              "fonte": "SIOPE"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-3",
+          "metrica": "% gestoras PPI",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2016,
+              "valorBA": 18,
+              "valorPPI": 10,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2018,
+              "valorBA": 19,
+              "valorPPI": 12,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 20,
+              "valorPPI": 14,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 21,
+              "valorPPI": 17,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 22,
+              "valorPPI": 19,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-4",
+          "metrica": "% creches com plano equidade",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 5,
+              "valorPPI": 1,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 15,
+              "valorPPI": 8,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 28,
+              "valorPPI": 20,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 40,
+              "valorPPI": 34,
+              "fonte": "Coalizão"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Alfabetização",
+    "diagnostico": [
+      {
+        "texto": "Apenas 36% das crianças PPI estão alfabetizadas na idade certa, vs 62% das BA.",
+        "fonte": "SAEB 2021"
+      },
+      {
+        "texto": "Gap racial em proficiência leitora cresceu 4 p.p. entre 2019 e 2021 (impacto pandemia).",
+        "fonte": "SAEB 2019/2021"
+      },
+      {
+        "texto": "60% dos professores alfabetizadores nunca receberam formação antirracista.",
+        "fonte": "Pesquisa Coalizão 2023"
+      }
+    ],
+    "visaoSucesso": "Garantir 90% das crianças alfabetizadas até 8 anos, com gap racial < 5 p.p. até 2030.",
+    "indicadores": [
+      {
+        "texto": "% de crianças alfabetizadas na idade certa",
+        "fonte": "SAEB/INEP",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Taxa de aprovação no 2º ano (BA × PPI)",
+        "fonte": "Censo Escolar",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de escolas com programa estruturado de alfabetização",
+        "fonte": "MEC",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de alfabetizadoras com formação antirracista",
+        "fonte": "Coalizão",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "N",
+        "resultadoNacional": "P"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Programa \"Alfabetiza Brasil + Equidade\" em 200 municípios",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Trilhas formativas antirracistas para professores",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Materiais didáticos com representatividade PPI",
+        "status": "Em desenvolvimento"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Avaliações diagnósticas raciais são pouco frequentes",
+        "criticidade": "Média",
+        "encaminhamento": "sim",
+        "recomendacao": "Adotar diagnóstico trimestral com recorte."
+      },
+      {
+        "texto": "Tutoria pedagógica não diferencia por contexto racial",
+        "criticidade": "Alta",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      }
+    ],
+    "estadoLacunas": "mapeadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": 2021,
+      "pptAnoFinal": 2024,
+      "coalizaoAnoInicio": 2020,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "Alfabetização na idade certa",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2021,
+              "valorBA": 55,
+              "valorPPI": 30,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 58,
+              "valorPPI": 34,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 60,
+              "valorPPI": 38,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 62,
+              "valorPPI": 44,
+              "fonte": "SAEB"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-1",
+          "metrica": "Aprovação 2º ano",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2021,
+              "valorBA": 92,
+              "valorPPI": 78,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 93,
+              "valorPPI": 77,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 94,
+              "valorPPI": 76,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 94,
+              "valorPPI": 74,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-2",
+          "metrica": "Escolas com programa estruturado",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2021,
+              "valorBA": 40,
+              "valorPPI": 30,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 42,
+              "valorPPI": 32,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 43,
+              "valorPPI": 33,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 43,
+              "valorPPI": 33,
+              "fonte": "MEC"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Anos Finais",
+    "diagnostico": [
+      {
+        "texto": "Distorção idade-série atinge 28% dos PPI vs 11% dos BA no 9º ano.",
+        "fonte": "Censo Escolar 2023"
+      },
+      {
+        "texto": "Coalizão iniciada em 2023; ainda mapeando indicadores.",
+        "fonte": "Documento fundacional 2023"
+      }
+    ],
+    "visaoSucesso": "Reduzir distorção idade-série racial em 50% até 2030.",
+    "indicadores": [
+      {
+        "texto": "Taxa de distorção idade-série (9º ano)",
+        "fonte": "Censo Escolar",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de escolas com projeto de equidade no Ensino Fundamental II",
+        "fonte": "Coalizão",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "N",
+        "resultadoNacional": "N"
+      },
+      {
+        "texto": "Proficiência em Matemática 9º ano",
+        "fonte": "SAEB",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Diagnóstico racial em 30 escolas-piloto",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Articulação com Secretarias Estaduais",
+        "status": "Em desenvolvimento"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Falta arquitetura de dados raciais por escola",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Construir painel até final de 2026."
+      },
+      {
+        "texto": "Equipes pedagógicas sem formação ER",
+        "criticidade": "Alta",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      },
+      {
+        "texto": "Pouca articulação com movimentos sociais negros",
+        "criticidade": "Média",
+        "encaminhamento": "sim",
+        "recomendacao": "Roda mensal com lideranças."
+      }
+    ],
+    "estadoLacunas": "mapeadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": true,
+        "justificativa": "Indicadores raciais desagregados indisponíveis em painéis públicos para esta etapa."
+      },
+      "estrategias": {
+        "ativa": true,
+        "justificativa": "Indicadores raciais desagregados indisponíveis em painéis públicos para esta etapa."
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": null,
+      "pptAnoFinal": null,
+      "coalizaoAnoInicio": 2023,
+      "barreira": {
+        "ativa": true,
+        "justificativa": "Microdados por raça/cor no Ensino Fundamental II ainda em consolidação no INEP."
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "Distorção idade-série",
+          "unidade": "%",
+          "sentidoDesejado": "descer",
+          "serie": [
+            {
+              "ano": 2023,
+              "valorBA": 11,
+              "valorPPI": 28,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-2",
+          "metrica": "Proficiência Matemática 9º ano",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2021,
+              "valorBA": 265,
+              "valorPPI": 235,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 268,
+              "valorPPI": 238,
+              "fonte": "SAEB"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Ensino Médio Integral",
+    "diagnostico": [
+      {
+        "texto": "Apenas 23% dos estudantes em tempo integral são PPI, vs 41% no parcial.",
+        "fonte": "Censo Escolar 2023"
+      },
+      {
+        "texto": "Coalizão atua em 8 estados desde 2017; resultados oscilantes.",
+        "fonte": "Relatório Coalizão 2024"
+      }
+    ],
+    "visaoSucesso": "Alcançar 50% de matrículas PPI em tempo integral até 2030.",
+    "indicadores": [
+      {
+        "texto": "% de matrículas PPI em tempo integral",
+        "fonte": "INEP",
+        "tipo": "Alcance",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Taxa de conclusão EM (BA×PPI)",
+        "fonte": "PNAD",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de docentes PPI no EM Integral",
+        "fonte": "Censo",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Taxa de evasão escolar no EM",
+        "fonte": "Censo",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Convênios com 8 Secretarias Estaduais",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Bolsa-permanência racial",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Mentoria entre pares PPI",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Plano de carreira docente com cláusula racial",
+        "status": "Em desenvolvimento"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Critérios de matrícula no integral favorecem BA",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Revisar editais."
+      },
+      {
+        "texto": "Bolsas insuficientes para sustentar permanência",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Triplicar orçamento."
+      },
+      {
+        "texto": "Avaliação de impacto frágil",
+        "criticidade": "Média",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      }
+    ],
+    "estadoLacunas": "mapeadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 2.0,
+      "pptAnoInicial": null,
+      "pptAnoFinal": null,
+      "coalizaoAnoInicio": 2017,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "% PPI em tempo integral",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2015,
+              "valorBA": 38,
+              "valorPPI": 18,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2016,
+              "valorBA": 39,
+              "valorPPI": 22,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 40,
+              "valorPPI": 21,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2018,
+              "valorBA": 41,
+              "valorPPI": 24,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 40,
+              "valorPPI": 22,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 41,
+              "valorPPI": 27,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 42,
+              "valorPPI": 25,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 41,
+              "valorPPI": 28,
+              "fonte": "INEP"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 42,
+              "valorPPI": 29,
+              "fonte": "INEP"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-1",
+          "metrica": "Conclusão EM",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2014,
+              "valorBA": 73,
+              "valorPPI": 55,
+              "fonte": "PNAD"
+            },
+            {
+              "ano": 2016,
+              "valorBA": 75,
+              "valorPPI": 58,
+              "fonte": "PNAD"
+            },
+            {
+              "ano": 2018,
+              "valorBA": 77,
+              "valorPPI": 63,
+              "fonte": "PNAD"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 79,
+              "valorPPI": 67,
+              "fonte": "PNAD"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 80,
+              "valorPPI": 71,
+              "fonte": "PNAD"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-3",
+          "metrica": "Taxa evasão",
+          "unidade": "%",
+          "sentidoDesejado": "descer",
+          "serie": [
+            {
+              "ano": 2015,
+              "valorBA": 4,
+              "valorPPI": 8,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 4,
+              "valorPPI": 9,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 4,
+              "valorPPI": 10,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 3,
+              "valorPPI": 11,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 3,
+              "valorPPI": 12,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Gestão Escolar",
+    "diagnostico": [
+      {
+        "texto": "Apenas 12% dos diretores escolares são PPI, vs 54% da população escolar.",
+        "fonte": ""
+      },
+      {
+        "texto": "Gestores PPI têm 30% menos acesso a formação continuada.",
+        "fonte": "SEB/MEC 2022"
+      },
+      {
+        "texto": "Coalizão atua na agenda de gestão democrática desde 2016.",
+        "fonte": ""
+      }
+    ],
+    "visaoSucesso": "Paridade racial na gestão escolar pública até 2030.",
+    "indicadores": [
+      {
+        "texto": "% de diretores escolares PPI",
+        "fonte": "Censo Escolar",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de coordenadores pedagógicos PPI",
+        "fonte": "Censo Escolar",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de gestores com formação em equidade racial",
+        "fonte": "Coalizão",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "P"
+      },
+      {
+        "texto": "Tempo médio de carreira para chegar à direção",
+        "fonte": "RH/MEC",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Não tem",
+        "resultadoEstados": "N",
+        "resultadoNacional": "N"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Mentoria para gestores PPI emergentes",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Edital de seleção com critério racial",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Formação continuada em ER para diretores",
+        "status": "Em escala"
+      }
+    ],
+    "lacunas": [],
+    "estadoLacunas": "nao_identificadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": null,
+      "pptAnoFinal": null,
+      "coalizaoAnoInicio": 2018,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "% diretores PPI",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2017,
+              "valorBA": 10,
+              "valorPPI": 8,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 11,
+              "valorPPI": 10,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 12,
+              "valorPPI": 11,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 13,
+              "valorPPI": 13,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-1",
+          "metrica": "% coordenadores PPI",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2017,
+              "valorBA": 14,
+              "valorPPI": 11,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 15,
+              "valorPPI": 13,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 16,
+              "valorPPI": 15,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 17,
+              "valorPPI": 16,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-2",
+          "metrica": "% gestores com formação ER",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 8,
+              "valorPPI": 3,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 18,
+              "valorPPI": 10,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 32,
+              "valorPPI": 20,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 45,
+              "valorPPI": 35,
+              "fonte": "Coalizão"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Professores",
+    "diagnostico": [
+      {
+        "texto": "41% dos professores se declaram PPI, mas apenas 18% nos cargos de coordenação.",
+        "fonte": "Censo Escolar 2023"
+      },
+      {
+        "texto": "Salário médio de docentes PPI é 8% inferior aos BA (mesma rede).",
+        "fonte": "RAIS 2022"
+      },
+      {
+        "texto": "Coalizão articula 12 sindicatos e 4 redes universitárias.",
+        "fonte": "Relatório 2024"
+      }
+    ],
+    "visaoSucesso": "Equidade salarial, formativa e de carreira docente até 2030.",
+    "indicadores": [
+      {
+        "texto": "% de docentes PPI na rede pública",
+        "fonte": "Censo",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Diferencial salarial docente (BA-PPI)",
+        "fonte": "RAIS",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de docentes com formação ER",
+        "fonte": "Coalizão",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "P"
+      },
+      {
+        "texto": "Acesso a pós-graduação docente",
+        "fonte": "Capes",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "P"
+      },
+      {
+        "texto": "% de docentes PPI em cargos de coordenação",
+        "fonte": "Censo",
+        "tipo": "Transformação",
+        "tipoRacial": "especifico_racial",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Plano de carreira com cláusula racial",
+        "fonte": "Coalizão",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Não tem",
+        "resultadoEstados": "N",
+        "resultadoNacional": "N"
+      },
+      {
+        "texto": "% de professores cotistas em universidades públicas",
+        "fonte": "MEC",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Censo docente racial nas redes",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Acordo nacional de equidade salarial",
+        "status": "Em desenvolvimento"
+      },
+      {
+        "texto": "Cátedras de pesquisa antirracista",
+        "status": "Piloto"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Sistema de carreira é cego à raça",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Anexar cláusula racial nos planos."
+      },
+      {
+        "texto": "Pouco dado salarial desagregado",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Pactuar com RAIS."
+      }
+    ],
+    "estadoLacunas": "mapeadas",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": false,
+        "justificativa": ""
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": null,
+      "pptAnoFinal": null,
+      "coalizaoAnoInicio": 2019,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "% docentes PPI",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 38,
+              "valorPPI": 32,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 40,
+              "valorPPI": 34,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 41,
+              "valorPPI": 37,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 42,
+              "valorPPI": 40,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-1",
+          "metrica": "Diferencial salarial",
+          "unidade": "%",
+          "sentidoDesejado": "descer",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 100,
+              "valorPPI": 82,
+              "fonte": "RAIS"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 100,
+              "valorPPI": 84,
+              "fonte": "RAIS"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 100,
+              "valorPPI": 89,
+              "fonte": "RAIS"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 100,
+              "valorPPI": 92,
+              "fonte": "RAIS"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-4",
+          "metrica": "% PPI coordenação",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 16,
+              "valorPPI": 12,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 17,
+              "valorPPI": 13,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 18,
+              "valorPPI": 15,
+              "fonte": "Censo"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 19,
+              "valorPPI": 17,
+              "fonte": "Censo"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  },
+  {
+    "nome": "Tecnologia",
+    "diagnostico": [
+      {
+        "texto": "Apenas 27% das escolas com PPI majoritário têm internet adequada.",
+        "fonte": "TIC Educação 2023"
+      },
+      {
+        "texto": "Programas de letramento digital chegam a 18% dos PPI vs 49% dos BA.",
+        "fonte": "TIC Educação 2023"
+      },
+      {
+        "texto": "Coalizão articulada desde 2020 com 3 empresas e MEC.",
+        "fonte": "Documento fundacional 2020"
+      }
+    ],
+    "visaoSucesso": "Reduzir gap de letramento digital a < 10 p.p. até 2030.",
+    "indicadores": [
+      {
+        "texto": "% de escolas com internet adequada",
+        "fonte": "TIC Educação",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "% de estudantes com letramento digital",
+        "fonte": "TIC Educação",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Equipamentos per capita por aluno",
+        "fonte": "MEC",
+        "tipo": "Alcance",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "P"
+      },
+      {
+        "texto": "% de docentes formados em educação digital",
+        "fonte": "Coalizão",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem parcialmente",
+        "resultadoEstados": "P",
+        "resultadoNacional": "P"
+      }
+    ],
+    "estrategias": [
+      {
+        "texto": "Conectividade prioritária para escolas PPI",
+        "status": "Em escala"
+      },
+      {
+        "texto": "Formação docente em letramento digital",
+        "status": "Piloto"
+      },
+      {
+        "texto": "Doação de equipamentos com critério racial",
+        "status": "Em desenvolvimento"
+      }
+    ],
+    "lacunas": [
+      {
+        "texto": "Manutenção de equipamentos é precária",
+        "criticidade": "Média",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      },
+      {
+        "texto": "Sem indicador único de letramento racial",
+        "criticidade": "Média",
+        "encaminhamento": "sim",
+        "recomendacao": "Construir índice composto."
+      },
+      {
+        "texto": "Pouca formação para famílias",
+        "criticidade": "Baixa",
+        "encaminhamento": "sim",
+        "recomendacao": "Curso EAD aberto."
+      }
+    ],
+    "estadoLacunas": "em_mapeamento",
+    "barreirasContexto": {
+      "indicadores": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "estrategias": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "lacunas": {
+        "ativa": true,
+        "justificativa": "Indicadores raciais desagregados indisponíveis em painéis públicos para esta etapa."
+      }
+    },
+    "eixo6": {
+      "pontosMinimos": 3,
+      "limiarGapAbsoluto": 1.0,
+      "pptAnoInicial": 2018,
+      "pptAnoFinal": 2024,
+      "coalizaoAnoInicio": 2020,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
+      "itens": [
+        {
+          "indicadorRef": "ind-0",
+          "metrica": "% escolas internet adequada",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 40,
+              "valorPPI": 15,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 50,
+              "valorPPI": 22,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 58,
+              "valorPPI": 32,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 65,
+              "valorPPI": 45,
+              "fonte": "TIC"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": 2019,
+          "pptAnoFinalOverride": 2024,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-1",
+          "metrica": "% letramento digital",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 45,
+              "valorPPI": 20,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 47,
+              "valorPPI": 22,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 48,
+              "valorPPI": 24,
+              "fonte": "TIC"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 49,
+              "valorPPI": 25,
+              "fonte": "TIC"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        },
+        {
+          "indicadorRef": "ind-2",
+          "metrica": "Equipamentos per capita",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2018,
+              "valorBA": 1.2,
+              "valorPPI": 0.8,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 1.4,
+              "valorPPI": 0.85,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 1.6,
+              "valorPPI": 0.9,
+              "fonte": "MEC"
+            },
+            {
+              "ano": 2024,
+              "valorBA": 1.9,
+              "valorPPI": 0.95,
+              "fonte": "MEC"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": 2021
+        },
+        {
+          "indicadorRef": "ind-3",
+          "metrica": "% docentes formados",
+          "unidade": "%",
+          "sentidoDesejado": "subir",
+          "serie": [
+            {
+              "ano": 2024,
+              "valorBA": 30,
+              "valorPPI": 18,
+              "fonte": "Coalizão"
+            }
+          ],
+          "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null
+        }
+      ]
+    }
+  }
+]
