@@ -1928,7 +1928,8 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
         <div style="display:flex;flex-direction:column;gap:2px;width:80px">
           <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Unidade</span>
           <input class="item-select" value="${(it.unidade||'%').replace(/"/g,'&quot;')}"
-            oninput="upEixo6Item(${i},'unidade',this.value)">
+            oninput="upEixo6Item(${i},'unidade',this.value)"
+            onchange="renderCoalizao()">
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px">
           <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Sentido desejado</span>
@@ -1999,9 +2000,9 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
           <thead>
             <tr style="color:var(--cinza-m);text-align:left">
               <th style="padding:4px 6px;width:70px">Ano</th>
-              <th style="padding:4px 6px">BA (${(it.unidade||'%')})</th>
-              <th style="padding:4px 6px">PPI (${(it.unidade||'%')})</th>
-              <th style="padding:4px 6px;width:80px">Gap</th>
+              <th style="padding:4px 6px">BA${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px">PPI${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:80px">Gap${unidadeLabel(it.unidade)}</th>
               <th style="padding:4px 6px">Fonte</th>
               <th style="padding:4px 6px;width:30px"></th>
             </tr>
@@ -2029,25 +2030,38 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
 
       <div style="margin-top:10px;padding:8px 10px;background:#F4F8F4;border:1px solid #C9D9C9;border-radius:5px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:700;color:#2D5A3D">METAS DA COALIZÃO · gap-alvo por ano (na unidade do indicador)</span>
+          <span style="font-size:11px;font-weight:700;color:#2D5A3D">METAS DA COALIZÃO · projeção ano-a-ano (BA, PPI e/ou gap-alvo)</span>
           ${calc.statusMeta ? `<span style="font-size:11px;font-weight:700;color:${statusMetaCor(calc.statusMeta)}">vs Meta: ${calc.statusMeta}</span>` : ''}
         </div>
+        <div style="font-size:10px;color:var(--cinza-m);margin-bottom:6px">Preencha <strong>Meta BA</strong> e <strong>Meta PPI</strong> para projeção visual nos gráficos, ou apenas <strong>Gap-alvo</strong> para indicar a redução esperada entre BA e PPI.</div>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead>
             <tr style="color:var(--cinza-m);text-align:left">
-              <th style="padding:4px 6px;width:90px">Ano</th>
-              <th style="padding:4px 6px;width:140px">Gap-alvo (${(it.unidade||'%')})</th>
+              <th style="padding:4px 6px;width:80px">Ano</th>
+              <th style="padding:4px 6px;width:110px">Meta BA${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:110px">Meta PPI${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:110px">Gap-alvo${unidadeLabel(it.unidade)}</th>
               <th style="padding:4px 6px"></th>
               <th style="padding:4px 6px;width:30px"></th>
             </tr>
           </thead>
           <tbody>
-            ${(it.metas||[]).map((m,j) => `<tr>
-              <td style="padding:3px 6px"><input type="number" value="${m.ano==null?'':m.ano}" style="width:80px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'ano',this.value)"></td>
-              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaGap==null?'':m.valorMetaGap}" style="width:120px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaGap',this.value)"></td>
-              <td style="padding:3px 6px;color:var(--cinza-m);font-size:10px">${m.valorMetaGap!=null?'gap esperado entre BA e PPI neste ano':''}</td>
+            ${(it.metas||[]).map((m,j) => {
+              const derivado = (m.valorMetaGap==null && m.valorMetaBA!=null && m.valorMetaPPI!=null)
+                ? (it.sentidoDesejado==='descer' ? (m.valorMetaPPI - m.valorMetaBA) : (m.valorMetaBA - m.valorMetaPPI))
+                : null;
+              const hint = m.valorMetaBA!=null && m.valorMetaPPI!=null
+                ? `derivado: ${derivado!=null?(+derivado.toFixed(2)):'—'}`
+                : (m.valorMetaGap!=null ? 'gap esperado entre BA e PPI' : '');
+              return `<tr>
+              <td style="padding:3px 6px"><input type="number" value="${m.ano==null?'':m.ano}" style="width:70px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'ano',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaBA==null?'':m.valorMetaBA}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaBA',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaPPI==null?'':m.valorMetaPPI}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaPPI',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaGap==null?'':m.valorMetaGap}" placeholder="${derivado!=null?(+derivado.toFixed(2)):''}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaGap',this.value)"></td>
+              <td style="padding:3px 6px;color:var(--cinza-m);font-size:10px">${hint}</td>
               <td style="padding:3px 6px;text-align:center"><button onclick="removeEixo6Meta(${i},${j})" style="background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;line-height:1">×</button></td>
-            </tr>`).join('')}
+            </tr>`;
+            }).join('')}
           </tbody>
         </table>
         <button onclick="addEixo6Meta(${i})" style="margin-top:6px;padding:4px 10px;font-size:11px;background:none;border:1px dashed #6B9A6B;border-radius:4px;color:#2D5A3D;cursor:pointer">+ Adicionar meta-ano</button>
