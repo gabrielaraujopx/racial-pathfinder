@@ -3029,6 +3029,12 @@ async function exportPPTX() {
                 { name: 'BA (Brancos e Amarelos)', labels, values: serieG.map(p => +p.valorBA) },
                 { name: 'PPI (Pretos, Pardos e Indígenas)', labels, values: serieG.map(p => +p.valorPPI) },
               ];
+              // Formato dos rótulos pela unidade do indicador
+              const u = (it.unidade||'').trim();
+              const isPct = u === '%' || /percent/i.test(u);
+              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI]);
+              const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
+              const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
               slG.addChart(pres.ChartType.line, dataChart, {
                 x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
                 chartColors: ['5C2E0A','E05A1A'],
@@ -3040,6 +3046,15 @@ async function exportPPTX() {
                 catAxisLabelColor: '5A4A40', valAxisLabelColor: '5A4A40',
                 showTitle: false,
                 plotArea: { fill: { color: 'FDFBF6' } },
+                showValue: true,
+                dataLabelPosition: 't',
+                dataLabelFontSize: 7,
+                dataLabelColor: '5A4A40',
+                dataLabelFormatCode: fmtCode,
+                showValAxisTitle: !!u,
+                valAxisTitle: u || '',
+                valAxisTitleFontSize: 8,
+                valAxisTitleColor: '7A6A60',
               });
             }
           }
