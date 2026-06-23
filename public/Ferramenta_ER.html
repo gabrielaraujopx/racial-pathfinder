@@ -3230,7 +3230,7 @@ async function exportPPTX() {
           const stCorG = statusEvolucaoCor(calc.status).replace('#','');
           const stBgG  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
           const stTxtG = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?' ⚠':'');
-          const sm = calc.statusMeta || 'Sem meta declaradа';
+          const sm = calc.statusMeta || 'Sem meta declarada';
           const stCorM = (statusMetaCor(sm)||'#8A8A8A').replace('#','');
           const stBgM  = sm==='Acima'?'E8F4EE'
                        : sm==='Dentro'?'D4EDE0'
