@@ -1,118 +1,134 @@
+## Eixo 05 — Redesenho do Índice + JSON de teste, docs e gráficos BA×PPI no PPT
 
-## Escopo
-
-Quatro mudanças no `public/Ferramenta_ER.html` + geração de um JSON de teste. Tudo entregue em uma única rodada de implementação. A geração do JSON é a tarefa mais barata em créditos, então será priorizada e entregue mesmo se algum dos outros itens precisar de refino posterior.
+Tudo entregue numa rodada só. Mudanças em `public/Ferramenta_ER.html` + 3 artefatos novos.
 
 ---
 
-## 1. Status de avanço do Índice de Impacto = antes vs depois da coalizão
+### Parte A — Lógica do Índice de Impacto (Eixo 05)
 
-Hoje `calcItemEixo6` já produz três janelas (`geral`, `antes`, `depois`) usando o `coalizaoAnoInicio` como marco. O status oficial sai da janela `geral` (regressão linear sobre toda a série). Vamos trocar isso por uma comparação direta antes×depois, que mede de fato o impacto da coalizão.
+#### A1. Barreira de dados por item (não por eixo)
+- Remove o toggle de barreira geral do Eixo 05; cada item ganha `barreira:{ativa, justificativa}`.
+- Item com barreira: status **`Barreira de dados`** (⚖), não pontua, não entra na média, mas conta como "listado" para a cobertura cruzada.
+- Sem compensação numérica.
 
-**Nova regra de status (por item):**
-
-```text
-gap_antes  = gap médio dos pontos com ano ≤ marco
-gap_depois = gap médio dos pontos com ano > marco
-delta      = gap_depois - gap_antes   (sentido já normalizado)
-thr        = max(0.05 * |gap_antes|, 0.05 * limiarGapAbsoluto)
-
-se delta <= -thr            → Fechando
-se delta >=  thr            → Abrindo
-caso contrário              → Estagnado
+#### A2. Status por antes × depois com janela simétrica
 ```
+marco        = item.coalizaoAnoInicio || ctx.coalizaoAnoInicio
+N            = min(#pts ano<marco, #pts ano>=marco)
+gap_antes    = média dos N pontos imediatamente antes do marco
+gap_depois   = média dos N pontos a partir do marco
+delta        = (gap_depois - gap_antes) normalizado pelo sentidoDesejado
+thr          = max(0.05·|gap_antes|, 0.05·limiarGapAbsoluto)
+delta<=-thr → Fechando | delta>=thr → Abrindo | senão → Estagnado
+```
+- `N==0` em algum lado → `Insuficiente`.
+- Sem marco → fallback regressão `geral` + flag `semBaseline`.
+- `item.barreira.ativa` curto-circuita tudo.
 
-**Regras de borda:**
-- Sem `marcoAno` definido OU sem ≥1 ponto antes E ≥1 ponto depois → cai no fallback atual (status pela inclinação da janela `geral`) e o item ganha um sufixo `(sem baseline)` no PPT/UI.
-- Coalizões com pontos só "depois" continuam medindo evolução intra-coalizão.
-- Item segue só pontuando se `geral.pontuavel` (≥ `pontosMinimos`).
+#### A3. Cobertura cruzada Eixo 02 × Eixo 05 entra no cálculo
+```
+nIndic02       = total de indicadores do Eixo 02
+nListados05    = itens listados (inclui barreira)
+nPontuaveis05  = itens com status Fechando/Estagnado/Abrindo
+nBarreira05    = itens Barreira de dados
+denomCob       = max(3, nIndic02)
+fatorCobertura = nListados05 / denomCob          // penaliza ausência
+fatorMedicao   = nPontuaveis05 / max(1, nListados05 - nBarreira05)
+mediaScore     = média scores dos pontuáveis
+pctBruto       = round(mediaScore · fatorCobertura · fatorMedicao)
+```
+- `nPontuaveis05==0` → pct=0, nível **`Sem medição`**.
+- Sem Eixo 02 → `denomCob = max(3, nListados05)`.
 
-**Onde mexe:** `_classifica*` interno em `calcItemEixo6` (extrair função `_statusAntesDepois`) + qualquer leitura de `item.calc.status` (já é genérica). Tooltip e copy do card "antes/depois" passam a explicar a nova lógica.
+Travas qualitativas (após pctBruto):
+- `nFechando==0` → teto **Avanço incipiente**.
+- `nFechando==0 ∧ nAbrindo>nEstagnado` → **Gaps se abrindo**.
+- `nFechando==0 ∧ nAbrindo==0 ∧ nEstagnado>0` → **Estagnado**.
 
----
+Faixas (se nenhuma trava): ≥70 Reduzindo gaps · ≥40 Avanço parcial · ≥20 Avanço incipiente · <20 Sem avanço.
 
-## 2. Eliminar Eixo 05 — Evidências e mover "Fonte" para Diagnóstico e Indicadores
+#### A4. Visibilidade antes×depois + cobertura cruzada (UI + PPT)
+- **Card UI** e **faixa Impacto do slide-resumo** + **rodapé do slide do Eixo 05**: 3 linhas — (1) nível·pct, (2) `Gap médio antes→depois: X → Y (Δ ±z)`, (3) `Cobertura Eixo 02→05: N/M · barreira em K · Fech/Estag/Abr/Insuf`.
 
-**Remover (UI + dados + PPT):**
-- Seção `Evidências` no formulário (`lista-evidencias`, `addItem('evidencias')`, `renderItemEvidencia`).
-- Array `c.evidencias`, default e normalização.
-- Faixa "05 — EVIDÊNCIAS" no slide da coalizão (libera ~0,55" de altura).
-- Linha do dashboard `Evidências registradas`.
-
-**Adicionar campo `fonte` obrigatório em dois lugares:**
-
-| Item | Estrutura | Onde aparece |
-|---|---|---|
-| Diagnóstico (`c.diagnostico[i]`) | `{ texto, fonte }` | UI: input "Fonte" abaixo do texto, com asterisco vermelho se vazio. PPT: o texto vai como `"<texto> (Fonte: <fonte>)"` no slide. |
-| Indicador (`c.indicadores[i]`) | adiciona `fonte` | UI: input "Fonte" na linha já compacta. PPT: texto vira `"<texto> (Fonte: <fonte>)"`. |
-
-**Obrigatoriedade:** validação visual apenas (badge ⚠ "Sem fonte" + borda vermelha no input). Sem bloqueio de salvamento, pra não quebrar coalizões legadas.
-
-**Migração:** itens antigos recebem `fonte = ''` no `normalizeCoalizao`. Texto antigo do array `evidencias` é descartado (já existia conceitualmente solto, vira responsabilidade da fonte por item).
-
-**Renumeração de eixos no PPT/UI:**
-- `01 Diagnóstico` (faixa) · `02 Indicadores` · `03 Estratégias` · `04 Lacunas` · `05 Gaps BA×PPI` (era 06).
-- Renomear referências textuais a "Eixo 06" → "Eixo 05" no documento de lógica e nos rótulos do slide do Índice de Impacto. **Identificadores internos (`eixo6`, `lista-eixo6`, ids de campo) ficam como estão** para não quebrar JSONs salvos.
-
----
-
-## 3. Realocação de espaço no slide da coalizão
-
-Slide é 10×5,625". Hoje: header ~0,42 + faixa Impacto ~0,32 + faixa Diagnóstico ~0,38 + 3 colunas (eixos 1–4) + faixa Evidências `evH ≈ 0,55`. Sai Evidências, sobra ~0,55" para redistribuir.
-
-**Nova distribuição:**
-- Faixa Índice de Impacto: altura sobe de `0,32"` → **`0,55"`**, fonte do título de 8 → **11** (negrito), badge de % maior. Cor de fundo levemente tingida pela cor do nível pra ganhar destaque visual.
-- Faixa Diagnóstico: mantém ~0,38" mas o texto interno ganha 1 linha extra (já cabia mal).
-- Colunas de Indicadores/Estratégias/Lacunas: altura sobe ~0,30" cada → cabem **+2 itens** por coluna em média (slice atual 8/8/6 sobe para 10/10/8) e o texto dos itens pode subir de `fontSize 10 → 11` mantendo `shrinkText`.
-
-**Constantes a alterar (linhas atuais ~2280–2470):** `evH` zerada, `colH` recalculada (`H - colY`), `itemFS = 11`, slices de `c.indicadores`/`c.estrategias`/`c.lacunas`, faixa Impacto (`impH`, `fontSize`, `bold`).
+#### A5. Aviso de barreira em massa
+- `nBarreira05 / max(1,nListados05) >= 0.5` → badge laranja "⚠ Metade ou mais dos gaps sob barreira — interpretar com cautela" no card UI e faixa amarela fina no topo do slide Eixo 05.
 
 ---
 
-## 4. JSON de teste com máxima variabilidade
+### Parte B — Visualização gráfica BA × PPI no PPT (novo)
 
-Arquivo novo `public/dados_teste_variabilidade.json` (carregável pelo botão "Importar JSON" atual).
-
-**7 coalizões**, cada uma combinando cenários diferentes:
-
-| # | Coalizão | Cenário coberto |
-|---|---|---|
-| 1 | Alfabetização | "Tudo cheio, alto desempenho" — 5 diagnósticos com fonte, 5 indicadores (3 gerais + 2 já-racializados), 5 estratégias todas com status diferentes, 4 lacunas com criticidade variada, Eixo 5 com 4 itens BA/PPI, séries de 8 anos, marco da coalizão = 2018, todos Fechando. |
-| 2 | Ensino Médio | "Pontos só depois do marco" — força fallback de status sem baseline. Mix Abrindo/Fechando/Estagnado. |
-| 3 | Equidade | "Coalizão nova" — poucos pontos, vários `Insuficiente`, barreira de dados públicos ativa em 2 eixos. |
-| 4 | Profissionalização | "Volátil + reversões" — séries com R² baixo e reversões deliberadas; mistura `tipoRacial`. |
-| 5 | Gestão | "Diagnóstico sem fonte" — gera badges ⚠ para validar UI; lacunas declaradas como "Não identificamos lacunas relevantes". |
-| 6 | Financiamento | "Indicadores em lacuna racial" — vários `Geral racializável` sem contrapartida no Eixo 5, derruba cobertura para ~30%. |
-| 7 | Primeira Infância | "Estado intermediário" — tudo Em desenvolvimento, com 1 item de cada status em Eixo 5, recorte de PPT customizado por item. |
-
-**Cobertura garantida pelo JSON:**
-- Todos os valores de `statusQualidade` (Tem / Tem parcialmente / Não tem) e `resultadoEstados`/`resultadoNacional` (S/P/N).
-- Ambos `tipoRacial` (`geral`, `especifico_racial`).
-- Todos os `criticidade` e `encaminhamento` de lacunas.
-- Todos os `status` de estratégias.
-- `barreirasContexto.{indicadores,estrategias,lacunas}` ativa em pelo menos 1 coalizão cada.
-- Eixo 5: `sentidoDesejado` subir/descer; séries com 1, 2, 3, 5 e 8 pontos; `coalizaoAnoInicio` global + override por item; `pptAnoInicial/Final` global + override por item; `limiarGapAbsoluto` variado.
-- Casos de fallback de status (sem baseline) e casos de baseline cheio.
-
-JSON entregue como artefato pronto para `/mnt/documents/dados_teste_variabilidade.json` (download direto) **e** copiado para `public/` para o botão de carga na ferramenta. Validação mínima: rodar o `normalizeCoalizao` mentalmente sobre cada coalizão.
+- **Checkbox no Eixo 05**: "Incluir slide(s) de visualização gráfica BA×PPI no PPT" (`e6.incluirGraficos`, default false). Persistido na coalizão.
+- Quando marcado, **após o slide do Eixo 05** de cada coalizão, gera 1+ slides com **gráficos de linha** (um por indicador listado):
+  - 2 séries por gráfico: linha **BA** (`brancosAmarelos`) e linha **PPI** (`pretosPardosIndigenas`), eixo X = ano da série temporal do item (não usa o gap calculado).
+  - Marco da coalizão desenhado como linha vertical pontilhada com rótulo "Início coalizão".
+  - Título do gráfico = nome do indicador; subtítulo = "Fonte: …" se houver.
+  - Item com `barreira.ativa` aparece como card vazio com selo ⚖ "Sem dados — barreira reconhecida".
+- **Layout por slide**: grid 2×2 (até 4 gráficos por slide). Se a coalizão tiver >4 itens, quebra em slides adicionais (`Eixo 05 — Gráficos BA×PPI (2/3)`).
+- Usa `pres.addChart(pres.ChartType.line, ...)` do pptxgenjs (já carregado no arquivo). Cores: BA = `#7A6A60` (marrom escuro do tema), PPI = `#C97B3A` (laranja do tema). Linha do marco em cinza tracejada.
 
 ---
 
-## Detalhes técnicos — onde mexer no arquivo
+### Parte C — JSON de teste atualizado
+
+Substitui `public/dados_teste_variabilidade.json` (também copiado para `/mnt/documents/`) cobrindo:
+
+- **C1**: coalizão com Eixo 02 = 8 indicadores, Eixo 05 = só 3 itens → testa queda do `fatorCobertura` (3/8).
+- **C2**: coalizão com Eixo 02 = 8, Eixo 05 = 8, sendo 5 com `barreira.ativa=true` → testa que **não derruba** mas dispara aviso de barreira em massa (5/8 ≥ 50%).
+- **C3**: Anos Finais — 2 itens com barreira (substitui o caso "Sem medição"), valida nível `Sem medição`.
+- **C4**: Tecnologia — Estag/Estag/Abrindo, sem Fechando → valida trava "Avanço incipiente" + nível "Gaps se abrindo" se `nAbr>nEstag` (mantido aqui em "Estagnado prevalece").
+- **C5**: coalizão com marco 2021 e série 2015–2025 com pontos assimétricos → valida janela simétrica (toma 4 antes / 4 depois).
+- **C6**: coalizão totalmente positiva — todos Fechando, ≥70% → "Reduzindo gaps".
+- **C7**: coalizão sem `coalizaoAnoInicio` em alguns itens → valida fallback `semBaseline` e badge "sem baseline".
+- **C8**: coalizão com `incluirGraficos=true` e séries BA/PPI ricas para validar visualmente os slides de gráfico (inclusive um item com barreira para validar card vazio).
+
+Garante cobertura de todos `statusQualidade`, `tipoRacial`, `criticidade`, `sentidoDesejado`, barreiras de Eixos 02/03/04 (intactas).
+
+---
+
+### Parte D — Documentação (2 documentos em `/mnt/documents/`)
+
+#### D1. `Logica_Sistematizacao_Executivo.md` (objetivo, ~3 páginas)
+- O que mede a ferramenta, para quem.
+- Os 5 eixos em 1 parágrafo cada.
+- Como o **Índice de Impacto** é lido: significado dos níveis, o que conta como "avanço", por que cobertura cruzada importa, papel da barreira de dados — **em linguagem de gestor, com 1 exemplo numérico narrado** ("se a coalizão lista 8 indicadores no Eixo 02 mas só acompanha 3 gaps, o índice começa em 3/8 da nota possível…").
+- Sem fórmulas: tabelas comparativas e analogias.
+
+#### D2. `Logica_Sistematizacao_Detalhado.md` (completo, ~10 páginas)
+- Estrutura por eixo: campos, regras de obrigatoriedade, cálculo da maturidade, barreiras.
+- Eixo 05 detalhado: fórmula janela simétrica, cobertura cruzada, fatores, travas qualitativas, faixas, casos de borda.
+- Cada fórmula seguida de **leitura em português** ("isso quer dizer que…") e **2 exemplos numéricos** trabalhados.
+- Tabela de status possíveis × cor × significado.
+- Apêndice: campos do JSON, mapeamento Eixo 02 ↔ Eixo 05, regras de migração de coalizões legadas.
+
+Ambos referenciam o JSON de teste e indicam quais coalizões ilustram cada regra.
+
+---
+
+### Onde mexe (resumo técnico)
 
 `public/Ferramenta_ER.html`:
 
-1. **Defaults/normalize** (~750–890): remover `evidencias`, adicionar `fonte` a `defaultDiagnostico` e `defaultIndicador`/normalizeIndicador.
-2. **`_statusAntesDepois`** novo + chamada dentro de `calcItemEixo6` (~1134–1177). `geral` segue computado mas o `status` propagado vem do antes×depois (com fallback `geral`).
-3. **Render dos cards de Diagnóstico (~700–720) e Indicador (~1809–1865)**: novo input `fonte` + badge ⚠ condicional.
-4. **Render do Eixo 5/Evidências (~1468–1475)**: remove a seção.
-5. **PPT slide coalizão (~2200–2480)**: nova altura/fonte da faixa Impacto, removida faixa Evidências, slices ampliados, texto do diagnóstico/indicador com `(Fonte: …)`.
-6. **Plano `.lovable/plan.md`**: atualizar.
+| Bloco | Linhas | Mudança |
+|---|---|---|
+| `defaultEixo6` / `normalizeEixo6` | 809–855 | Remove `e6.barreira`, adiciona `e6.incluirGraficos`, `item.barreira` |
+| `calcItemEixo6` | 1135–1206 | `_statusAntesDepois` com janela simétrica; curto-circuito de barreira |
+| `calcEixo6` | 1207–1259 | Recebe `c`; nova fórmula cobertura cruzada; travas; nível `Sem medição` |
+| Chamadas a `calcEixo6` | 1400, 1941, 2146, 2246, 2664 | Passar `c` |
+| UI Eixo 05 | 1547–1601 | Remove barreira geral, adiciona checkbox `incluirGraficos` e toggle barreira por item |
+| Card Índice (UI) | 1511+ | 3 linhas + badge aviso barreira em massa |
+| PPT slide-resumo | 2246–2275 | Faixa Impacto com 3 linhas + badge |
+| PPT slide Eixo 05 | 2540–2560 | Rodapé com 3 blocos + faixa amarela se barreira em massa |
+| PPT slides gráficos (novo) | após 2560 | Geração condicional de slides com `addChart` BA/PPI |
+| Migração | `normalizeCoalizao` | `e6.barreira` antigo → ignorado; itens herdam `barreira:{ativa:false}` |
+
+Novos artefatos:
+- `public/dados_teste_variabilidade.json` (substituído) + cópia em `/mnt/documents/`
+- `/mnt/documents/Logica_Sistematizacao_Executivo.md`
+- `/mnt/documents/Logica_Sistematizacao_Detalhado.md`
 
 ---
 
-## Fora de escopo
-
-- Não mexer no Eixo 5 (Gaps BA×PPI) além da renumeração e da nova regra de status.
-- Não alterar fórmula de cobertura racial nem barreiras.
-- Não alterar exportação DOCX nesta rodada (só PPT) — caso o DOCX referencie evidências, remove só a seção correspondente.
+### Fora de escopo
+- Barreiras dos Eixos 02/03/04 (mantidas).
+- DOCX (sem alteração).
+- Radar/dashboard (apenas novos rótulos de nível).
