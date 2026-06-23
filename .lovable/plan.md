@@ -1,61 +1,39 @@
-## Ajustes no PPT (4 pontos)
+## Objetivo
 
-### 1) Slide da coalizão — faixa do Índice de Redução de Gaps
-Arquivo: `public/Ferramenta_ER.html`, bloco `~2737-2759`.
+Atualizar `public/dados_teste_variabilidade.json` para que os indicadores do Eixo 6 cubram **todos os cenários** da regra de renderização dos gráficos BA×PPI no PPT, sem precisar editar a ferramenta manualmente.
 
-Remover:
-- Linha `l3` inteira (cobertura Eixo 02→05, Avan/Estag/Retr/Insuf, marco, aviso barreira em massa).
-- Pedaço de `l2` com `Gap antes→depois ... (Δ ...)`.
-- `%` numérico após o status `vs Meta` (em `l1`).
-- `%` numérico após o status `Geral` em `l2` (manter só o rótulo, ex.: `Geral (sem comparar): Avanço parcial`).
+## Regra atual do código (referência)
 
-Manter:
-- `l1` (vs Meta): "Índice de Redução de Gaps · vs Meta: **Acima**" (sem `%`).
-- `lChips` com a contagem por status (▲▲ Acima N · ✓ Dentro N · ↘ Abaixo N · = Sem redução N · ▲ Retrocesso N · — Sem meta N).
-- `l2` (geral, sem comparar): "Geral (sem comparar): **Avanço parcial**" (sem `%`).
-- Realocar verticalmente as 3 linhas restantes dentro do `impH = 0.86` para ficarem com respiro (ex.: 0.04 / 0.34 / 0.62).
+Para cada item do Eixo 6 com `incluirGraficos:true`:
+- O gráfico só é desenhado se houver `serie` com pelo menos um ponto válido (`ano`, `valorBA`, `valorPPI`).
+- **Projeção tracejada BA** aparece quando há `metas` com `ano > último ano histórico` e `valorMetaBA != null`.
+- **Projeção tracejada PPI** idem com `valorMetaPPI`.
+- **Anotação "🎯 Gap-alvo"** no rodapé do quadro aparece quando há metas futuras só com `valorMetaGap` (sem BA/PPI).
+- Quando `serie` está vazia, mostra placeholder "Sem pontos válidos na série temporal".
 
-### 2) Slide dos gráficos BA×PPI — corrigir cores das linhas projetadas
-Arquivo: `public/Ferramenta_ER.html`, bloco `~3058-3093`.
+## Cenários a cobrir (um por item)
 
-Hoje o array `chartColors` é montado com 2 (BA, PPI) + 2 cores tracejadas (Meta BA, Meta PPI), mas a chamada `slG.addChart(...)` reescreve `chartColors: ['5C2E0A','E05A1A']` (linha 3074), descartando as cores das projeções e fazendo as linhas de meta reciclarem a paleta.
+Vou ajustar as coalizões com `incluirGraficos:true` (**Pré-escola**, **Alfabetização**, **Tecnologia**, **Ensino Médio Integral**, **Gestão Escolar**) para que os itens cubram, no conjunto, os 6 cenários abaixo. Cada cenário fica claramente identificado em pelo menos um item.
 
-Correções:
-- Substituir o literal por `chartColors` (a variável já montada acima).
-- Aplicar estilo tracejado **só** nas séries `Meta BA` / `Meta PPI` via `lineDataSymbol:'none'` específico por série, usando `chartColors[2/3]` em tom mais claro (mantendo `A88670` / `F2A87A`).
-- Para a linha projetada usar `lineSize: 2`, `lineDataSymbol:'circle'`, mas `lineDash: 'dash'` via `lineSize`/opções globais do pptxgenjs (aplicaremos `chartColorsOpacity` por série não é possível; usaremos `dataLabelFormatCode` igual). Como o pptxgenjs não suporta dash por série em `LINE`, vamos no mínimo: garantir cores corretas e nome diferenciado "(projeção)" na legenda — já presente.
-- Comportamento gap-alvo isolado: continua aparecendo o rodapé 🎯 (já feito).
+| # | Cenário | Onde | Como configurar |
+|---|---|---|---|
+| 1 | Projeção **BA + PPI** (duas tracejadas) | Tecnologia · item 1 "Acesso (%)" | metas futuras com `valorMetaBA` e `valorMetaPPI` preenchidos |
+| 2 | Projeção **apenas BA** | Tecnologia · item 2 "Banda larga (%)" | metas futuras só com `valorMetaBA` (zerar `valorMetaPPI`) |
+| 3 | Projeção **apenas PPI** | Tecnologia · item 3 "Letramento digital (%)" | metas futuras só com `valorMetaPPI` |
+| 4 | **Sem projeção BA/PPI** + anotação 🎯 Gap-alvo | Gestão Escolar · item 1 "Diretoras PPI" | metas futuras só com `valorMetaGap` |
+| 5 | **Sem metas futuras** (só linhas históricas) | Gestão Escolar · item 4 "Formação (h)" | apagar `metas` ou deixar todas com `ano <= último histórico` |
+| 6 | **Série vazia** (placeholder "Sem pontos válidos") | Gestão Escolar · item 3 "Escolas c/ plano (%)" | `serie: []` |
 
-### 3) Slide "Eixo 05 — Gaps BA×PPI" — coluna Status com dois olhares
-Arquivo: `public/Ferramenta_ER.html`, bloco `~3238-3245`.
+Os demais itens (Pré-escola, Alfabetização, EMI) ficam como hoje — já cobrem variações de unidade (%, R$/aluno, horas, Ponto SAEB) e sentidoDesejado subir/descer, que também afetam o eixo, formato dos rótulos e cores das linhas.
 
-Hoje a célula da coluna **Status** mostra só `calc.status` (Avançando/Estagnado/Retrocesso/Insuficiente).
+## Outros ajustes pequenos no JSON
 
-Mudança:
-- Renderizar duas mini-badges empilhadas dentro da célula:
-  - **Geral**: `Avançando | Estagnado | Retrocesso | Insuficiente` (cor por `statusEvolucaoCor`).
-  - **vs Meta**: `Acima | Dentro | Abaixo | Sem redução | Retrocesso | Sem meta` (cor por `statusMetaCor`).
-- Exigirá que `calcItemEixo6` exponha o `statusVsMeta` no objeto retornado (já calculado via `_calcStatusVsMeta` em outro ponto; vamos garantir que esteja em `it.calc.statusVsMeta`).
-- Ajustar `linhasH2` para reservar altura suficiente (badge dupla + Volátil) — subir mínimo de `0.78` para `~0.95`.
-- Cabeçalho da coluna passa de "Status" para "Status — Geral / vs Meta".
+- Garantir que toda meta futura preserve `ano > último ano da série` (do contrário a projeção não aparece).
+- Manter os totais de Eixo 6 coerentes para que o slide dedicado ainda calcule status e o índice.
+- Não mexer nas outras coalizões nem em outros eixos.
 
-### 4) Slide Síntese — palavras de status cortadas
-Arquivo: `public/Ferramenta_ER.html`, bloco `~2682-2697`.
+## Arquivo afetado
 
-Causa: células com `wrap:false` e altura pequena cortam rótulos longos como "Em consolidação", "Em desenvolvimento", "Sem lacunas relevantes", "Sem redução".
+- `public/dados_teste_variabilidade.json` (único arquivo alterado).
 
-Correções:
-- Trocar `wrap:false` por `wrap:true` em todas as linhas do bloco `dimsSint` (linhas 2693, 2694, 2696, 2689).
-- Reduzir a fonte do nível para 9-10pt (linhas 2693/2696) e manter `shrinkText:true`.
-- Reduzir levemente o padding interno do roundRect (`+0.04` em vez de `+0.06`) para dar +0.04 de largura útil.
-- No caso do Índice (`isImpacto`): aumentar `h1` para 0.70 (de 0.62) e usar fonte 9pt no rótulo vs-Meta; "Geral: …" sem `%` (conforme item 1).
-
-### Resumo das alterações de arquivos
-- `public/Ferramenta_ER.html`:
-  - Faixa de Índice no slide da coalizão (limpeza + sem %).
-  - Bloco gráficos BA×PPI (cores corretas das linhas projetadas).
-  - Tabela de gaps BA×PPI (coluna Status dupla + altura).
-  - Slide Síntese (wrap/fonte/altura para evitar corte).
-  - Expor `statusVsMeta` em `calcItemEixo6` se ainda não estiver disponível por item.
-
-Sem mudanças em `dados_teste_variabilidade.json` (os dados atuais já cobrem todos os status).
+Nada será mudado na ferramenta (`Ferramenta_ER.html`).
