@@ -3114,7 +3114,7 @@ async function exportPPTX() {
         const n2 = estLin(it.metrica || '—', 28);
         const n  = Math.max(n1, n2);
         // Reserva 3 sub-linhas (G/A/D) nas colunas analíticas.
-        return Math.max(0.78, 0.20 + Math.max(n, 3) * 0.20);
+        return Math.max(0.98, 0.20 + Math.max(n, 3) * 0.20);
       });
       const paginas = [];
       let atual = { idxs: [], hs: [], total: 0 };
