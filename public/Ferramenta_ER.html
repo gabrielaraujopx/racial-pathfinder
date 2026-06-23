@@ -858,9 +858,22 @@ function normalizeEixo6(e) {
     // indicador). Quando vazio, item entra como "Sem meta declarada" na
     // visão vs-meta e não compõe o agregado.
     metas: Array.isArray(it.metas) ? it.metas
-        .filter(m => m && m.ano != null && m.ano !== '' && m.valorMetaGap != null && m.valorMetaGap !== '')
-        .map(m => ({ ano: parseInt(m.ano,10), valorMetaGap: Number(m.valorMetaGap) }))
-        .filter(m => Number.isFinite(m.ano) && Number.isFinite(m.valorMetaGap))
+        .filter(m => m && m.ano != null && m.ano !== '')
+        .map(m => {
+          const ba  = (m.valorMetaBA  == null || m.valorMetaBA  === '') ? null : Number(m.valorMetaBA);
+          const ppi = (m.valorMetaPPI == null || m.valorMetaPPI === '') ? null : Number(m.valorMetaPPI);
+          let gap = (m.valorMetaGap == null || m.valorMetaGap === '') ? null : Number(m.valorMetaGap);
+          if (gap == null && ba != null && ppi != null && !isNaN(ba) && !isNaN(ppi)) {
+            gap = it.sentidoDesejado === 'descer' ? (ppi - ba) : (ba - ppi);
+          }
+          return {
+            ano: parseInt(m.ano,10),
+            valorMetaBA:  (ba  != null && Number.isFinite(ba))  ? ba  : null,
+            valorMetaPPI: (ppi != null && Number.isFinite(ppi)) ? ppi : null,
+            valorMetaGap: (gap != null && Number.isFinite(gap)) ? gap : null,
+          };
+        })
+        .filter(m => Number.isFinite(m.ano) && (m.valorMetaGap != null || (m.valorMetaBA != null && m.valorMetaPPI != null)))
         .sort((a,b)=>a.ano-b.ano)
       : [],
   })) : [];
@@ -1295,15 +1308,15 @@ function _calcStatusVsMeta(item, serie, marcoEfetivo, sent, limAbs) {
   const tolZero = Math.max(0.05 * Math.abs(gapMarco), 0.05 * limAbs);
   let statusMeta;
   if (deltaReal > tolZero) {
-    statusMeta = 'Em retrocesso';
+    statusMeta = 'Retrocesso';
   } else if (Math.abs(deltaReal) <= tolZero) {
-    statusMeta = 'Não há redução';
+    statusMeta = 'Sem redução';
   } else if (deltaReal <= deltaEsperado - tol) {
-    statusMeta = 'Redução acima da meta';
+    statusMeta = 'Acima';
   } else if (Math.abs(deltaReal - deltaEsperado) <= tol) {
-    statusMeta = 'Redução dentro da meta';
+    statusMeta = 'Dentro';
   } else {
-    statusMeta = 'Redução abaixo da meta';
+    statusMeta = 'Abaixo';
   }
   return {
     statusMeta,
@@ -1387,23 +1400,23 @@ function calcEixo6(eixo6Obj, coaliz) {
   const pct = pctBruto;
   // ── VISÃO vs META (paralela à visão geral) ──────────────────
   const SCORES_META = {
-    'Redução acima da meta': 100,
-    'Redução dentro da meta': 80,
-    'Redução abaixo da meta': 40,
-    'Não há redução': 10,
-    'Em retrocesso': 0,
+    'Acima': 100,
+    'Dentro': 80,
+    'Abaixo': 40,
+    'Sem redução': 10,
+    'Retrocesso': 0,
   };
   const contagensMeta = {
     acima:0, dentro:0, abaixo:0, semReducao:0, retrocesso:0, semMeta:0,
   };
   itens.forEach(x => {
     const sm = x.calc.statusMeta;
-    if (sm === 'Redução acima da meta')      contagensMeta.acima++;
-    else if (sm === 'Redução dentro da meta') contagensMeta.dentro++;
-    else if (sm === 'Redução abaixo da meta') contagensMeta.abaixo++;
-    else if (sm === 'Não há redução')         contagensMeta.semReducao++;
-    else if (sm === 'Em retrocesso')          contagensMeta.retrocesso++;
-    else                                       contagensMeta.semMeta++;
+    if (sm === 'Acima')            contagensMeta.acima++;
+    else if (sm === 'Dentro')      contagensMeta.dentro++;
+    else if (sm === 'Abaixo')      contagensMeta.abaixo++;
+    else if (sm === 'Sem redução') contagensMeta.semReducao++;
+    else if (sm === 'Retrocesso')  contagensMeta.retrocesso++;
+    else                            contagensMeta.semMeta++;
   });
   const itensComMeta = itens.filter(x => SCORES_META[x.calc.statusMeta] != null);
   const nVsMetaValido = itensComMeta.length;
@@ -1416,14 +1429,14 @@ function calcEixo6(eixo6Obj, coaliz) {
   } else {
     const mediaMeta = itensComMeta.reduce((a,x)=>a+SCORES_META[x.calc.statusMeta],0) / nVsMetaValido;
     pctMeta = Math.round(mediaMeta * fatorCobertura * fatorMedicaoMeta);
-    nivelMeta = pctMeta >= 80 ? 'Superando metas'
-              : pctMeta >= 60 ? 'No ritmo da meta'
-              : pctMeta >= 30 ? 'Aquém da meta'
-              : pctMeta >= 10 ? 'Sem redução vs meta'
-              :                  'Em retrocesso vs meta';
-    // Trava qualitativa: se nº de retrocessos > nº acima+dentro, teto Aquém da meta
+    nivelMeta = pctMeta >= 80 ? 'Acima'
+              : pctMeta >= 60 ? 'Dentro'
+              : pctMeta >= 30 ? 'Abaixo'
+              : pctMeta >= 10 ? 'Sem redução'
+              :                  'Retrocesso';
+    // Trava qualitativa: se nº de retrocessos > nº acima+dentro, teto Abaixo
     if (contagensMeta.retrocesso > (contagensMeta.acima + contagensMeta.dentro)) {
-      if (pctMeta >= 60) nivelMeta = 'Aquém da meta';
+      if (pctMeta >= 60) nivelMeta = 'Abaixo';
     }
   }
   const meta = {
@@ -1455,20 +1468,24 @@ function calcEixo6(eixo6Obj, coaliz) {
   };
 }
 function statusMetaCor(s) {
-  if (s === 'Redução acima da meta')  return '#1A6B3C';
-  if (s === 'Redução dentro da meta') return '#2D7A4F';
-  if (s === 'Redução abaixo da meta') return '#C8860A';
-  if (s === 'Não há redução')         return '#B36F1E';
-  if (s === 'Em retrocesso')          return '#C0392B';
-  if (s === 'Barreira de dados')      return '#7A6A60';
+  if (s === 'Acima')             return '#1A6B3C';
+  if (s === 'Dentro')            return '#2D7A4F';
+  if (s === 'Abaixo')            return '#C8860A';
+  if (s === 'Sem redução')       return '#B36F1E';
+  if (s === 'Retrocesso')        return '#C0392B';
+  if (s === 'Barreira de dados') return '#7A6A60';
   return '#8A8A8A';
 }
+function unidadeLabel(u) {
+  const v = (u == null ? '' : String(u)).trim();
+  return v ? ' ('+v+')' : '';
+}
 function nivelMetaCor(n) {
-  if (n === 'Superando metas')        return '#1A6B3C';
-  if (n === 'No ritmo da meta')       return '#2D7A4F';
-  if (n === 'Aquém da meta')          return '#C8860A';
-  if (n === 'Sem redução vs meta')    return '#B36F1E';
-  if (n === 'Em retrocesso vs meta')  return '#C0392B';
+  if (n === 'Acima')              return '#1A6B3C';
+  if (n === 'Dentro')             return '#2D7A4F';
+  if (n === 'Abaixo')             return '#C8860A';
+  if (n === 'Sem redução')        return '#B36F1E';
+  if (n === 'Retrocesso')         return '#C0392B';
   return '#8A8A8A';
 }
 function impactoCor(nivel) {
@@ -1915,7 +1932,8 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
         <div style="display:flex;flex-direction:column;gap:2px;width:80px">
           <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Unidade</span>
           <input class="item-select" value="${(it.unidade||'%').replace(/"/g,'&quot;')}"
-            oninput="upEixo6Item(${i},'unidade',this.value)">
+            oninput="upEixo6Item(${i},'unidade',this.value)"
+            onchange="renderCoalizao()">
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px">
           <span style="font-size:10px;color:var(--cinza-m);font-weight:600">Sentido desejado</span>
@@ -1986,9 +2004,9 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
           <thead>
             <tr style="color:var(--cinza-m);text-align:left">
               <th style="padding:4px 6px;width:70px">Ano</th>
-              <th style="padding:4px 6px">BA (${(it.unidade||'%')})</th>
-              <th style="padding:4px 6px">PPI (${(it.unidade||'%')})</th>
-              <th style="padding:4px 6px;width:80px">Gap</th>
+              <th style="padding:4px 6px">BA${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px">PPI${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:80px">Gap${unidadeLabel(it.unidade)}</th>
               <th style="padding:4px 6px">Fonte</th>
               <th style="padding:4px 6px;width:30px"></th>
             </tr>
@@ -2016,25 +2034,38 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
 
       <div style="margin-top:10px;padding:8px 10px;background:#F4F8F4;border:1px solid #C9D9C9;border-radius:5px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:700;color:#2D5A3D">METAS DA COALIZÃO · gap-alvo por ano (na unidade do indicador)</span>
+          <span style="font-size:11px;font-weight:700;color:#2D5A3D">METAS DA COALIZÃO · projeção ano-a-ano (BA, PPI e/ou gap-alvo)</span>
           ${calc.statusMeta ? `<span style="font-size:11px;font-weight:700;color:${statusMetaCor(calc.statusMeta)}">vs Meta: ${calc.statusMeta}</span>` : ''}
         </div>
+        <div style="font-size:10px;color:var(--cinza-m);margin-bottom:6px">Preencha <strong>Meta BA</strong> e <strong>Meta PPI</strong> para projeção visual nos gráficos, ou apenas <strong>Gap-alvo</strong> para indicar a redução esperada entre BA e PPI.</div>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead>
             <tr style="color:var(--cinza-m);text-align:left">
-              <th style="padding:4px 6px;width:90px">Ano</th>
-              <th style="padding:4px 6px;width:140px">Gap-alvo (${(it.unidade||'%')})</th>
+              <th style="padding:4px 6px;width:80px">Ano</th>
+              <th style="padding:4px 6px;width:110px">Meta BA${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:110px">Meta PPI${unidadeLabel(it.unidade)}</th>
+              <th style="padding:4px 6px;width:110px">Gap-alvo${unidadeLabel(it.unidade)}</th>
               <th style="padding:4px 6px"></th>
               <th style="padding:4px 6px;width:30px"></th>
             </tr>
           </thead>
           <tbody>
-            ${(it.metas||[]).map((m,j) => `<tr>
-              <td style="padding:3px 6px"><input type="number" value="${m.ano==null?'':m.ano}" style="width:80px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'ano',this.value)"></td>
-              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaGap==null?'':m.valorMetaGap}" style="width:120px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaGap',this.value)"></td>
-              <td style="padding:3px 6px;color:var(--cinza-m);font-size:10px">${m.valorMetaGap!=null?'gap esperado entre BA e PPI neste ano':''}</td>
+            ${(it.metas||[]).map((m,j) => {
+              const derivado = (m.valorMetaGap==null && m.valorMetaBA!=null && m.valorMetaPPI!=null)
+                ? (it.sentidoDesejado==='descer' ? (m.valorMetaPPI - m.valorMetaBA) : (m.valorMetaBA - m.valorMetaPPI))
+                : null;
+              const hint = m.valorMetaBA!=null && m.valorMetaPPI!=null
+                ? `derivado: ${derivado!=null?(+derivado.toFixed(2)):'—'}`
+                : (m.valorMetaGap!=null ? 'gap esperado entre BA e PPI' : '');
+              return `<tr>
+              <td style="padding:3px 6px"><input type="number" value="${m.ano==null?'':m.ano}" style="width:70px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'ano',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaBA==null?'':m.valorMetaBA}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaBA',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaPPI==null?'':m.valorMetaPPI}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaPPI',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaGap==null?'':m.valorMetaGap}" placeholder="${derivado!=null?(+derivado.toFixed(2)):''}" style="width:100px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaGap',this.value)"></td>
+              <td style="padding:3px 6px;color:var(--cinza-m);font-size:10px">${hint}</td>
               <td style="padding:3px 6px;text-align:center"><button onclick="removeEixo6Meta(${i},${j})" style="background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;line-height:1">×</button></td>
-            </tr>`).join('')}
+            </tr>`;
+            }).join('')}
           </tbody>
         </table>
         <button onclick="addEixo6Meta(${i})" style="margin-top:6px;padding:4px 10px;font-size:11px;background:none;border:1px dashed #6B9A6B;border-radius:4px;color:#2D5A3D;cursor:pointer">+ Adicionar meta-ano</button>
@@ -2234,11 +2265,11 @@ function renderSintese() {
       fn: c => {
         const e = calcEixo6(c.eixo6, c);
         const m = e.meta || { nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0 };
-        const clM = m.nivel==='Superando metas'?'mat-alta'
-                  : m.nivel==='No ritmo da meta'?'mat-avancada'
-                  : m.nivel==='Aquém da meta'?'mat-desenv'
-                  : m.nivel==='Sem redução vs meta'?'mat-baixa'
-                  : m.nivel==='Em retrocesso vs meta'?'mat-baixa'
+        const clM = m.nivel==='Acima'?'mat-alta'
+                  : m.nivel==='Dentro'?'mat-avancada'
+                  : m.nivel==='Abaixo'?'mat-desenv'
+                  : m.nivel==='Sem redução'?'mat-baixa'
+                  : m.nivel==='Retrocesso'?'mat-baixa'
                   : 'mat-vazia';
         const clG = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia';
         return {
@@ -2471,7 +2502,7 @@ function addEixo6Meta(i) {
   const it = _e6().itens[i]; if (!it) return;
   if (!Array.isArray(it.metas)) it.metas = [];
   const ultAno = it.metas.reduce((m, x) => Math.max(m, parseInt(x.ano,10)||0), 0);
-  it.metas.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorMetaGap: null });
+  it.metas.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorMetaBA: null, valorMetaPPI: null, valorMetaGap: null });
   saveState(); renderCoalizao();
 }
 function removeEixo6Meta(i, j) {
@@ -2483,6 +2514,8 @@ function upEixo6Meta(i, j, campo, val) {
   const it = _e6().itens[i]; if (!it || !it.metas || !it.metas[j]) return;
   if (campo === 'ano')           it.metas[j].ano = val === '' ? '' : parseInt(val, 10);
   else if (campo === 'valorMetaGap') it.metas[j].valorMetaGap = val === '' ? null : Number(val);
+  else if (campo === 'valorMetaBA')  it.metas[j].valorMetaBA  = val === '' ? null : Number(val);
+  else if (campo === 'valorMetaPPI') it.metas[j].valorMetaPPI = val === '' ? null : Number(val);
   saveState(); refreshImpacto();
 }
 function refreshImpacto() {
@@ -2617,11 +2650,11 @@ async function exportPPTX() {
           if (e.semItens) return {isImpacto:true, metaNivel:'Sem dados', metaPct:null, geralNivel:'', geralPct:null, bg:'EEEAE3', cor:'8A8A8A'};
           const m = e.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
           const corM = (nivelMetaCor(m.nivel)||'#8A8A8A').replace('#','');
-          const bgM  = m.nivel==='Superando metas'?'E8F4EE'
-                     : m.nivel==='No ritmo da meta'?'D4EDE0'
-                     : m.nivel==='Aquém da meta'?'FEF3DC'
-                     : m.nivel==='Sem redução vs meta'?'FBE5D6'
-                     : m.nivel==='Em retrocesso vs meta'?'FCE8E8'
+          const bgM  = m.nivel==='Acima'?'E8F4EE'
+                     : m.nivel==='Dentro'?'D4EDE0'
+                     : m.nivel==='Abaixo'?'FEF3DC'
+                     : m.nivel==='Sem redução'?'FBE5D6'
+                     : m.nivel==='Retrocesso'?'FCE8E8'
                      : 'EEEAE3';
           return {
             isImpacto:true,
@@ -2686,7 +2719,7 @@ async function exportPPTX() {
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
     // Faixa fina: Índice de Redução de Gaps (BA×PPI) — separado da Maturidade
-    const impH = 0.62;
+    const impH = 0.86;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
                     : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
@@ -2701,9 +2734,16 @@ async function exportPPTX() {
       s.addText('Índice de Redução de Gaps: sem itens cadastrados',
         {x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     } else {
-      const _m   = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
+      const _m   = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0, contagens:{acima:0,dentro:0,abaixo:0,semReducao:0,retrocesso:0,semMeta:0}};
       const corM = (nivelMetaCor(_m.nivel)||'#7A6A60').replace('#','');
+      const mc = _m.contagens || {acima:0,dentro:0,abaixo:0,semReducao:0,retrocesso:0,semMeta:0};
       const l1 = 'Índice de Redução de Gaps · vs Meta: ' + _m.nivel + (_m.nVsMetaValido>0 ? (' · ' + _m.pct + '%') : '');
+      const lChips = '▲▲ Acima ' + mc.acima
+                   + '   ✓ Dentro ' + mc.dentro
+                   + '   ↘ Abaixo ' + mc.abaixo
+                   + '   = Sem redução ' + mc.semReducao
+                   + '   ▲ Retrocesso ' + mc.retrocesso
+                   + (mc.semMeta>0 ? ('   — Sem meta ' + mc.semMeta) : '');
       const l2 = 'Geral (sem comparar): ' + imp.nivel + ' · ' + imp.pct + '%'
                + '   |   ' + (imp.gapAntesAgr != null
                   ? ('Gap antes→depois: ' + imp.gapAntesAgr + '→' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')')
@@ -2713,9 +2753,10 @@ async function exportPPTX() {
                + ' · Avan ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
                + ' · Retr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
                + (imp.avisoBarreiraMassa ? '  ⚠ barreira em massa' : '');
-      s.addText(l1, {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.24,fontSize:13,bold:true,color:corM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l2, {x:PAD,y:hdrH+0.24,w:W-PAD*2,h:0.18,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l3, {x:PAD,y:hdrH+0.42,w:W-PAD*2,h:0.18,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l1,     {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.22,fontSize:13,bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(lChips, {x:PAD,y:hdrH+0.24,w:W-PAD*2,h:0.20,fontSize:9, bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l2,     {x:PAD,y:hdrH+0.46,w:W-PAD*2,h:0.18,fontSize:8,           color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l3,     {x:PAD,y:hdrH+0.66,w:W-PAD*2,h:0.18,fontSize:8,           color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     }
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
@@ -2996,15 +3037,36 @@ async function exportPPTX() {
               slG.addText('Sem pontos válidos na série temporal',
                 {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
             } else {
-              const labels = serieG.map(p => String(p.ano));
+              // ── Projeções de meta (BA/PPI ano-a-ano) ────────────
+              const metasArr = (it.metas || []).slice().sort((a,b)=>a.ano-b.ano);
+              const ultAnoHist = serieG[serieG.length-1].ano;
+              const metasFuturas = metasArr.filter(m => m.ano > ultAnoHist);
+              const metasBA  = metasFuturas.filter(m => m.valorMetaBA  != null);
+              const metasPPI = metasFuturas.filter(m => m.valorMetaPPI != null);
+              const temProjBA  = metasBA.length  > 0;
+              const temProjPPI = metasPPI.length > 0;
+              // Labels = anos históricos ∪ anos-meta (futuros)
+              const anosUni = Array.from(new Set([...serieG.map(p=>p.ano), ...metasFuturas.map(m=>m.ano)])).sort((a,b)=>a-b);
+              const labels = anosUni.map(a => String(a));
+              const histBAByAno  = Object.fromEntries(serieG.map(p => [p.ano, +p.valorBA]));
+              const histPPIByAno = Object.fromEntries(serieG.map(p => [p.ano, +p.valorPPI]));
+              const metaBAByAno  = Object.fromEntries(metasBA.map(m => [m.ano, +m.valorMetaBA]));
+              const metaPPIByAno = Object.fromEntries(metasPPI.map(m => [m.ano, +m.valorMetaPPI]));
+              // Ponte: último histórico → primeiro meta (para a linha tracejada partir do real)
+              if (temProjBA  && histBAByAno[ultAnoHist]  != null) metaBAByAno[ultAnoHist]  = histBAByAno[ultAnoHist];
+              if (temProjPPI && histPPIByAno[ultAnoHist] != null) metaPPIByAno[ultAnoHist] = histPPIByAno[ultAnoHist];
               const dataChart = [
-                { name: 'BA (Brancos e Amarelos)', labels, values: serieG.map(p => +p.valorBA) },
-                { name: 'PPI (Pretos, Pardos e Indígenas)', labels, values: serieG.map(p => +p.valorPPI) },
+                { name: 'BA (Brancos e Amarelos)',         labels, values: anosUni.map(a => histBAByAno[a]  != null ? histBAByAno[a]  : null) },
+                { name: 'PPI (Pretos, Pardos e Indígenas)',labels, values: anosUni.map(a => histPPIByAno[a] != null ? histPPIByAno[a] : null) },
               ];
+              const chartColors = ['5C2E0A','E05A1A'];
+              if (temProjBA)  { dataChart.push({ name: 'Meta BA (projeção)',  labels, values: anosUni.map(a => metaBAByAno[a]  != null ? metaBAByAno[a]  : null) }); chartColors.push('A88670'); }
+              if (temProjPPI) { dataChart.push({ name: 'Meta PPI (projeção)', labels, values: anosUni.map(a => metaPPIByAno[a] != null ? metaPPIByAno[a] : null) }); chartColors.push('F2A87A'); }
               // Formato dos rótulos pela unidade do indicador
               const u = (it.unidade||'').trim();
               const isPct = u === '%' || /percent/i.test(u);
-              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI]);
+              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI])
+                                .concat(metasBA.map(m=>+m.valorMetaBA), metasPPI.map(m=>+m.valorMetaPPI));
               const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
               const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
               slG.addChart(pres.ChartType.line, dataChart, {
@@ -3027,7 +3089,14 @@ async function exportPPTX() {
                 valAxisTitle: u || '',
                 valAxisTitleFontSize: 8,
                 valAxisTitleColor: '7A6A60',
+                displayBlanksAs: 'gap',
               });
+              // Anotação de gap-alvo (quando só há valorMetaGap, sem BA/PPI projetados)
+              const metasGapOnly = metasFuturas.filter(m => m.valorMetaGap != null && (m.valorMetaBA == null || m.valorMetaPPI == null));
+              if (metasGapOnly.length > 0 && !temProjBA && !temProjPPI) {
+                const txt = '🎯 Gap-alvo: ' + metasGapOnly.map(m => m.ano+' → '+(+m.valorMetaGap.toFixed(2))+(u?' '+u:'')).join(' · ');
+                slG.addText(txt, {x:cx+0.10,y:cy+cellH-0.22,w:cellW-0.20,h:0.18,fontSize:7,italic:true,bold:true,color:'7A5A0A',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+              }
             }
           }
         });
