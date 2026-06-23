@@ -1986,6 +1986,33 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
         <button onclick="addEixo6Ponto(${i})" style="margin-top:6px;padding:4px 10px;font-size:11px;background:none;border:1px dashed #B5A98F;border-radius:4px;color:var(--cinza-m);cursor:pointer">+ Adicionar ano</button>
       </div>
 
+      <div style="margin-top:10px;padding:8px 10px;background:#F4F8F4;border:1px solid #C9D9C9;border-radius:5px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;color:#2D5A3D">METAS DA COALIZÃO · gap-alvo por ano (na unidade do indicador)</span>
+          ${calc.statusMeta ? `<span style="font-size:11px;font-weight:700;color:${statusMetaCor(calc.statusMeta)}">vs Meta: ${calc.statusMeta}</span>` : ''}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead>
+            <tr style="color:var(--cinza-m);text-align:left">
+              <th style="padding:4px 6px;width:90px">Ano</th>
+              <th style="padding:4px 6px;width:140px">Gap-alvo (${(it.unidade||'%')})</th>
+              <th style="padding:4px 6px"></th>
+              <th style="padding:4px 6px;width:30px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(it.metas||[]).map((m,j) => `<tr>
+              <td style="padding:3px 6px"><input type="number" value="${m.ano==null?'':m.ano}" style="width:80px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'ano',this.value)"></td>
+              <td style="padding:3px 6px"><input type="number" step="0.01" value="${m.valorMetaGap==null?'':m.valorMetaGap}" style="width:120px;padding:3px 5px;border:1px solid #C9D9C9;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Meta(${i},${j},'valorMetaGap',this.value)"></td>
+              <td style="padding:3px 6px;color:var(--cinza-m);font-size:10px">${m.valorMetaGap!=null?'gap esperado entre BA e PPI neste ano':''}</td>
+              <td style="padding:3px 6px;text-align:center"><button onclick="removeEixo6Meta(${i},${j})" style="background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;line-height:1">×</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <button onclick="addEixo6Meta(${i})" style="margin-top:6px;padding:4px 10px;font-size:11px;background:none;border:1px dashed #6B9A6B;border-radius:4px;color:#2D5A3D;cursor:pointer">+ Adicionar meta-ano</button>
+        ${calc.metaInfo ? `<div style="margin-top:6px;font-size:10px;color:var(--cinza-m)">Última comparação: ano <strong>${calc.metaInfo.anoMeta}</strong> · gap real <strong>${calc.metaInfo.gapReal}</strong> vs gap-meta <strong>${calc.metaInfo.valorMetaGap}</strong> · baseline marco <strong>${calc.metaInfo.gapMarco}</strong></div>`:''}
+      </div>
+
       <div style="margin-top:8px">
         <textarea class="item-texto-input" rows="1" placeholder="Observações (opcional)"
           oninput="upEixo6Item(${i},'observacoes',this.value)">${(it.observacoes||'').replace(/</g,'&lt;')}</textarea>
