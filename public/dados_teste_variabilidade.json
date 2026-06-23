@@ -210,7 +210,25 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": [
+            {
+              "ano": 2024,
+              "valorMetaGap": 6.0
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 5.0
+            },
+            {
+              "ano": 2030,
+              "valorMetaGap": 3.0
+            },
+            {
+              "ano": 2035,
+              "valorMetaGap": 0.0
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
@@ -247,7 +265,21 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": [
+            {
+              "ano": 2024,
+              "valorMetaGap": 8.0
+            },
+            {
+              "ano": 2028,
+              "valorMetaGap": 6.0
+            },
+            {
+              "ano": 2032,
+              "valorMetaGap": 3.0
+            }
+          ]
         },
         {
           "indicadorRef": "ind-6",
@@ -290,7 +322,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -450,7 +483,25 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": [
+            {
+              "ano": 2024,
+              "valorMetaGap": 10.0
+            },
+            {
+              "ano": 2027,
+              "valorMetaGap": 7.0
+            },
+            {
+              "ano": 2030,
+              "valorMetaGap": 4.0
+            },
+            {
+              "ano": 2035,
+              "valorMetaGap": 0.0
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -493,7 +544,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-2",
@@ -505,7 +557,8 @@
           "barreira": {
             "ativa": true,
             "justificativa": "Ausência de microdados raciais para alfabetização em painéis públicos."
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-3",
@@ -517,7 +570,8 @@
           "barreira": {
             "ativa": true,
             "justificativa": "INEP não divulga formação por raça/cor."
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-4",
@@ -529,7 +583,8 @@
           "barreira": {
             "ativa": true,
             "justificativa": "Sem painel público — só amostra interna."
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-5",
@@ -541,7 +596,8 @@
           "barreira": {
             "ativa": true,
             "justificativa": "Censo Escolar não desagrega frequência por raça por município."
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -639,7 +695,21 @@
           "barreira": {
             "ativa": true,
             "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
-          }
+          },
+          "metas": [
+            {
+              "ano": 2024,
+              "valorMetaGap": 5.0
+            },
+            {
+              "ano": 2028,
+              "valorMetaGap": 2.0
+            },
+            {
+              "ano": 2032,
+              "valorMetaGap": 0.0
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -651,7 +721,8 @@
           "barreira": {
             "ativa": true,
             "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -776,7 +847,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-1",
@@ -819,7 +891,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-2",
@@ -862,7 +935,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -1015,7 +1089,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-1",
@@ -1058,7 +1133,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-2",
@@ -1095,7 +1171,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -1237,7 +1314,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-1",
@@ -1280,7 +1358,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-2",
@@ -1323,7 +1402,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-3",
@@ -1360,7 +1440,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         }
       ]
     }
@@ -1479,7 +1560,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-1",
@@ -1516,7 +1598,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         },
         {
           "indicadorRef": "ind-2",
@@ -1553,7 +1636,8 @@
           "barreira": {
             "ativa": false,
             "justificativa": ""
-          }
+          },
+          "metas": []
         }
       ]
     }
