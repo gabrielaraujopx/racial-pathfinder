@@ -2225,10 +2225,30 @@ function renderSintese() {
     { label: 'Maturidade Geral', fn: c => { const m = calcMaturidade(c); return { tag: m.nivel, cl: matClass(m.nivel) }; } },
     { label: 'Diagnóstico (dados)', fn: c => c.diagnostico.stat1 ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
     { label: 'Visão de Sucesso', fn: c => c.visaoSucesso ? { tag: 'Sim', cl: 'mat-alta' } : { tag: 'Não', cl: 'mat-baixa' } },
-    { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores, c.eixo6); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
-    { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
-    { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
-    { label: 'Índice de Redução de Gaps (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6, c); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
+    { label: 'Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores, c.eixo6); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
+    { label: 'Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
+    { label: 'Lacunas Identificadas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
+    {
+      label: 'Índice de Redução de Gaps',
+      isImpacto: true,
+      fn: c => {
+        const e = calcEixo6(c.eixo6, c);
+        const m = e.meta || { nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0 };
+        const clM = m.nivel==='Superando metas'?'mat-alta'
+                  : m.nivel==='No ritmo da meta'?'mat-avancada'
+                  : m.nivel==='Aquém da meta'?'mat-desenv'
+                  : m.nivel==='Sem redução vs meta'?'mat-baixa'
+                  : m.nivel==='Em retrocesso vs meta'?'mat-baixa'
+                  : 'mat-vazia';
+        const clG = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia';
+        return {
+          metaTag: e.semItens ? '—' : (m.nivel + (m.nVsMetaValido>0?' ('+m.pct+'%)':'')),
+          metaCl: clM,
+          geralTag: e.semItens ? '' : (e.nivel+' · '+e.pct+'%'),
+          geralCl: clG,
+        };
+      }
+    },
   ];
 
   main.innerHTML = `
@@ -2253,6 +2273,14 @@ function renderSintese() {
               <td>${dim.label}</td>
               ${state.coaliz.map(c => {
                 const r = dim.fn(c);
+                if (dim.isImpacto) {
+                  return `<td>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                      <span class="tag-pill ${r.metaCl}" style="font-size:11px;font-weight:700">${r.metaTag}</span>
+                      ${r.geralTag ? `<span style="font-size:9px;color:#8A7A6E">Geral: ${r.geralTag}</span>` : ''}
+                    </div>
+                  </td>`;
+                }
                 return `<td><span class="tag-pill ${r.cl}" style="font-size:10px">${r.tag}</span></td>`;
               }).join('')}
             </tr>
@@ -2270,7 +2298,7 @@ function renderSintese() {
           <div style="height:8px"></div>
           ${renderEixoBar('Estratégias', mat.e2)}
           <div style="height:8px"></div>
-          ${renderEixoBar('Lacunas', mat.e3)}
+          ${renderEixoBar('Lacunas Identificadas', mat.e3)}
         </div>`;
       }).join('')}
     </div>
