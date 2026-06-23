@@ -3082,10 +3082,12 @@ async function exportPPTX() {
         // Faixa do índice
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:W,h:0.22,fill:{color:'F0E8DF'},line:{color:C.begeE}});
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
+        const _mE = e6.meta || {nivel:'—', pct:0, nVsMetaValido:0};
+        const corMSub = (nivelMetaCor(_mE.nivel)||'#7A6A60').replace('#','');
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Geral: '+e6.nivel+' · '+e6.pct+'%'
-              +'   |   vs Meta: '+(e6.meta&&e6.meta.nivel||'—')+(e6.meta&&e6.meta.nVsMetaValido>0?' · '+e6.meta.pct+'%':'')
+          : 'vs Meta: '+_mE.nivel+(_mE.nVsMetaValido>0?' · '+_mE.pct+'%':'')
+              +'   |   Geral: '+e6.nivel+' · '+e6.pct+'%'
               +'   |   '+(e6.gapAntesAgr!=null
                   ? 'Gap médio antes→depois: '+e6.gapAntesAgr+'→'+e6.gapDepoisAgr+' (Δ '+(e6.deltaAgr>0?'+':'')+e6.deltaAgr+')'
                   : 'Sem baseline antes×depois')
@@ -3094,7 +3096,7 @@ async function exportPPTX() {
               +'   |   Avan '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Retr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
               +(e6.coalizaoAnoInicio!=null?'   |   Marco: '+e6.coalizaoAnoInicio:'')
               +(e6.avisoBarreiraMassa?'   |   ⚠ barreira em massa':'');
-        eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:8,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+        eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:8,bold:true,color:e6.semItens?impCorHex2:corMSub,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
         // Header tabela
         headers.forEach((h,i) => {
           eg.addShape(pres.ShapeType.rect,{x:colXs[i],y:headerY,w:colWs2[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
@@ -3187,7 +3189,7 @@ async function exportPPTX() {
         if (b[eixo] && b[eixo].ativa) {
           linhas.push({
             coaliz: c.nome,
-            eixo: eixo === 'indicadores' ? 'Indicadores' : eixo === 'estrategias' ? 'Estratégias' : 'Lacunas',
+            eixo: eixo === 'indicadores' ? 'Indicadores' : eixo === 'estrategias' ? 'Estratégias' : 'Lacunas Identificadas',
             just: b[eixo].justificativa || '(sem justificativa)',
           });
         }
