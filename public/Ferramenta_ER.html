@@ -1637,7 +1637,7 @@ function renderCoalizao() {
       <div class="mat-eixos">
         ${renderEixoBar('Indicadores', mat.e1)}
         ${renderEixoBar('Estratégias', mat.e2)}
-        ${renderEixoBar('Lacunas', mat.e3)}
+        ${renderEixoBar('Lacunas Identificadas', mat.e3)}
       </div>
     </div>
     ${renderImpactoCard(imp)}
@@ -1703,8 +1703,8 @@ function renderCoalizao() {
       <button class="btn-add" onclick="addItem('estrategias')">+ Adicionar estratégia</button>
     `)}
 
-    <!-- Lacunas -->
-    ${renderSecao(3, 'Lacunas', '#C8860A', `
+    <!-- Lacunas Identificadas -->
+    ${renderSecao(3, 'Lacunas Identificadas', '#C8860A', `
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bege);border-radius:5px;font-size:12px;">
         <span style="font-weight:600;color:var(--cinza-m)">Estado do mapeamento de lacunas:</span>
         <select class="item-select" style="max-width:320px" onchange="upEstadoLacunas(this.value)">
