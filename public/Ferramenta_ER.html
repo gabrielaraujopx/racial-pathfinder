@@ -2678,22 +2678,22 @@ async function exportPPTX() {
         const r  = dim.fn(c);
         const cx = gridX+labelW+col*cellW;
         sint.addShape(pres.ShapeType.rect,{x:cx,y:rowY,w:cellW,h:cellH,fill:{color:rowBg},line:{color:C.begeE}});
-        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
+        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.04,y:rowY+0.05,w:cellW-0.08,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
         if (r.isImpacto) {
           // vs Meta principal (linha 1, fonte maior) + Geral secundário (linha 2, menor/cinza)
-          const h1 = (cellH-0.10) * 0.62;
+          const h1 = (cellH-0.10) * 0.70;
           const h2 = (cellH-0.10) - h1;
-          const txtM = r.metaPct ? (r.metaNivel+'\n('+r.metaPct+')') : r.metaNivel;
-          sint.addText(txtM,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:h1,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+          const txtM = r.metaNivel;
+          sint.addText(txtM,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:h1,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           if (r.geralNivel) {
-            sint.addText('Geral: '+r.geralNivel+' · '+r.geralPct,{x:cx+0.06,y:rowY+0.05+h1,w:cellW-0.12,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+            sint.addText('Geral: '+r.geralNivel,{x:cx+0.05,y:rowY+0.05+h1,w:cellW-0.10,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           }
         } else if (r.pct) {
           const halfH = (cellH-0.10)/2;
-          sint.addText(r.nivel,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:halfH,fontSize:11,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:false,shrinkText:true});
-          sint.addText('('+r.pct+')',{x:cx+0.06,y:rowY+0.05+halfH,w:cellW-0.12,h:halfH,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
+          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:true,shrinkText:true});
+          sint.addText('('+r.pct+')',{x:cx+0.05,y:rowY+0.05+halfH,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
         } else {
-          sint.addText(r.nivel,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:cellH-0.10,fontSize:12,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:cellH-0.10,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
         }
       });
     });
@@ -2737,26 +2737,17 @@ async function exportPPTX() {
       const _m   = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0, contagens:{acima:0,dentro:0,abaixo:0,semReducao:0,retrocesso:0,semMeta:0}};
       const corM = (nivelMetaCor(_m.nivel)||'#7A6A60').replace('#','');
       const mc = _m.contagens || {acima:0,dentro:0,abaixo:0,semReducao:0,retrocesso:0,semMeta:0};
-      const l1 = 'Índice de Redução de Gaps · vs Meta: ' + _m.nivel + (_m.nVsMetaValido>0 ? (' · ' + _m.pct + '%') : '');
+      const l1 = 'Índice de Redução de Gaps · vs Meta: ' + _m.nivel;
       const lChips = '▲▲ Acima ' + mc.acima
                    + '   ✓ Dentro ' + mc.dentro
                    + '   ↘ Abaixo ' + mc.abaixo
                    + '   = Sem redução ' + mc.semReducao
                    + '   ▲ Retrocesso ' + mc.retrocesso
                    + (mc.semMeta>0 ? ('   — Sem meta ' + mc.semMeta) : '');
-      const l2 = 'Geral (sem comparar): ' + imp.nivel + ' · ' + imp.pct + '%'
-               + '   |   ' + (imp.gapAntesAgr != null
-                  ? ('Gap antes→depois: ' + imp.gapAntesAgr + '→' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')')
-                  : 'Sem baseline antes×depois');
-      const l3 = 'Cobertura Eixo 02 → 05: ' + imp.nListados05 + '/' + (imp.nIndic02||imp.nListados05)
-               + (imp.nBarreira05>0?' · barreira em '+imp.nBarreira05:'')
-               + ' · Avan ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
-               + ' · Retr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
-               + (imp.avisoBarreiraMassa ? '  ⚠ barreira em massa' : '');
-      s.addText(l1,     {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.22,fontSize:13,bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(lChips, {x:PAD,y:hdrH+0.24,w:W-PAD*2,h:0.20,fontSize:9, bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l2,     {x:PAD,y:hdrH+0.46,w:W-PAD*2,h:0.18,fontSize:8,           color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l3,     {x:PAD,y:hdrH+0.66,w:W-PAD*2,h:0.18,fontSize:8,           color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      const l2 = 'Geral (sem comparar): ' + imp.nivel;
+      s.addText(l1,     {x:PAD,y:hdrH+0.04,w:W-PAD*2,h:0.24,fontSize:13,bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(lChips, {x:PAD,y:hdrH+0.30,w:W-PAD*2,h:0.24,fontSize:10,bold:true,color:corM,     fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l2,     {x:PAD,y:hdrH+0.58,w:W-PAD*2,h:0.22,fontSize:10,bold:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     }
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
@@ -3071,7 +3062,7 @@ async function exportPPTX() {
               const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
               slG.addChart(pres.ChartType.line, dataChart, {
                 x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
-                chartColors: ['5C2E0A','E05A1A'],
+                chartColors: chartColors,
                 lineSize: 2.5,
                 lineDataSymbol: 'circle',
                 lineDataSymbolSize: 7,
@@ -3123,7 +3114,7 @@ async function exportPPTX() {
         const n2 = estLin(it.metrica || '—', 28);
         const n  = Math.max(n1, n2);
         // Reserva 3 sub-linhas (G/A/D) nas colunas analíticas.
-        return Math.max(0.78, 0.20 + Math.max(n, 3) * 0.20);
+        return Math.max(0.98, 0.20 + Math.max(n, 3) * 0.20);
       });
       const paginas = [];
       let atual = { idxs: [], hs: [], total: 0 };
@@ -3235,14 +3226,37 @@ async function exportPPTX() {
             {text:fmtDelta(calc.depois),options:{fontSize:8,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
           ];
           eg.addText(dRuns,{x:colXs[5]+0.04,y:y+0.03,w:colWs2[5]-0.08,h:rowH-0.06,valign:'middle',align:'left',wrap:true,shrinkText:true});
-          // Status badge (+ flag Volátil)
-          const stCor = statusEvolucaoCor(calc.status).replace('#','');
-          const stBg  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
-          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?'\n⚠ Volátil':'');
-          const bH = calc.volatil ? 0.36 : 0.24;
-          const bY = y + (rowH - bH)/2;
-          eg.addShape(pres.ShapeType.roundRect,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
-          eg.addText(stTxt,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:true,shrinkText:true});
+          // Status — duas badges: Geral (evolução) + vs Meta
+          const stCorG = statusEvolucaoCor(calc.status).replace('#','');
+          const stBgG  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
+          const stTxtG = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?' ⚠':'');
+          const sm = calc.statusMeta || 'Sem meta declarada';
+          const stCorM = (statusMetaCor(sm)||'#8A8A8A').replace('#','');
+          const stBgM  = sm==='Acima'?'E8F4EE'
+                       : sm==='Dentro'?'D4EDE0'
+                       : sm==='Abaixo'?'FEF3DC'
+                       : sm==='Sem redução'?'FBE5D6'
+                       : sm==='Retrocesso'?'FCE8E8'
+                       : 'EEEAE3';
+          const bH = 0.22;
+          const gap = 0.04;
+          const totalBH = bH*2 + gap;
+          const bY1 = y + (rowH - totalBH)/2;
+          const bY2 = bY1 + bH + gap;
+          const bX  = colXs[6]+0.06;
+          const bW  = colWs2[6]-0.12;
+          // Geral
+          eg.addShape(pres.ShapeType.roundRect,{x:bX,y:bY1,w:bW,h:bH,fill:{color:stBgG},line:{color:stBgG},rectRadius:0.04});
+          eg.addText([
+            {text:'Geral: ',options:{fontSize:6,bold:true,color:'7A6A60',fontFace:'Calibri'}},
+            {text:stTxtG, options:{fontSize:8,bold:true,color:stCorG,fontFace:'Calibri'}},
+          ],{x:bX,y:bY1,w:bW,h:bH,valign:'middle',align:'center',wrap:false,shrinkText:true});
+          // vs Meta
+          eg.addShape(pres.ShapeType.roundRect,{x:bX,y:bY2,w:bW,h:bH,fill:{color:stBgM},line:{color:stBgM},rectRadius:0.04});
+          eg.addText([
+            {text:'vs Meta: ',options:{fontSize:6,bold:true,color:'7A6A60',fontFace:'Calibri'}},
+            {text:sm,        options:{fontSize:8,bold:true,color:stCorM,fontFace:'Calibri'}},
+          ],{x:bX,y:bY2,w:bW,h:bH,valign:'middle',align:'center',wrap:false,shrinkText:true});
           y += rowH;
         });
       });
