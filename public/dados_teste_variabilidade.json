@@ -213,27 +213,39 @@
           },
           "metas": [
             {
+              "ano": 2020,
+              "valorMetaGap": 13.6
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 7.2
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 4.0
+            },
+            {
               "ano": 2024,
-              "valorMetaGap": 6.0
+              "valorMetaGap": 3.72
             },
             {
               "ano": 2026,
-              "valorMetaGap": 5.0
+              "valorMetaGap": 3.16
             },
             {
-              "ano": 2030,
-              "valorMetaGap": 3.0
+              "ano": 2029,
+              "valorMetaGap": 2.32
             },
             {
-              "ano": 2035,
-              "valorMetaGap": 0.0
+              "ano": 2033,
+              "valorMetaGap": 1.2
             }
           ]
         },
         {
           "indicadorRef": "ind-2",
           "metrica": "R$/aluno",
-          "unidade": "%",
+          "unidade": "R$/aluno",
           "sentidoDesejado": "subir",
           "serie": [
             {
@@ -268,16 +280,28 @@
           },
           "metas": [
             {
+              "ano": 2020,
+              "valorMetaGap": 770.0
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 440.0
+            },
+            {
               "ano": 2024,
-              "valorMetaGap": 8.0
+              "valorMetaGap": 378.4
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 347.6
             },
             {
               "ano": 2028,
-              "valorMetaGap": 6.0
+              "valorMetaGap": 255.2
             },
             {
               "ano": 2032,
-              "valorMetaGap": 3.0
+              "valorMetaGap": 132.0
             }
           ]
         },
@@ -323,7 +347,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2020,
+              "valorMetaGap": 3.24
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 1.98
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 1.35
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 1.26
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 1.07
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 0.78
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 0.41
+            }
+          ]
         }
       ]
     }
@@ -486,20 +539,28 @@
           },
           "metas": [
             {
-              "ano": 2024,
+              "ano": 2021,
+              "valorMetaGap": 17.5
+            },
+            {
+              "ano": 2023,
               "valorMetaGap": 10.0
             },
             {
-              "ano": 2027,
-              "valorMetaGap": 7.0
+              "ano": 2025,
+              "valorMetaGap": 8.6
             },
             {
-              "ano": 2030,
-              "valorMetaGap": 4.0
+              "ano": 2026,
+              "valorMetaGap": 7.9
             },
             {
-              "ano": 2035,
-              "valorMetaGap": 0.0
+              "ano": 2029,
+              "valorMetaGap": 5.8
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 3.0
             }
           ]
         },
@@ -545,7 +606,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2021,
+              "valorMetaGap": 19.38
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 13.75
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 11.83
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 10.86
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 7.98
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 4.13
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
@@ -688,7 +774,7 @@
         {
           "indicadorRef": "ind-0",
           "metrica": "Português 9º ano",
-          "unidade": "pts",
+          "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
           "serie": [],
           "observacoes": "",
@@ -696,25 +782,12 @@
             "ativa": true,
             "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
           },
-          "metas": [
-            {
-              "ano": 2024,
-              "valorMetaGap": 5.0
-            },
-            {
-              "ano": 2028,
-              "valorMetaGap": 2.0
-            },
-            {
-              "ano": 2032,
-              "valorMetaGap": 0.0
-            }
-          ]
+          "metas": []
         },
         {
           "indicadorRef": "ind-1",
           "metrica": "Matemática 9º ano",
-          "unidade": "pts",
+          "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
           "serie": [],
           "observacoes": "",
@@ -848,7 +921,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2018,
+              "valorMetaGap": 26.4
+            },
+            {
+              "ano": 2020,
+              "valorMetaGap": 19.8
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 13.2
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 9.9
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 7.82
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 5.74
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 2.97
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -892,7 +994,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2018,
+              "valorMetaGap": 22.37
+            },
+            {
+              "ano": 2020,
+              "valorMetaGap": 17.74
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 13.11
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 10.8
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 8.53
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 6.26
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 3.24
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
@@ -936,7 +1067,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2018,
+              "valorMetaGap": 16.0
+            },
+            {
+              "ano": 2020,
+              "valorMetaGap": 12.0
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 8.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 6.0
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 4.74
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 3.48
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 1.8
+            }
+          ]
         }
       ]
     }
@@ -1090,7 +1250,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2023,
+              "valorMetaGap": 8.4
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 7.22
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 6.64
+            },
+            {
+              "ano": 2027,
+              "valorMetaGap": 6.05
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 4.87
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 2.52
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -1134,7 +1319,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2023,
+              "valorMetaGap": 7.2
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 6.19
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 5.69
+            },
+            {
+              "ano": 2027,
+              "valorMetaGap": 5.18
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 4.18
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 2.16
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
@@ -1172,7 +1382,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2020,
+              "valorMetaGap": 12.24
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 7.48
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 5.1
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 4.74
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 4.03
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 2.96
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 1.53
+            }
+          ]
         }
       ]
     }
@@ -1315,7 +1554,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2022,
+              "valorMetaGap": 18.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 12.0
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 11.16
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 9.48
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 6.96
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 3.6
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -1359,7 +1623,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2022,
+              "valorMetaGap": 13.87
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 7.8
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 7.25
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 6.16
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 4.52
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 2.34
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
@@ -1403,12 +1692,37 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2022,
+              "valorMetaGap": 4.27
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 2.4
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 2.23
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 1.9
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 1.39
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 0.72
+            }
+          ]
         },
         {
           "indicadorRef": "ind-3",
           "metrica": "Formação (h)",
-          "unidade": "%",
+          "unidade": "horas",
           "sentidoDesejado": "subir",
           "serie": [
             {
@@ -1441,7 +1755,32 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2022,
+              "valorMetaGap": 14.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 6.0
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 5.58
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 4.74
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 3.48
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 1.8
+            }
+          ]
         }
       ]
     }
@@ -1561,7 +1900,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2020,
+              "valorMetaGap": 20.52
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 14.04
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 10.8
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 10.04
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 8.53
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 6.26
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 3.24
+            }
+          ]
         },
         {
           "indicadorRef": "ind-1",
@@ -1599,12 +1967,41 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2020,
+              "valorMetaGap": 34.4
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 25.8
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 21.5
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 20.0
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 16.98
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 12.47
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 6.45
+            }
+          ]
         },
         {
           "indicadorRef": "ind-2",
           "metrica": "Permanência (anos)",
-          "unidade": "%",
+          "unidade": "anos",
           "sentidoDesejado": "subir",
           "serie": [
             {
@@ -1637,7 +2034,36 @@
             "ativa": false,
             "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            {
+              "ano": 2020,
+              "valorMetaGap": 2.16
+            },
+            {
+              "ano": 2022,
+              "valorMetaGap": 1.32
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 0.9
+            },
+            {
+              "ano": 2024,
+              "valorMetaGap": 0.84
+            },
+            {
+              "ano": 2026,
+              "valorMetaGap": 0.71
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 0.52
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 0.27
+            }
+          ]
         }
       ]
     }
