@@ -2609,10 +2609,31 @@ async function exportPPTX() {
 
     const dimsSint = [
       { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
-      { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
-      { label:'Impacto (BA×PPI)',  fn: c => { const e=calcEixo6(c.eixo6, c); if (e.semItens) return {nivel:'Sem dados', pct:null, bg:'EEEAE3', cor:'8A8A8A'}; const bg = e.nivel==='Reduzindo gaps'?'E8F4EE':e.nivel==='Avanço parcial'?'D4EDE0':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'FEF3DC':e.nivel==='Sem medição'?'EEEAE3':'FCE8E8'; return {nivel:e.nivel, pct:e.pct+'%', bg, cor:impactoCor(e.nivel).replace('#','')}; }},
+      { label:'Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
+      { label:'Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
+      { label:'Lacunas Identificadas', fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
+      { label:'Índice de Redução de Gaps', isImpacto:true, fn: c => {
+          const e=calcEixo6(c.eixo6, c);
+          if (e.semItens) return {isImpacto:true, metaNivel:'Sem dados', metaPct:null, geralNivel:'', geralPct:null, bg:'EEEAE3', cor:'8A8A8A'};
+          const m = e.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
+          const corM = (nivelMetaCor(m.nivel)||'#8A8A8A').replace('#','');
+          const bgM  = m.nivel==='Superando metas'?'E8F4EE'
+                     : m.nivel==='No ritmo da meta'?'D4EDE0'
+                     : m.nivel==='Aquém da meta'?'FEF3DC'
+                     : m.nivel==='Sem redução vs meta'?'FBE5D6'
+                     : m.nivel==='Em retrocesso vs meta'?'FCE8E8'
+                     : 'EEEAE3';
+          return {
+            isImpacto:true,
+            metaNivel: m.nivel,
+            metaPct:   m.nVsMetaValido>0 ? (m.pct+'%') : null,
+            geralNivel: e.nivel,
+            geralPct:   e.pct+'%',
+            bg: bgM,
+            cor: corM,
+            corGeral: impactoCor(e.nivel).replace('#',''),
+          };
+      }},
     ];
 
     dimsSint.forEach((dim,row) => {
@@ -2625,8 +2646,16 @@ async function exportPPTX() {
         const cx = gridX+labelW+col*cellW;
         sint.addShape(pres.ShapeType.rect,{x:cx,y:rowY,w:cellW,h:cellH,fill:{color:rowBg},line:{color:C.begeE}});
         sint.addShape(pres.ShapeType.roundRect,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
-        if (r.pct) {
-          // Ponto 7: nível na linha de cima, % na linha de baixo, fontes maiores
+        if (r.isImpacto) {
+          // vs Meta principal (linha 1, fonte maior) + Geral secundário (linha 2, menor/cinza)
+          const h1 = (cellH-0.10) * 0.62;
+          const h2 = (cellH-0.10) - h1;
+          const txtM = r.metaPct ? (r.metaNivel+'\n('+r.metaPct+')') : r.metaNivel;
+          sint.addText(txtM,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:h1,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+          if (r.geralNivel) {
+            sint.addText('Geral: '+r.geralNivel+' · '+r.geralPct,{x:cx+0.06,y:rowY+0.05+h1,w:cellW-0.12,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+          }
+        } else if (r.pct) {
           const halfH = (cellH-0.10)/2;
           sint.addText(r.nivel,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:halfH,fontSize:11,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:false,shrinkText:true});
           sint.addText('('+r.pct+')',{x:cx+0.06,y:rowY+0.05+halfH,w:cellW-0.12,h:halfH,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
