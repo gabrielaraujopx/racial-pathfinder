@@ -1468,6 +1468,9 @@ function calcEixo6(eixo6Obj, coaliz) {
   };
 }
 function statusMetaCor(s) {
+  return statusMetaCor._impl(s);
+}
+statusMetaCor._impl = function(s) {
   if (s === 'Acima')             return '#1A6B3C';
   if (s === 'Dentro')            return '#2D7A4F';
   if (s === 'Abaixo')            return '#C8860A';
@@ -1475,6 +1478,10 @@ function statusMetaCor(s) {
   if (s === 'Retrocesso')        return '#C0392B';
   if (s === 'Barreira de dados') return '#7A6A60';
   return '#8A8A8A';
+};
+function unidadeLabel(u) {
+  const v = (u == null ? '' : String(u)).trim();
+  return v ? ' ('+v+')' : '';
 }
 function nivelMetaCor(n) {
   if (n === 'Acima')              return '#1A6B3C';
