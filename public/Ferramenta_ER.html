@@ -1308,15 +1308,15 @@ function _calcStatusVsMeta(item, serie, marcoEfetivo, sent, limAbs) {
   const tolZero = Math.max(0.05 * Math.abs(gapMarco), 0.05 * limAbs);
   let statusMeta;
   if (deltaReal > tolZero) {
-    statusMeta = 'Em retrocesso';
+    statusMeta = 'Retrocesso';
   } else if (Math.abs(deltaReal) <= tolZero) {
-    statusMeta = 'Não há redução';
+    statusMeta = 'Sem redução';
   } else if (deltaReal <= deltaEsperado - tol) {
-    statusMeta = 'Redução acima da meta';
+    statusMeta = 'Acima';
   } else if (Math.abs(deltaReal - deltaEsperado) <= tol) {
-    statusMeta = 'Redução dentro da meta';
+    statusMeta = 'Dentro';
   } else {
-    statusMeta = 'Redução abaixo da meta';
+    statusMeta = 'Abaixo';
   }
   return {
     statusMeta,
