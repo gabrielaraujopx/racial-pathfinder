@@ -3037,15 +3037,36 @@ async function exportPPTX() {
               slG.addText('Sem pontos válidos na série temporal',
                 {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
             } else {
-              const labels = serieG.map(p => String(p.ano));
+              // ── Projeções de meta (BA/PPI ano-a-ano) ────────────
+              const metasArr = (it.metas || []).slice().sort((a,b)=>a.ano-b.ano);
+              const ultAnoHist = serieG[serieG.length-1].ano;
+              const metasFuturas = metasArr.filter(m => m.ano > ultAnoHist);
+              const metasBA  = metasFuturas.filter(m => m.valorMetaBA  != null);
+              const metasPPI = metasFuturas.filter(m => m.valorMetaPPI != null);
+              const temProjBA  = metasBA.length  > 0;
+              const temProjPPI = metasPPI.length > 0;
+              // Labels = anos históricos ∪ anos-meta (futuros)
+              const anosUni = Array.from(new Set([...serieG.map(p=>p.ano), ...metasFuturas.map(m=>m.ano)])).sort((a,b)=>a-b);
+              const labels = anosUni.map(a => String(a));
+              const histBAByAno  = Object.fromEntries(serieG.map(p => [p.ano, +p.valorBA]));
+              const histPPIByAno = Object.fromEntries(serieG.map(p => [p.ano, +p.valorPPI]));
+              const metaBAByAno  = Object.fromEntries(metasBA.map(m => [m.ano, +m.valorMetaBA]));
+              const metaPPIByAno = Object.fromEntries(metasPPI.map(m => [m.ano, +m.valorMetaPPI]));
+              // Ponte: último histórico → primeiro meta (para a linha tracejada partir do real)
+              if (temProjBA  && histBAByAno[ultAnoHist]  != null) metaBAByAno[ultAnoHist]  = histBAByAno[ultAnoHist];
+              if (temProjPPI && histPPIByAno[ultAnoHist] != null) metaPPIByAno[ultAnoHist] = histPPIByAno[ultAnoHist];
               const dataChart = [
-                { name: 'BA (Brancos e Amarelos)', labels, values: serieG.map(p => +p.valorBA) },
-                { name: 'PPI (Pretos, Pardos e Indígenas)', labels, values: serieG.map(p => +p.valorPPI) },
+                { name: 'BA (Brancos e Amarelos)',         labels, values: anosUni.map(a => histBAByAno[a]  != null ? histBAByAno[a]  : null) },
+                { name: 'PPI (Pretos, Pardos e Indígenas)',labels, values: anosUni.map(a => histPPIByAno[a] != null ? histPPIByAno[a] : null) },
               ];
+              const chartColors = ['5C2E0A','E05A1A'];
+              if (temProjBA)  { dataChart.push({ name: 'Meta BA (projeção)',  labels, values: anosUni.map(a => metaBAByAno[a]  != null ? metaBAByAno[a]  : null) }); chartColors.push('A88670'); }
+              if (temProjPPI) { dataChart.push({ name: 'Meta PPI (projeção)', labels, values: anosUni.map(a => metaPPIByAno[a] != null ? metaPPIByAno[a] : null) }); chartColors.push('F2A87A'); }
               // Formato dos rótulos pela unidade do indicador
               const u = (it.unidade||'').trim();
               const isPct = u === '%' || /percent/i.test(u);
-              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI]);
+              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI])
+                                .concat(metasBA.map(m=>+m.valorMetaBA), metasPPI.map(m=>+m.valorMetaPPI));
               const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
               const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
               slG.addChart(pres.ChartType.line, dataChart, {
@@ -3068,7 +3089,14 @@ async function exportPPTX() {
                 valAxisTitle: u || '',
                 valAxisTitleFontSize: 8,
                 valAxisTitleColor: '7A6A60',
+                displayBlanksAs: 'gap',
               });
+              // Anotação de gap-alvo (quando só há valorMetaGap, sem BA/PPI projetados)
+              const metasGapOnly = metasFuturas.filter(m => m.valorMetaGap != null && (m.valorMetaBA == null || m.valorMetaPPI == null));
+              if (metasGapOnly.length > 0 && !temProjBA && !temProjPPI) {
+                const txt = '🎯 Gap-alvo: ' + metasGapOnly.map(m => m.ano+' → '+(+m.valorMetaGap.toFixed(2))+(u?' '+u:'')).join(' · ');
+                slG.addText(txt, {x:cx+0.10,y:cy+cellH-0.22,w:cellW-0.20,h:0.18,fontSize:7,italic:true,bold:true,color:'7A5A0A',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+              }
             }
           }
         });
