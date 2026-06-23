@@ -1,78 +1,38 @@
-## Ajustes finais — padronização de status, metas BA/PPI ano-a-ano e títulos dos campos de gap
+## Atualização do JSON de teste (`public/dados_teste_variabilidade.json`)
 
-Três frentes de ajuste em `public/Ferramenta_ER.html` (UI + PPT) e atualização das docs.
+A estrutura do JSON já contempla os campos novos (`unidade`, `valorMetaBA`, `valorMetaPPI`, `valorMetaGap` por ano, `sentidoDesejado`), mas há lacunas que reduzem a cobertura de teste dos ajustes recentes. Proponho as seguintes mudanças, mantendo o que já existe:
 
----
+### 1) Preencher itens vazios para cobrir todos os status novos
 
-### 1. Padronização do vocabulário de status (Índice de Redução de Gaps)
+Hoje 6 itens estão com `serie: []` e `metas: []` (todos com `barreira.ativa: true`). Vou:
 
-Hoje o índice "vs Meta" usa rótulos diferentes (`Superando metas`, `No ritmo da meta`, `Aquém da meta`, `Sem redução vs meta`, `Em retrocesso vs meta`) e por item (`Redução acima/dentro/abaixo da meta`, `Não há redução`, `Em retrocesso`). Vamos unificar tudo no vocabulário das chips de contagem:
+- **Manter como "barreira ativa"**: `Material didático adotado (%)` e `Frequência (%)` (Alfabetização) — preservam o cenário de "sem dados por barreira".
+- **Preencher com série + metas**:
+  - **Anos Finais → "Português 9º ano"** (unidade `Ponto SAEB`): série 2015–2023 com gap fechando bem → demonstrará **Acima** (vs meta) e unidade SAEB no gráfico/labels.
+  - **Anos Finais → "Matemática 9º ano"** (unidade `Ponto SAEB`): série 2015–2023 com gap praticamente estável → demonstrará **Sem redução**.
+  - **Alfabetização → "Alfabetização aos 7 (%)"**: série fechando, mas abaixo do ritmo de meta → **Abaixo**.
+  - **Alfabetização → "Formação específica (%)"**: série SEM `metas` declaradas → **Sem meta declarada** (campo `metas: []` proposital, sem barreira).
 
-| Onde | Antes | Depois |
-|------|-------|--------|
-| Status por item (`statusMeta`) | Redução acima da meta | **Acima** |
-| | Redução dentro da meta | **Dentro** |
-| | Redução abaixo da meta | **Abaixo** |
-| | Não há redução | **Sem redução** |
-| | Em retrocesso | **Retrocesso** |
-| | (sem meta no item) | **Sem meta declarada** |
-| Nível agregado da coalizão (`nivelMeta`) | Superando metas | **Acima** |
-| | No ritmo da meta | **Dentro** |
-| | Aquém da meta | **Abaixo** |
-| | Sem redução vs meta | **Sem redução** |
-| | Em retrocesso vs meta | **Retrocesso** |
-| | Sem metas declaradas | **Sem metas declaradas** (mantido) |
+### 2) Forçar a presença de "Retrocesso" no dataset
 
-Refletido em: `statusMetaCor`, `nivelMetaCor`, contagens (`contagensMeta`), trava qualitativa, chips do dashboard, card do índice, tabela de síntese comparativa, JSON interno (`calc.statusMeta`, `meta.nivel`) e textos das docs.
+Ajustar a série de um indicador existente (sugiro `Tecnologia → Letramento digital (%)`) para que o gap aumente nos últimos 2 anos, produzindo o status **Retrocesso** vs meta.
 
-### 2. Slide da coalizão — exibir status vs-meta no Índice
+### 3) Coalizão "Professores"
 
-No slide individual de cada coalizão (PPT), a área dedicada ao "Índice de Redução de Gaps" hoje só mostra o agregado. Vamos:
+Definir `coalizaoAnoInicio: 2021` (hoje `null`) para que o cálculo do índice considere o período pós-coalizão.
 
-- Acrescentar, na faixa de cabeçalho do índice no slide da coalizão, a chip-resumo das contagens (mesmo padrão visual do dashboard da ferramenta): `▲▲ Acima · ✓ Dentro · ↘ Abaixo · = Sem redução · ▲ Retrocesso · — Sem meta declarada`.
-- Em cada card de item desse slide, garantir que o badge "vs Meta" exiba o status novo (Acima/Dentro/Abaixo/Sem redução/Retrocesso/Sem meta declarada) com a cor correspondente.
-- Mesmo bloco de contagens também aparece na visualização do índice dentro da ferramenta (card e síntese), já consistente com a UI atual.
+### 4) Diversidade de unidades já coberta (sem mudança)
 
-### 3. Metas: BA, PPI e/ou gap-alvo ano-a-ano
+`%`, `R$/aluno`, `horas`, `anos`, `Ponto SAEB` — já presentes.
 
-Hoje a tabela METAS aceita só `valorMetaGap` por ano. Vamos ampliar o modelo e a UI:
+### Resultado esperado
 
-**Modelo de dados** (`it.metas[j]`):
-- `ano: number`
-- `valorMetaBA: number|null` (novo)
-- `valorMetaPPI: number|null` (novo)
-- `valorMetaGap: number|null` (mantido; derivável de BA/PPI se ambos preenchidos)
+Após a atualização, o dataset cobrirá os 6 status do "vs meta":
+`Acima` · `Dentro` · `Abaixo` · `Sem redução` · `Retrocesso` · `Sem meta declarada`,
+e o slide/dashboard de cada coalizão renderizará todos os elementos novos (linhas tracejadas Meta BA/PPI, anotações 🎯 Gap-alvo, chips de status, unidades reativas).
 
-Regra de derivação: se `BA` e `PPI` preenchidos e `valorMetaGap` vazio, calcula gap conforme `sentidoDesejado` (`subir`: BA−PPI; `descer`: PPI−BA). Se `valorMetaGap` foi preenchido manualmente, prevalece. Cálculo de `statusMeta` continua usando `valorMetaGap` (direto ou derivado) — sem mudança na fórmula.
+### Arquivo afetado
 
-**UI de preenchimento** (linha de meta-ano):
-- Colunas: `Ano | Meta BA | Meta PPI | Gap-alvo | ×`
-- Texto auxiliar: "Preencha BA e PPI para projeção visual nos gráficos, ou só o Gap-alvo para indicar a redução esperada."
+- `public/dados_teste_variabilidade.json` (somente este).
 
-**Gráficos em linha (UI + PPT)**:
-- Se houver pelo menos 2 pontos de meta com `valorMetaBA` preenchido → desenhar uma série tracejada "Meta BA" estendendo a linha BA até o último ano-meta.
-- Mesma coisa para `valorMetaPPI` → série tracejada "Meta PPI".
-- Se houver só `valorMetaGap` (sem BA/PPI) → desenhar marcadores/anotação no gráfico mostrando o gap-alvo de cada ano-meta (linha pontilhada horizontal entre BA e PPI projetados a partir do último ponto real, com label "gap-alvo: X"), apenas como referência visual.
-- Aplica a `renderGraficoEixo6` (UI Chart.js) e ao gerador de gráfico do PPT (chart.js → imagem).
-
-### 4. Títulos dos campos de gap acompanham a unidade
-
-Atualmente os labels dos inputs no Eixo 02 (gaps) embutem a unidade no título (ex.: `Gap-alvo (R$/aluno)`, `BA (%)`, `PPI (X)`) e não re-renderizam quando o usuário troca o campo "unidade". Solução:
-
-- Manter `( )` no título, mas torná-lo reativo: ao alterar `it.unidade`, re-renderiza o item (já existe `renderEixoItem`/`upItem`; vamos garantir que mudar unidade dispare `render()` do eixo, não só um `up` mudo).
-- Sub-rotina utilitária `unidadeLabel(u)` que retorna `(u)` se `u` preenchido e não-vazio, ou string vazia caso contrário — usada em todos os títulos: `BA${unidadeLabel(it.unidade)}`, `PPI${unidadeLabel(it.unidade)}`, `Gap-alvo${unidadeLabel(it.unidade)}` e nos novos `Meta BA${...}`, `Meta PPI${...}`.
-- Mesma reatividade aplica nos gráficos (eixo Y e datalabels) — já é dinâmico via `it.unidade`, só precisa do re-render.
-
----
-
-### Arquivos tocados
-
-- `public/Ferramenta_ER.html`
-  - `statusMetaCor`, `nivelMetaCor`, blocos de contagem (`contagensMeta`), `_calcStatusVsMeta` (renomes de strings retornadas), chips do dashboard (linhas ~1770), card do índice e síntese comparativa, tabela de metas (linhas ~2017–2042) com colunas BA/PPI, `upEixo6Meta` aceitando `valorMetaBA`/`valorMetaPPI`, função de gráfico em linha (UI + PPT), labels de input de série/meta com `unidadeLabel`, listener de `upEixo6Item('unidade', …)` disparando re-render do item.
-  - Geração do PPT: slide da coalizão recebe chips de contagem vs-meta na faixa do índice; itens individuais usam novos rótulos de status; gráficos com projeção BA/PPI tracejada ou anotação de gap-alvo.
-- `/mnt/documents/Logica_Sistematizacao_Executivo.md` e `Logica_Sistematizacao_Detalhado.md`: atualizar nomenclatura dos status (Acima/Dentro/Abaixo/Sem redução/Retrocesso/Sem meta declarada) e descrever as novas metas BA/PPI/gap-alvo + projeção no gráfico.
-- `public/dados_teste_variabilidade.json`: ampliar alguns cenários para incluir `valorMetaBA`/`valorMetaPPI` em alguns itens (mantendo outros só com `valorMetaGap`) para validar ambas as visualizações.
-
-### Fora de escopo
-- Fórmula de cálculo do índice ou faixas (mantidas — só renomeio de strings).
-- Hierarquia vs-Meta principal / Geral secundário (já implementado).
+Confirma que posso aplicar?
