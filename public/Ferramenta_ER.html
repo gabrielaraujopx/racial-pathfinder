@@ -854,6 +854,15 @@ function normalizeEixo6(e) {
     barreira: (it.barreira && typeof it.barreira === 'object')
       ? { ativa: !!it.barreira.ativa, justificativa: String(it.barreira.justificativa || '') }
       : { ativa: false, justificativa: '' },
+    // Metas ano-a-ano declaradas pela coalizão (gap-alvo na unidade do
+    // indicador). Quando vazio, item entra como "Sem meta declarada" na
+    // visão vs-meta e não compõe o agregado.
+    metas: Array.isArray(it.metas) ? it.metas
+        .filter(m => m && m.ano != null && m.ano !== '' && m.valorMetaGap != null && m.valorMetaGap !== '')
+        .map(m => ({ ano: parseInt(m.ano,10), valorMetaGap: Number(m.valorMetaGap) }))
+        .filter(m => Number.isFinite(m.ano) && Number.isFinite(m.valorMetaGap))
+        .sort((a,b)=>a.ano-b.ano)
+      : [],
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
