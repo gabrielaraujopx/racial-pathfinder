@@ -3062,7 +3062,7 @@ async function exportPPTX() {
               const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
               slG.addChart(pres.ChartType.line, dataChart, {
                 x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
-                chartColors: ['5C2E0A','E05A1A'],
+                chartColors: chartColors,
                 lineSize: 2.5,
                 lineDataSymbol: 'circle',
                 lineDataSymbolSize: 7,
