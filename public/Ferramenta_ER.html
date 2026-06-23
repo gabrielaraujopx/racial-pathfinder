@@ -2587,9 +2587,11 @@ async function exportPPTX() {
         {x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     } else {
       const l1 = 'Índice de Redução de Gaps (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%';
-      const l2 = (imp.gapAntesAgr != null)
-        ? 'Gap médio antes → depois: ' + imp.gapAntesAgr + ' → ' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')'
-        : 'Gap antes → depois: sem baseline válido';
+      const _m = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
+      const l2 = 'vs Meta: ' + _m.nivel + (_m.nVsMetaValido>0 ? (' · ' + _m.pct + '%') : '')
+               + '   |   ' + (imp.gapAntesAgr != null
+                  ? ('Gap antes→depois: ' + imp.gapAntesAgr + '→' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')')
+                  : 'Sem baseline antes×depois');
       const l3 = 'Cobertura Eixo 02 → 05: ' + imp.nListados05 + '/' + (imp.nIndic02||imp.nListados05)
                + (imp.nBarreira05>0?' · barreira em '+imp.nBarreira05:'')
                + ' · Avan ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
