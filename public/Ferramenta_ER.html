@@ -1296,7 +1296,7 @@ function calcEixo6(eixo6Obj, coaliz) {
           : pctBruto >= 40 ? 'Avanço parcial'
           : pctBruto >= 20 ? 'Avanço incipiente'
           :                  'Sem avanço';
-    // Travas qualitativas: sem nenhum Fechando, não há "avanço real"
+    // Travas qualitativas: sem nenhum Avançando, não há "avanço real"
     if (contagens.fechando === 0) {
       if (contagens.abrindo > contagens.estagnado) {
         nivel = 'Gaps se abrindo';
