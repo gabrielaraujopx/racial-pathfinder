@@ -2051,7 +2051,7 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
 }
 
 function renderEixoBar(label, eixo) {
-  const isLac = label === 'Lacunas';
+  const isLac = label === 'Lacunas' || label === 'Lacunas Identificadas';
   const niv = isLac ? (eixo.nivelLacunas || 'Sem lacunas registradas') : eixo.nivel;
   const cor = isLac ? lacunasColor(niv) : eixoColor(eixo.nivel);
   const ajuste = eixo.compensado
