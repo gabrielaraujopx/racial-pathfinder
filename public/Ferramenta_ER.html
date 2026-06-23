@@ -2698,12 +2698,13 @@ async function exportPPTX() {
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.12,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
     if (imp.semItens) {
-      s.addText('Índice de Redução de Gaps (BA×PPI): sem itens cadastrados',
+      s.addText('Índice de Redução de Gaps: sem itens cadastrados',
         {x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     } else {
-      const l1 = 'Índice de Redução de Gaps (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%';
-      const _m = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
-      const l2 = 'vs Meta: ' + _m.nivel + (_m.nVsMetaValido>0 ? (' · ' + _m.pct + '%') : '')
+      const _m   = imp.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
+      const corM = (nivelMetaCor(_m.nivel)||'#7A6A60').replace('#','');
+      const l1 = 'Índice de Redução de Gaps · vs Meta: ' + _m.nivel + (_m.nVsMetaValido>0 ? (' · ' + _m.pct + '%') : '');
+      const l2 = 'Geral (sem comparar): ' + imp.nivel + ' · ' + imp.pct + '%'
                + '   |   ' + (imp.gapAntesAgr != null
                   ? ('Gap antes→depois: ' + imp.gapAntesAgr + '→' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')')
                   : 'Sem baseline antes×depois');
@@ -2712,9 +2713,9 @@ async function exportPPTX() {
                + ' · Avan ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
                + ' · Retr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
                + (imp.avisoBarreiraMassa ? '  ⚠ barreira em massa' : '');
-      s.addText(l1, {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.22,fontSize:12,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l2, {x:PAD,y:hdrH+0.22,w:W-PAD*2,h:0.18,fontSize:8.5,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-      s.addText(l3, {x:PAD,y:hdrH+0.40,w:W-PAD*2,h:0.18,fontSize:8.5,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l1, {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.24,fontSize:13,bold:true,color:corM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l2, {x:PAD,y:hdrH+0.24,w:W-PAD*2,h:0.18,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l3, {x:PAD,y:hdrH+0.42,w:W-PAD*2,h:0.18,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     }
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
@@ -2786,9 +2787,9 @@ async function exportPPTX() {
     const _e1lblExtra = (_e1c && _e1c.gerais > 0 && _e1c.cobertos < _e1c.gerais)
       ? ` · ⚠${_e1c.cobertos}/${_e1c.gerais}`
       : '';
-    addEixoHeader(0,      '02 — INDICADORES' + _e1lblExtra, C.azul,    mat.e1);
-    addEixoHeader(colW,   '03 — ESTRATÉGIAS', C.marrom,  mat.e2);
-    addEixoHeader(colW*2, '04 — LACUNAS',      C.amarelo, mat.e3, true);
+    addEixoHeader(0,      'INDICADORES' + _e1lblExtra, C.azul,    mat.e1);
+    addEixoHeader(colW,   'ESTRATÉGIAS', C.marrom,  mat.e2);
+    addEixoHeader(colW*2, 'LACUNAS IDENTIFICADAS', C.amarelo, mat.e3, true);
 
     // ── Aviso de Barreira de Acesso a Dados Públicos por eixo ──
     // Strip fina amarela logo abaixo do header de cada eixo quando há barreira ativa.
