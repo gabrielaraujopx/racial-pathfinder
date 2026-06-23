@@ -2705,6 +2705,69 @@ async function exportPPTX() {
     const mat = calcMaturidade(c);
     const imp = calcEixo6(c.eixo6, c);
     const W=10, H=5.625, PAD=0.28;
+
+    // ── PAGINAÇÃO: calcula páginas por coluna antes de desenhar ──
+    // Itens (Indicadores, Estratégias, Lacunas) podem exceder o espaço
+    // vertical da coluna; nesse caso geramos slides "parte X/Y".
+    {
+      // (bloco apenas para clareza visual; constantes locais reutilizadas)
+    }
+    const _hdrH=0.46, _impH=0.86, _diagH=0.68;
+    const _colYpre = _hdrH + _impH + _diagH;
+    const _colBotPre = _colYpre + (H - _colYpre) - 0.03;
+    const _labYpre = _colYpre + 0.05, _labH1pre = 0.18;
+    const _baseStartYpre = _labYpre + _labH1pre + 0.05;
+    const _colWpre = W/3;
+    const _circRpre = 0.16, _itmGapPre = 0.05, _itemFSpre = 11, _leftZonePre = _circRpre + 0.06;
+    const _indBdgsWpre = 0.30*3 + 0.025*2;
+    const _indTWpre = _colWpre - PAD*0.6 - _leftZonePre - _indBdgsWpre - 0.05 - PAD*0.4;
+    const _eTWpre   = _colWpre - PAD*0.6 - _leftZonePre - 0.90 - PAD*0.4;
+    const _lTWpre   = _colWpre - PAD*0.6 - _leftZonePre - PAD*0.4 - 0.04;
+    const _bCtxPre  = c.barreirasContexto || {};
+    const _startByKeyPre = {
+      indicadores: (_bCtxPre.indicadores && _bCtxPre.indicadores.ativa) ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
+      estrategias: (_bCtxPre.estrategias && _bCtxPre.estrategias.ativa) ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
+      lacunas:     (_bCtxPre.lacunas     && _bCtxPre.lacunas.ativa)     ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
+    };
+    const _paginateColPre = (items, mkH, startY) => {
+      const pages = [];
+      let cur = [], y = startY;
+      items.forEach((it, idx) => {
+        const h = mkH(it, idx) + _itmGapPre;
+        if (y + h > _colBotPre && cur.length > 0) {
+          pages.push(cur);
+          cur = []; y = startY;
+        }
+        cur.push(idx);
+        y += h;
+      });
+      if (cur.length > 0) pages.push(cur);
+      return pages.length ? pages : [[]];
+    };
+    const _hIndPre = (ind) => {
+      const fonteTxt = (ind.fonte||'').trim();
+      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
+      return Math.max(_circRpre, estH(txt, _indTWpre, _itemFSpre));
+    };
+    const _hEstPre = (est) => Math.max(_circRpre, estH(est.texto||'—', _eTWpre, _itemFSpre));
+    const _hLacPre = (lac) => {
+      const txt = lac.texto||'—';
+      const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
+      const tH = estH(txt, _lTWpre, _itemFSpre);
+      const recH = recTxt ? estH(recTxt, _lTWpre, 7) : 0;
+      const iconH = 0.155 + 0.02 + 0.10;
+      return Math.max(iconH, tH + recH);
+    };
+    const _pagInd = _paginateColPre(c.indicadores || [], _hIndPre, _startByKeyPre.indicadores);
+    const _pagEst = _paginateColPre(c.estrategias || [], _hEstPre, _startByKeyPre.estrategias);
+    const _pagLac = _paginateColPre(c.lacunas     || [], _hLacPre, _startByKeyPre.lacunas);
+    const _totPagCoal = Math.max(_pagInd.length, _pagEst.length, _pagLac.length, 1);
+
+    for (let pgCoal = 0; pgCoal < _totPagCoal; pgCoal++) {
+    const _idxsIndPg = _pagInd[pgCoal] || [];
+    const _idxsEstPg = _pagEst[pgCoal] || [];
+    const _idxsLacPg = _pagLac[pgCoal] || [];
+    const _pageSuf = _totPagCoal > 1 ? '  ·  parte '+(pgCoal+1)+'/'+_totPagCoal : '';
     const s   = pres.addSlide();
     s.background = { color: C.creme };
 
@@ -2713,7 +2776,7 @@ async function exportPPTX() {
     s.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:hdrH,fill:{color:C.marrom},line:{color:C.marrom}});
     // Ponto 4: EQUIDADE RACIAL com largura generosa para não quebrar
     s.addText('EQUIDADE RACIAL  ·',{x:PAD,y:0,w:2.85,h:hdrH,fontSize:14,color:C.laranjaC,charSpacing:0.4,fontFace:'Georgia',valign:'middle',shrinkText:true});
-    s.addText(c.nome.toUpperCase(),{x:3.25,y:0,w:4.0,h:hdrH,fontSize:14,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
+    s.addText(c.nome.toUpperCase() + _pageSuf,{x:3.25,y:0,w:4.20,h:hdrH,fontSize:14,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
     s.addShape(pres.ShapeType.roundRect,{x:7.52,y:0.06,w:2.2,h:0.34,fill:{color:C.marrom},line:{color:matCorHex(mat.nivel),width:1.2},rectRadius:0.06});
     s.addShape(pres.ShapeType.ellipse,{x:7.63,y:0.175,w:0.1,h:0.1,fill:{color:matCorHex(mat.nivel)},line:{color:matCorHex(mat.nivel)}});
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
@@ -2876,7 +2939,8 @@ async function exportPPTX() {
     let yI = startYByCol.indicadores;
     const e1cov = (mat.e1 && mat.e1.cobertura) ? mat.e1.cobertura : { idxLacuna: [] };
     const lacunaSet = new Set(e1cov.idxLacuna || []);
-    c.indicadores.slice(0,10).forEach((ind,idx) => {
+    _idxsIndPg.forEach((idx) => {
+      const ind = c.indicadores[idx];
       const fonteTxt = (ind.fonte||'').trim();
       const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
@@ -2908,7 +2972,8 @@ async function exportPPTX() {
     // ── Col 2: Estratégias ──
     const eTW = colW - PAD*0.6 - leftZone - bdgW - PAD*0.4;
     let yE = startYByCol.estrategias;
-    c.estrategias.slice(0,10).forEach((est,idx) => {
+    _idxsEstPg.forEach((idx) => {
+      const est = c.estrategias[idx];
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
       const totalH = tH + itmGap;
@@ -2933,7 +2998,8 @@ async function exportPPTX() {
     const lLeftW = leftZone;  // mesma zona esq das outras colunas
     const lTW    = colW - PAD*0.6 - lLeftW - PAD*0.4 - 0.04;
     let yL = startYByCol.lacunas;
-    c.lacunas.slice(0,8).forEach((lac,idx) => {
+    _idxsLacPg.forEach((idx) => {
+      const lac = c.lacunas[idx];
       const txt    = lac.texto||'—';
       const recTxt = lac.encaminhamento==='sim' && lac.recomendacao ? '→ '+lac.recomendacao : '';
       const tH     = estH(txt, lTW, itemFS);
@@ -2970,6 +3036,7 @@ async function exportPPTX() {
 
     // ── Faixa Evidências removida — espaço redistribuído para Impacto e colunas ──
     // Ponto 8: removido nome+página do rodapé (conflitava com evidências)
+    } // fim do loop de páginas da coalizão
 
     // ── SLIDES OPCIONAIS: GRÁFICOS BA × PPI ───────────────────
     // Gerados após o slide do Eixo 05 quando a coalizão marca
@@ -3028,31 +3095,25 @@ async function exportPPTX() {
               slG.addText('Sem pontos válidos na série temporal',
                 {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
             } else {
-              // ── Projeções de meta (BA/PPI ano-a-ano) ────────────
+              // ── Séries de meta (BA/PPI ano-a-ano) — independentes do histórico ──
+              // Cada Meta BA / Meta PPI tem sua própria linha cobrindo TODOS os anos
+              // em que foi declarada (inclusive antes/durante a série histórica),
+              // para permitir comparar metas passadas com o desempenho real.
               const metasArr = (it.metas || []).slice().sort((a,b)=>a.ano-b.ano);
-              const ultAnoHist = serieG[serieG.length-1].ano;
-              const metasFuturas = metasArr.filter(m => m.ano > ultAnoHist);
-              const metasBA  = metasFuturas.filter(m => m.valorMetaBA  != null);
-              const metasPPI = metasFuturas.filter(m => m.valorMetaPPI != null);
+              const metasBA  = metasArr.filter(m => m.valorMetaBA  != null);
+              const metasPPI = metasArr.filter(m => m.valorMetaPPI != null);
               const temProjBA  = metasBA.length  > 0;
               const temProjPPI = metasPPI.length > 0;
-              // Labels = anos históricos ∪ anos-meta (futuros)
-              const anosUni = Array.from(new Set([...serieG.map(p=>p.ano), ...metasFuturas.map(m=>m.ano)])).sort((a,b)=>a-b);
+              // Eixo X = união de TODOS os anos com qualquer valor (hist + metas).
+              const anosUni = Array.from(new Set([
+                ...serieG.map(p=>p.ano),
+                ...metasArr.map(m=>m.ano)
+              ])).sort((a,b)=>a-b);
               const labels = anosUni.map(a => String(a));
               const histBAByAno  = Object.fromEntries(serieG.map(p => [p.ano, +p.valorBA]));
               const histPPIByAno = Object.fromEntries(serieG.map(p => [p.ano, +p.valorPPI]));
               const metaBAByAno  = Object.fromEntries(metasBA.map(m => [m.ano, +m.valorMetaBA]));
               const metaPPIByAno = Object.fromEntries(metasPPI.map(m => [m.ano, +m.valorMetaPPI]));
-              // Ponte: último histórico → primeiro meta (para a linha tracejada partir do real)
-              if (temProjBA  && histBAByAno[ultAnoHist]  != null) metaBAByAno[ultAnoHist]  = histBAByAno[ultAnoHist];
-              if (temProjPPI && histPPIByAno[ultAnoHist] != null) metaPPIByAno[ultAnoHist] = histPPIByAno[ultAnoHist];
-              const dataChart = [
-                { name: 'BA (Brancos e Amarelos)',         labels, values: anosUni.map(a => histBAByAno[a]  != null ? histBAByAno[a]  : null) },
-                { name: 'PPI (Pretos, Pardos e Indígenas)',labels, values: anosUni.map(a => histPPIByAno[a] != null ? histPPIByAno[a] : null) },
-              ];
-              const chartColors = ['5C2E0A','E05A1A'];
-              if (temProjBA)  { dataChart.push({ name: 'Meta BA (projeção)',  labels, values: anosUni.map(a => metaBAByAno[a]  != null ? metaBAByAno[a]  : null) }); chartColors.push('A88670'); }
-              if (temProjPPI) { dataChart.push({ name: 'Meta PPI (projeção)', labels, values: anosUni.map(a => metaPPIByAno[a] != null ? metaPPIByAno[a] : null) }); chartColors.push('F2A87A'); }
               // Formato dos rótulos pela unidade do indicador
               const u = (it.unidade||'').trim();
               const isPct = u === '%' || /percent/i.test(u);
@@ -3060,30 +3121,79 @@ async function exportPPTX() {
                                 .concat(metasBA.map(m=>+m.valorMetaBA), metasPPI.map(m=>+m.valorMetaPPI));
               const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
               const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
-              slG.addChart(pres.ChartType.line, dataChart, {
-                x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
-                chartColors: chartColors,
-                lineSize: 2.5,
-                lineDataSymbol: 'circle',
-                lineDataSymbolSize: 7,
-                showLegend: true, legendPos: 'b', legendFontSize: 8,
+              // Em séries longas, exibe rótulos só nas históricas para evitar embaralhamento.
+              const muitosAnos = anosUni.length >= 8;
+              const mkSerie = (name, byAno) => ({ name, labels, values: anosUni.map(a => byAno[a] != null ? byAno[a] : null) });
+              const baseAxis = {
                 catAxisLabelFontSize: 8, valAxisLabelFontSize: 8,
                 catAxisLabelColor: '5A4A40', valAxisLabelColor: '5A4A40',
                 showTitle: false,
                 plotArea: { fill: { color: 'FDFBF6' } },
-                showValue: true,
-                dataLabelPosition: 't',
-                dataLabelFontSize: 7,
-                dataLabelColor: '5A4A40',
-                dataLabelFormatCode: fmtCode,
                 showValAxisTitle: !!u,
                 valAxisTitle: u || '',
                 valAxisTitleFontSize: 8,
                 valAxisTitleColor: '7A6A60',
                 displayBlanksAs: 'gap',
+                showLegend: true, legendPos: 'b', legendFontSize: 8,
+                dataLabelFormatCode: fmtCode,
+              };
+              // Cada série é um sub-chart "combo" para que dataLabelPosition,
+              // cor e tamanho sejam independentes — evita rótulos sobrepostos.
+              const series = [];
+              series.push({
+                type: pres.ChartType.line,
+                data: [ mkSerie('BA (Brancos e Amarelos)', histBAByAno) ],
+                options: {
+                  chartColors: ['5C2E0A'], lineSize: 2.5,
+                  lineDataSymbol: 'circle', lineDataSymbolSize: 5,
+                  showValue: true, dataLabelPosition: 't',
+                  dataLabelFontSize: 7, dataLabelColor: '5C2E0A',
+                  dataLabelFormatCode: fmtCode,
+                },
               });
-              // Anotação de gap-alvo (quando só há valorMetaGap, sem BA/PPI projetados)
-              const metasGapOnly = metasFuturas.filter(m => m.valorMetaGap != null && (m.valorMetaBA == null || m.valorMetaPPI == null));
+              series.push({
+                type: pres.ChartType.line,
+                data: [ mkSerie('PPI (Pretos, Pardos e Indígenas)', histPPIByAno) ],
+                options: {
+                  chartColors: ['E05A1A'], lineSize: 2.5,
+                  lineDataSymbol: 'circle', lineDataSymbolSize: 5,
+                  showValue: true, dataLabelPosition: 'b',
+                  dataLabelFontSize: 7, dataLabelColor: 'E05A1A',
+                  dataLabelFormatCode: fmtCode,
+                },
+              });
+              if (temProjBA) {
+                series.push({
+                  type: pres.ChartType.line,
+                  data: [ mkSerie('Meta BA (projeção)', metaBAByAno) ],
+                  options: {
+                    chartColors: ['A88670'], lineSize: 1.5,
+                    lineDataSymbol: 'diamond', lineDataSymbolSize: 4,
+                    showValue: !muitosAnos, dataLabelPosition: 't',
+                    dataLabelFontSize: 6, dataLabelColor: 'A88670',
+                    dataLabelFormatCode: fmtCode,
+                  },
+                });
+              }
+              if (temProjPPI) {
+                series.push({
+                  type: pres.ChartType.line,
+                  data: [ mkSerie('Meta PPI (projeção)', metaPPIByAno) ],
+                  options: {
+                    chartColors: ['F2A87A'], lineSize: 1.5,
+                    lineDataSymbol: 'diamond', lineDataSymbolSize: 4,
+                    showValue: !muitosAnos, dataLabelPosition: 'b',
+                    dataLabelFontSize: 6, dataLabelColor: 'C26A2A',
+                    dataLabelFormatCode: fmtCode,
+                  },
+                });
+              }
+              slG.addChart(series, {
+                x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
+                ...baseAxis,
+              });
+              // Anotação 🎯 Gap-alvo — todos os anos com valorMetaGap mas sem BA/PPI projetados.
+              const metasGapOnly = metasArr.filter(m => m.valorMetaGap != null && (m.valorMetaBA == null || m.valorMetaPPI == null));
               if (metasGapOnly.length > 0 && !temProjBA && !temProjPPI) {
                 const txt = '🎯 Gap-alvo: ' + metasGapOnly.map(m => m.ano+' → '+(+m.valorMetaGap.toFixed(2))+(u?' '+u:'')).join(' · ');
                 slG.addText(txt, {x:cx+0.10,y:cy+cellH-0.22,w:cellW-0.20,h:0.18,fontSize:7,italic:true,bold:true,color:'7A5A0A',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});

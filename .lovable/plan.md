@@ -1,39 +1,55 @@
-## Objetivo
+## Ajustes em `public/Ferramenta_ER.html`
 
-Atualizar `public/dados_teste_variabilidade.json` para que os indicadores do Eixo 6 cubram **todos os cenários** da regra de renderização dos gráficos BA×PPI no PPT, sem precisar editar a ferramenta manualmente.
+Três correções no gerador de PPT, sem alterar a UI da ferramenta nem o JSON de teste.
 
-## Regra atual do código (referência)
+### 1. Linhas independentes para Meta BA e Meta PPI (gráfico Eixo 05)
 
-Para cada item do Eixo 6 com `incluirGraficos:true`:
-- O gráfico só é desenhado se houver `serie` com pelo menos um ponto válido (`ano`, `valorBA`, `valorPPI`).
-- **Projeção tracejada BA** aparece quando há `metas` com `ano > último ano histórico` e `valorMetaBA != null`.
-- **Projeção tracejada PPI** idem com `valorMetaPPI`.
-- **Anotação "🎯 Gap-alvo"** no rodapé do quadro aparece quando há metas futuras só com `valorMetaGap` (sem BA/PPI).
-- Quando `serie` está vazia, mostra placeholder "Sem pontos válidos na série temporal".
+**Hoje:** as projeções tracejadas só aparecem para metas com `ano > último ano histórico`, e existe uma "ponte" artificial que injeta o último ponto histórico no início da linha de meta (linhas 3034–3048). Isso impede comparar como as metas declaradas se comportavam *durante* a série histórica.
 
-## Cenários a cobrir (um por item)
+**Mudança:**
+- Remover o filtro `m.ano > ultAnoHist`. As linhas Meta BA e Meta PPI passam a usar **todas** as metas declaradas (`metasArr`), inclusive anos sobrepostos ao histórico.
+- Eliminar a "ponte" `metaBAByAno[ultAnoHist] = histBAByAno[ultAnoHist]` (e a equivalente de PPI). Cada série Meta usa apenas os anos onde de fato existe um valor declarado.
+- O eixo X (`anosUni`) passa a ser a união de todos os anos com qualquer valor (hist BA, hist PPI, meta BA, meta PPI, meta Gap). Isso garante que uma meta declarada para 2019, com histórico iniciando em 2015, apareça como ponto isolado/segmento próprio.
+- A anotação "🎯 Gap-alvo" continua exclusiva dos casos sem `valorMetaBA`/`valorMetaPPI`, mas passa a considerar todos os anos (não apenas futuros).
 
-Vou ajustar as coalizões com `incluirGraficos:true` (**Pré-escola**, **Alfabetização**, **Tecnologia**, **Ensino Médio Integral**, **Gestão Escolar**) para que os itens cubram, no conjunto, os 6 cenários abaixo. Cada cenário fica claramente identificado em pelo menos um item.
+### 2. Eliminar sobreposição dos rótulos de dados no gráfico
 
-| # | Cenário | Onde | Como configurar |
-|---|---|---|---|
-| 1 | Projeção **BA + PPI** (duas tracejadas) | Tecnologia · item 1 "Acesso (%)" | metas futuras com `valorMetaBA` e `valorMetaPPI` preenchidos |
-| 2 | Projeção **apenas BA** | Tecnologia · item 2 "Banda larga (%)" | metas futuras só com `valorMetaBA` (zerar `valorMetaPPI`) |
-| 3 | Projeção **apenas PPI** | Tecnologia · item 3 "Letramento digital (%)" | metas futuras só com `valorMetaPPI` |
-| 4 | **Sem projeção BA/PPI** + anotação 🎯 Gap-alvo | Gestão Escolar · item 1 "Diretoras PPI" | metas futuras só com `valorMetaGap` |
-| 5 | **Sem metas futuras** (só linhas históricas) | Gestão Escolar · item 4 "Formação (h)" | apagar `metas` ou deixar todas com `ano <= último histórico` |
-| 6 | **Série vazia** (placeholder "Sem pontos válidos") | Gestão Escolar · item 3 "Escolas c/ plano (%)" | `serie: []` |
+**Hoje:** todas as 4 séries usam `showValue:true`, `dataLabelPosition:'t'`, `dataLabelFontSize:7` e `lineDataSymbolSize:7`. Resultado: números empilhados em cima uns dos outros e por baixo dos pontos.
 
-Os demais itens (Pré-escola, Alfabetização, EMI) ficam como hoje — já cobrem variações de unidade (%, R$/aluno, horas, Ponto SAEB) e sentidoDesejado subir/descer, que também afetam o eixo, formato dos rótulos e cores das linhas.
+**Mudança (via opções por série — pptxgenjs aceita `options` por entrada do array de dados):**
+- Posicionar rótulos de forma intercalada:
+  - `BA` → label position `t` (acima)
+  - `PPI` → label position `b` (abaixo)
+  - `Meta BA` → label position `t`, deslocamento sutil + cor mais clara
+  - `Meta PPI` → label position `b`, deslocamento sutil + cor mais clara
+- Reduzir `lineDataSymbolSize` de 7 → 4 (pontos menores deixam o número legível ao lado).
+- Reduzir `dataLabelFontSize` de 7 → 6 e mudar cor das metas para um cinza/laranja mais suave, deixando os históricos com peso visual maior.
+- Quando o nº de anos no eixo X for ≥ 8, exibir rótulos **apenas das séries históricas** (Meta BA/PPI ficam sem `showValue` mas mantêm a linha). Em séries curtas mantém todos.
+- Garantir `dataLabelPosition` por série usando o formato `{ name, labels, values, options:{ dataLabelPosition, showValue, dataLabelFontSize, dataLabelColor } }` suportado pelo pptxgenjs.
 
-## Outros ajustes pequenos no JSON
+### 3. Paginação dos itens nos slides de coalizão
 
-- Garantir que toda meta futura preserve `ano > último ano da série` (do contrário a projeção não aparece).
-- Manter os totais de Eixo 6 coerentes para que o slide dedicado ainda calcule status e o índice.
-- Não mexer nas outras coalizões nem em outros eixos.
+**Hoje:** o slide da coalizão renderiza Indicadores/Estratégias/Lacunas em 3 colunas com `c.indicadores.slice(0,10).forEach(...)` mais um corte `if (yI + totalH > colBot) return;` (linhas 2879, 2911, 2936). Resultado: Pré-escola tem 8 indicadores, mas só 4 cabem na coluna e o restante é silenciosamente descartado.
 
-## Arquivo afetado
+**Mudança:**
+- Antes de desenhar cada coluna, fazer um **layout pass**: percorrer todos os itens (sem o `slice(0,10)`) acumulando `totalH` e quebrar em "páginas" sempre que `yCol + totalH > colBot`.
+- O número total de páginas da coalizão = `max(páginasIndic, páginasEstrat, páginasLacunas)`.
+- Para cada página `p ∈ [0, totalPaginas)`:
+  - Criar um slide novo (já existe `pres.addSlide()` no loop — vira loop interno).
+  - Header recebe sufixo `· (parte p/total)` quando `totalPaginas > 1`.
+  - Repetir as faixas superiores (header marrom, índice de redução de gaps, diagnóstico + visão de sucesso, headers das 3 colunas, avisos de barreira).
+  - Cada coluna renderiza apenas o slice de itens correspondente à sua página; se uma coluna tem menos páginas que o total, exibe os itens da última página apenas no último slide (ou fica vazia nos slides extras — preferência: deixar vazia com label "(continua nos demais eixos)" para evitar confusão).
+- Manter a numeração dos itens contínua entre páginas (Indicador 5, 6, 7, 8…), não reiniciar do 1.
+- Remover o teto rígido `slice(0,10)` e `slice(0,8)` — passa a ser limitado apenas pelo espaço vertical, agora resolvido pela paginação.
 
-- `public/dados_teste_variabilidade.json` (único arquivo alterado).
+### Verificação
 
-Nada será mudado na ferramenta (`Ferramenta_ER.html`).
+Após editar, regenerar o PPT a partir de `public/dados_teste_variabilidade.json` (que já cobre os 6 cenários de gráfico + Pré-escola com 8 indicadores) e validar:
+1. Cada item Eixo 05 com meta BA/PPI mostra duas linhas tracejadas próprias, sem ponte forçada.
+2. Nenhum rótulo de valor fica sobreposto a outro ou ao ponto da linha em qualquer um dos 6 cenários.
+3. O slide da coalizão Pré-escola lista os 8 indicadores (provavelmente em 2 slides "parte 1/2" e "parte 2/2").
+
+### Arquivos afetados
+
+- `public/Ferramenta_ER.html` (única alteração).
+- Nenhuma mudança no JSON de teste nem em outros arquivos.
