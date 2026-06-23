@@ -214,31 +214,45 @@
           "metas": [
             {
               "ano": 2020,
-              "valorMetaGap": 13.6
+              "valorMetaGap": 13.6,
+              "valorMetaBA": 87.0,
+              "valorMetaPPI": 73.4
             },
             {
               "ano": 2022,
-              "valorMetaGap": 7.2
+              "valorMetaGap": 7.2,
+              "valorMetaBA": 87.8,
+              "valorMetaPPI": 80.6
             },
             {
               "ano": 2023,
-              "valorMetaGap": 4.0
+              "valorMetaGap": 4.0,
+              "valorMetaBA": 88.2,
+              "valorMetaPPI": 84.2
             },
             {
               "ano": 2024,
-              "valorMetaGap": 3.72
+              "valorMetaGap": 3.72,
+              "valorMetaBA": 88.6,
+              "valorMetaPPI": 84.88
             },
             {
               "ano": 2026,
-              "valorMetaGap": 3.16
+              "valorMetaGap": 3.16,
+              "valorMetaBA": 89.4,
+              "valorMetaPPI": 86.24
             },
             {
               "ano": 2029,
-              "valorMetaGap": 2.32
+              "valorMetaGap": 2.32,
+              "valorMetaBA": 90.6,
+              "valorMetaPPI": 88.28
             },
             {
               "ano": 2033,
-              "valorMetaGap": 1.2
+              "valorMetaGap": 1.2,
+              "valorMetaBA": 92.2,
+              "valorMetaPPI": 91.0
             }
           ]
         },
@@ -281,27 +295,39 @@
           "metas": [
             {
               "ano": 2020,
-              "valorMetaGap": 770.0
+              "valorMetaGap": 770.0,
+              "valorMetaBA": 6500.0,
+              "valorMetaPPI": 5730.0
             },
             {
               "ano": 2022,
-              "valorMetaGap": 440.0
+              "valorMetaGap": 440.0,
+              "valorMetaBA": 6500.8,
+              "valorMetaPPI": 6060.8
             },
             {
               "ano": 2024,
-              "valorMetaGap": 378.4
+              "valorMetaGap": 378.4,
+              "valorMetaBA": 6501.6,
+              "valorMetaPPI": 6123.2
             },
             {
               "ano": 2025,
-              "valorMetaGap": 347.6
+              "valorMetaGap": 347.6,
+              "valorMetaBA": 6502.0,
+              "valorMetaPPI": 6154.4
             },
             {
               "ano": 2028,
-              "valorMetaGap": 255.2
+              "valorMetaGap": 255.2,
+              "valorMetaBA": 6503.2,
+              "valorMetaPPI": 6248.0
             },
             {
               "ano": 2032,
-              "valorMetaGap": 132.0
+              "valorMetaGap": 132.0,
+              "valorMetaBA": 6504.8,
+              "valorMetaPPI": 6372.8
             }
           ]
         },
@@ -540,27 +566,39 @@
           "metas": [
             {
               "ano": 2021,
-              "valorMetaGap": 17.5
+              "valorMetaGap": 17.5,
+              "valorMetaBA": 69.0,
+              "valorMetaPPI": 51.5
             },
             {
               "ano": 2023,
-              "valorMetaGap": 10.0
+              "valorMetaGap": 10.0,
+              "valorMetaBA": 69.8,
+              "valorMetaPPI": 59.8
             },
             {
               "ano": 2025,
-              "valorMetaGap": 8.6
+              "valorMetaGap": 8.6,
+              "valorMetaBA": 70.6,
+              "valorMetaPPI": 62.0
             },
             {
               "ano": 2026,
-              "valorMetaGap": 7.9
+              "valorMetaGap": 7.9,
+              "valorMetaBA": 71.0,
+              "valorMetaPPI": 63.1
             },
             {
               "ano": 2029,
-              "valorMetaGap": 5.8
+              "valorMetaGap": 5.8,
+              "valorMetaBA": 72.2,
+              "valorMetaPPI": 66.4
             },
             {
               "ano": 2033,
-              "valorMetaGap": 3.0
+              "valorMetaGap": 3.0,
+              "valorMetaBA": 73.8,
+              "valorMetaPPI": 70.8
             }
           ]
         },
@@ -609,27 +647,39 @@
           "metas": [
             {
               "ano": 2021,
-              "valorMetaGap": 19.38
+              "valorMetaGap": 19.38,
+              "valorMetaBA": 64.0,
+              "valorMetaPPI": 44.62
             },
             {
               "ano": 2023,
-              "valorMetaGap": 13.75
+              "valorMetaGap": 13.75,
+              "valorMetaBA": 64.8,
+              "valorMetaPPI": 51.05
             },
             {
               "ano": 2025,
-              "valorMetaGap": 11.83
+              "valorMetaGap": 11.83,
+              "valorMetaBA": 65.6,
+              "valorMetaPPI": 53.77
             },
             {
               "ano": 2026,
-              "valorMetaGap": 10.86
+              "valorMetaGap": 10.86,
+              "valorMetaBA": 66.0,
+              "valorMetaPPI": 55.14
             },
             {
               "ano": 2029,
-              "valorMetaGap": 7.98
+              "valorMetaGap": 7.98,
+              "valorMetaBA": 67.2,
+              "valorMetaPPI": 59.22
             },
             {
               "ano": 2033,
-              "valorMetaGap": 4.13
+              "valorMetaGap": 4.13,
+              "valorMetaBA": 68.8,
+              "valorMetaPPI": 64.67
             }
           ]
         },
@@ -997,31 +1047,45 @@
           "metas": [
             {
               "ano": 2018,
-              "valorMetaGap": 22.37
+              "valorMetaGap": 22.37,
+              "valorMetaBA": 75.0,
+              "valorMetaPPI": 52.63
             },
             {
               "ano": 2020,
-              "valorMetaGap": 17.74
+              "valorMetaGap": 17.74,
+              "valorMetaBA": 75.8,
+              "valorMetaPPI": 58.06
             },
             {
               "ano": 2022,
-              "valorMetaGap": 13.11
+              "valorMetaGap": 13.11,
+              "valorMetaBA": 76.6,
+              "valorMetaPPI": 63.49
             },
             {
               "ano": 2023,
-              "valorMetaGap": 10.8
+              "valorMetaGap": 10.8,
+              "valorMetaBA": 77.0,
+              "valorMetaPPI": 66.2
             },
             {
               "ano": 2026,
-              "valorMetaGap": 8.53
+              "valorMetaGap": 8.53,
+              "valorMetaBA": 78.2,
+              "valorMetaPPI": 69.67
             },
             {
               "ano": 2029,
-              "valorMetaGap": 6.26
+              "valorMetaGap": 6.26,
+              "valorMetaBA": 79.4,
+              "valorMetaPPI": 73.14
             },
             {
               "ano": 2033,
-              "valorMetaGap": 3.24
+              "valorMetaGap": 3.24,
+              "valorMetaBA": 81.0,
+              "valorMetaPPI": 77.76
             }
           ]
         },
@@ -1070,31 +1134,45 @@
           "metas": [
             {
               "ano": 2018,
-              "valorMetaGap": 16.0
+              "valorMetaGap": 16.0,
+              "valorMetaBA": 70.0,
+              "valorMetaPPI": 54.0
             },
             {
               "ano": 2020,
-              "valorMetaGap": 12.0
+              "valorMetaGap": 12.0,
+              "valorMetaBA": 70.8,
+              "valorMetaPPI": 58.8
             },
             {
               "ano": 2022,
-              "valorMetaGap": 8.0
+              "valorMetaGap": 8.0,
+              "valorMetaBA": 71.6,
+              "valorMetaPPI": 63.6
             },
             {
               "ano": 2023,
-              "valorMetaGap": 6.0
+              "valorMetaGap": 6.0,
+              "valorMetaBA": 72.0,
+              "valorMetaPPI": 66.0
             },
             {
               "ano": 2026,
-              "valorMetaGap": 4.74
+              "valorMetaGap": 4.74,
+              "valorMetaBA": 73.2,
+              "valorMetaPPI": 68.46
             },
             {
               "ano": 2029,
-              "valorMetaGap": 3.48
+              "valorMetaGap": 3.48,
+              "valorMetaBA": 74.4,
+              "valorMetaPPI": 70.92
             },
             {
               "ano": 2033,
-              "valorMetaGap": 1.8
+              "valorMetaGap": 1.8,
+              "valorMetaBA": 76.0,
+              "valorMetaPPI": 74.2
             }
           ]
         }
@@ -1322,27 +1400,39 @@
           "metas": [
             {
               "ano": 2023,
-              "valorMetaGap": 7.2
+              "valorMetaGap": 7.2,
+              "valorMetaBA": 77.0,
+              "valorMetaPPI": 69.8
             },
             {
               "ano": 2025,
-              "valorMetaGap": 6.19
+              "valorMetaGap": 6.19,
+              "valorMetaBA": 77.8,
+              "valorMetaPPI": 71.61
             },
             {
               "ano": 2026,
-              "valorMetaGap": 5.69
+              "valorMetaGap": 5.69,
+              "valorMetaBA": 78.2,
+              "valorMetaPPI": 72.51
             },
             {
               "ano": 2027,
-              "valorMetaGap": 5.18
+              "valorMetaGap": 5.18,
+              "valorMetaBA": 78.6,
+              "valorMetaPPI": 73.42
             },
             {
               "ano": 2029,
-              "valorMetaGap": 4.18
+              "valorMetaGap": 4.18,
+              "valorMetaBA": 79.4,
+              "valorMetaPPI": 75.22
             },
             {
               "ano": 2033,
-              "valorMetaGap": 2.16
+              "valorMetaGap": 2.16,
+              "valorMetaBA": 81.0,
+              "valorMetaPPI": 78.84
             }
           ]
         },
@@ -1385,31 +1475,45 @@
           "metas": [
             {
               "ano": 2020,
-              "valorMetaGap": 12.24
+              "valorMetaGap": 12.24,
+              "valorMetaBA": 48.0,
+              "valorMetaPPI": 35.76
             },
             {
               "ano": 2022,
-              "valorMetaGap": 7.48
+              "valorMetaGap": 7.48,
+              "valorMetaBA": 48.8,
+              "valorMetaPPI": 41.32
             },
             {
               "ano": 2023,
-              "valorMetaGap": 5.1
+              "valorMetaGap": 5.1,
+              "valorMetaBA": 49.2,
+              "valorMetaPPI": 44.1
             },
             {
               "ano": 2024,
-              "valorMetaGap": 4.74
+              "valorMetaGap": 4.74,
+              "valorMetaBA": 49.6,
+              "valorMetaPPI": 44.86
             },
             {
               "ano": 2026,
-              "valorMetaGap": 4.03
+              "valorMetaGap": 4.03,
+              "valorMetaBA": 50.4,
+              "valorMetaPPI": 46.37
             },
             {
               "ano": 2029,
-              "valorMetaGap": 2.96
+              "valorMetaGap": 2.96,
+              "valorMetaBA": 51.6,
+              "valorMetaPPI": 48.64
             },
             {
               "ano": 2033,
-              "valorMetaGap": 1.53
+              "valorMetaGap": 1.53,
+              "valorMetaBA": 53.2,
+              "valorMetaPPI": 51.67
             }
           ]
         }
@@ -1626,27 +1730,39 @@
           "metas": [
             {
               "ano": 2022,
-              "valorMetaGap": 13.87
+              "valorMetaGap": 13.87,
+              "valorMetaBA": 59.0,
+              "valorMetaPPI": 45.13
             },
             {
               "ano": 2023,
-              "valorMetaGap": 7.8
+              "valorMetaGap": 7.8,
+              "valorMetaBA": 59.4,
+              "valorMetaPPI": 51.6
             },
             {
               "ano": 2024,
-              "valorMetaGap": 7.25
+              "valorMetaGap": 7.25,
+              "valorMetaBA": 59.8,
+              "valorMetaPPI": 52.55
             },
             {
               "ano": 2026,
-              "valorMetaGap": 6.16
+              "valorMetaGap": 6.16,
+              "valorMetaBA": 60.6,
+              "valorMetaPPI": 54.44
             },
             {
               "ano": 2029,
-              "valorMetaGap": 4.52
+              "valorMetaGap": 4.52,
+              "valorMetaBA": 61.8,
+              "valorMetaPPI": 57.28
             },
             {
               "ano": 2033,
-              "valorMetaGap": 2.34
+              "valorMetaGap": 2.34,
+              "valorMetaBA": 63.4,
+              "valorMetaPPI": 61.06
             }
           ]
         },
@@ -1695,27 +1811,39 @@
           "metas": [
             {
               "ano": 2022,
-              "valorMetaGap": 4.27
+              "valorMetaGap": 4.27,
+              "valorMetaBA": 52.0,
+              "valorMetaPPI": 47.73
             },
             {
               "ano": 2023,
-              "valorMetaGap": 2.4
+              "valorMetaGap": 2.4,
+              "valorMetaBA": 52.4,
+              "valorMetaPPI": 50.0
             },
             {
               "ano": 2024,
-              "valorMetaGap": 2.23
+              "valorMetaGap": 2.23,
+              "valorMetaBA": 52.8,
+              "valorMetaPPI": 50.57
             },
             {
               "ano": 2026,
-              "valorMetaGap": 1.9
+              "valorMetaGap": 1.9,
+              "valorMetaBA": 53.6,
+              "valorMetaPPI": 51.7
             },
             {
               "ano": 2029,
-              "valorMetaGap": 1.39
+              "valorMetaGap": 1.39,
+              "valorMetaBA": 54.8,
+              "valorMetaPPI": 53.41
             },
             {
               "ano": 2033,
-              "valorMetaGap": 0.72
+              "valorMetaGap": 0.72,
+              "valorMetaBA": 56.4,
+              "valorMetaPPI": 55.68
             }
           ]
         },
@@ -1903,31 +2031,45 @@
           "metas": [
             {
               "ano": 2020,
-              "valorMetaGap": 20.52
+              "valorMetaGap": 20.52,
+              "valorMetaBA": 61.0,
+              "valorMetaPPI": 40.48
             },
             {
               "ano": 2022,
-              "valorMetaGap": 14.04
+              "valorMetaGap": 14.04,
+              "valorMetaBA": 61.8,
+              "valorMetaPPI": 47.76
             },
             {
               "ano": 2023,
-              "valorMetaGap": 10.8
+              "valorMetaGap": 10.8,
+              "valorMetaBA": 62.2,
+              "valorMetaPPI": 51.4
             },
             {
               "ano": 2024,
-              "valorMetaGap": 10.04
+              "valorMetaGap": 10.04,
+              "valorMetaBA": 62.6,
+              "valorMetaPPI": 52.56
             },
             {
               "ano": 2026,
-              "valorMetaGap": 8.53
+              "valorMetaGap": 8.53,
+              "valorMetaBA": 63.4,
+              "valorMetaPPI": 54.87
             },
             {
               "ano": 2029,
-              "valorMetaGap": 6.26
+              "valorMetaGap": 6.26,
+              "valorMetaBA": 64.6,
+              "valorMetaPPI": 58.34
             },
             {
               "ano": 2033,
-              "valorMetaGap": 3.24
+              "valorMetaGap": 3.24,
+              "valorMetaBA": 66.2,
+              "valorMetaPPI": 62.96
             }
           ]
         },
@@ -1970,31 +2112,45 @@
           "metas": [
             {
               "ano": 2020,
-              "valorMetaGap": 34.4
+              "valorMetaGap": 34.4,
+              "valorMetaBA": 57.0,
+              "valorMetaPPI": 22.6
             },
             {
               "ano": 2022,
-              "valorMetaGap": 25.8
+              "valorMetaGap": 25.8,
+              "valorMetaBA": 57.8,
+              "valorMetaPPI": 32.0
             },
             {
               "ano": 2023,
-              "valorMetaGap": 21.5
+              "valorMetaGap": 21.5,
+              "valorMetaBA": 58.2,
+              "valorMetaPPI": 36.7
             },
             {
               "ano": 2024,
-              "valorMetaGap": 20.0
+              "valorMetaGap": 20.0,
+              "valorMetaBA": 58.6,
+              "valorMetaPPI": 38.6
             },
             {
               "ano": 2026,
-              "valorMetaGap": 16.98
+              "valorMetaGap": 16.98,
+              "valorMetaBA": 59.4,
+              "valorMetaPPI": 42.42
             },
             {
               "ano": 2029,
-              "valorMetaGap": 12.47
+              "valorMetaGap": 12.47,
+              "valorMetaBA": 60.6,
+              "valorMetaPPI": 48.13
             },
             {
               "ano": 2033,
-              "valorMetaGap": 6.45
+              "valorMetaGap": 6.45,
+              "valorMetaBA": 62.2,
+              "valorMetaPPI": 55.75
             }
           ]
         },
