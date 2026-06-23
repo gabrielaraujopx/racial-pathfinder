@@ -2512,7 +2512,7 @@ function refreshMat() {
     card.querySelector('.mat-eixos').innerHTML =
       renderEixoBar('Indicadores', mat.e1) +
       renderEixoBar('Estratégias', mat.e2) +
-      renderEixoBar('Lacunas', mat.e3);
+      renderEixoBar('Lacunas Identificadas', mat.e3);
     // Atualiza alerta de lacunas (declarou "Sem lacunas relevantes" em estágio inicial)
     const existing = document.querySelector('.alerta-lacunas');
     if (existing) existing.remove();
