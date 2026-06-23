@@ -858,9 +858,22 @@ function normalizeEixo6(e) {
     // indicador). Quando vazio, item entra como "Sem meta declarada" na
     // visão vs-meta e não compõe o agregado.
     metas: Array.isArray(it.metas) ? it.metas
-        .filter(m => m && m.ano != null && m.ano !== '' && m.valorMetaGap != null && m.valorMetaGap !== '')
-        .map(m => ({ ano: parseInt(m.ano,10), valorMetaGap: Number(m.valorMetaGap) }))
-        .filter(m => Number.isFinite(m.ano) && Number.isFinite(m.valorMetaGap))
+        .filter(m => m && m.ano != null && m.ano !== '')
+        .map(m => {
+          const ba  = (m.valorMetaBA  == null || m.valorMetaBA  === '') ? null : Number(m.valorMetaBA);
+          const ppi = (m.valorMetaPPI == null || m.valorMetaPPI === '') ? null : Number(m.valorMetaPPI);
+          let gap = (m.valorMetaGap == null || m.valorMetaGap === '') ? null : Number(m.valorMetaGap);
+          if (gap == null && ba != null && ppi != null && !isNaN(ba) && !isNaN(ppi)) {
+            gap = it.sentidoDesejado === 'descer' ? (ppi - ba) : (ba - ppi);
+          }
+          return {
+            ano: parseInt(m.ano,10),
+            valorMetaBA:  (ba  != null && Number.isFinite(ba))  ? ba  : null,
+            valorMetaPPI: (ppi != null && Number.isFinite(ppi)) ? ppi : null,
+            valorMetaGap: (gap != null && Number.isFinite(gap)) ? gap : null,
+          };
+        })
+        .filter(m => Number.isFinite(m.ano) && (m.valorMetaGap != null || (m.valorMetaBA != null && m.valorMetaPPI != null)))
         .sort((a,b)=>a.ano-b.ano)
       : [],
   })) : [];
