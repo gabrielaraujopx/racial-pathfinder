@@ -2874,13 +2874,14 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Redução de Gaps: '+e6.nivel+' · '+e6.pct+'%'
+          : 'Geral: '+e6.nivel+' · '+e6.pct+'%'
+              +'   |   vs Meta: '+(e6.meta&&e6.meta.nivel||'—')+(e6.meta&&e6.meta.nVsMetaValido>0?' · '+e6.meta.pct+'%':'')
               +'   |   '+(e6.gapAntesAgr!=null
                   ? 'Gap médio antes→depois: '+e6.gapAntesAgr+'→'+e6.gapDepoisAgr+' (Δ '+(e6.deltaAgr>0?'+':'')+e6.deltaAgr+')'
                   : 'Sem baseline antes×depois')
               +'   |   Cobertura Eixo 02→05: '+e6.nListados05+'/'+(e6.nIndic02||e6.nListados05)
               +(e6.nBarreira05>0?' · barreira '+e6.nBarreira05:'')
-              +'   |   Fech '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Retr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
+              +'   |   Avan '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Retr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
               +(e6.coalizaoAnoInicio!=null?'   |   Marco: '+e6.coalizaoAnoInicio:'')
               +(e6.avisoBarreiraMassa?'   |   ⚠ barreira em massa':'');
         eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:8,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
