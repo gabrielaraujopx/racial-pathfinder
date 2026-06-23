@@ -1385,6 +1385,53 @@ function calcEixo6(eixo6Obj, coaliz) {
   // Aviso de barreira em massa (≥50% dos listados sob barreira). Não afeta cálculo.
   const avisoBarreiraMassa = nListados05 > 0 && (nBarreira / nListados05) >= 0.5;
   const pct = pctBruto;
+  // ── VISÃO vs META (paralela à visão geral) ──────────────────
+  const SCORES_META = {
+    'Redução acima da meta': 100,
+    'Redução dentro da meta': 80,
+    'Redução abaixo da meta': 40,
+    'Não há redução': 10,
+    'Em retrocesso': 0,
+  };
+  const contagensMeta = {
+    acima:0, dentro:0, abaixo:0, semReducao:0, retrocesso:0, semMeta:0,
+  };
+  itens.forEach(x => {
+    const sm = x.calc.statusMeta;
+    if (sm === 'Redução acima da meta')      contagensMeta.acima++;
+    else if (sm === 'Redução dentro da meta') contagensMeta.dentro++;
+    else if (sm === 'Redução abaixo da meta') contagensMeta.abaixo++;
+    else if (sm === 'Não há redução')         contagensMeta.semReducao++;
+    else if (sm === 'Em retrocesso')          contagensMeta.retrocesso++;
+    else                                       contagensMeta.semMeta++;
+  });
+  const itensComMeta = itens.filter(x => SCORES_META[x.calc.statusMeta] != null);
+  const nVsMetaValido = itensComMeta.length;
+  const fatorMedicaoMeta = naoBarreira > 0 ? nVsMetaValido / naoBarreira : 0;
+  let pctMeta = 0, nivelMeta = 'Sem metas declaradas';
+  if (nListados05 === 0) {
+    nivelMeta = 'Sem dados';
+  } else if (nVsMetaValido === 0) {
+    nivelMeta = 'Sem metas declaradas';
+  } else {
+    const mediaMeta = itensComMeta.reduce((a,x)=>a+SCORES_META[x.calc.statusMeta],0) / nVsMetaValido;
+    pctMeta = Math.round(mediaMeta * fatorCobertura * fatorMedicaoMeta);
+    nivelMeta = pctMeta >= 80 ? 'Superando metas'
+              : pctMeta >= 60 ? 'No ritmo da meta'
+              : pctMeta >= 30 ? 'Aquém da meta'
+              : pctMeta >= 10 ? 'Sem redução vs meta'
+              :                  'Em retrocesso vs meta';
+    // Trava qualitativa: se nº de retrocessos > nº acima+dentro, teto Aquém da meta
+    if (contagensMeta.retrocesso > (contagensMeta.acima + contagensMeta.dentro)) {
+      if (pctMeta >= 60) nivelMeta = 'Aquém da meta';
+    }
+  }
+  const meta = {
+    pct: pctMeta, nivel: nivelMeta,
+    contagens: contagensMeta,
+    nVsMetaValido,
+    fatorMedicaoMeta: +fatorMedicaoMeta.toFixed(3),
+  };
   return {
     pct, pctBruto, nivel,
     compensado: false, justificativaBarreira: '', // legado (não há mais compensação)
@@ -1404,7 +1451,25 @@ function calcEixo6(eixo6Obj, coaliz) {
     coalizaoAnoInicio: e6.coalizaoAnoInicio,
     incluirGraficos: !!e6.incluirGraficos,
     semItens: itens.length === 0,
+    meta,
   };
+}
+function statusMetaCor(s) {
+  if (s === 'Redução acima da meta')  return '#1A6B3C';
+  if (s === 'Redução dentro da meta') return '#2D7A4F';
+  if (s === 'Redução abaixo da meta') return '#C8860A';
+  if (s === 'Não há redução')         return '#B36F1E';
+  if (s === 'Em retrocesso')          return '#C0392B';
+  if (s === 'Barreira de dados')      return '#7A6A60';
+  return '#8A8A8A';
+}
+function nivelMetaCor(n) {
+  if (n === 'Superando metas')        return '#1A6B3C';
+  if (n === 'No ritmo da meta')       return '#2D7A4F';
+  if (n === 'Aquém da meta')          return '#C8860A';
+  if (n === 'Sem redução vs meta')    return '#B36F1E';
+  if (n === 'Em retrocesso vs meta')  return '#C0392B';
+  return '#8A8A8A';
 }
 function impactoCor(nivel) {
   if (nivel === 'Reduzindo gaps') return '#2D7A4F';
