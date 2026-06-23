@@ -843,26 +843,50 @@
           "metrica": "Português 9º ano",
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2015, "valorBA": 265, "valorPPI": 235, "fonte": "SAEB" },
+            { "ano": 2017, "valorBA": 268, "valorPPI": 240, "fonte": "SAEB" },
+            { "ano": 2019, "valorBA": 270, "valorPPI": 246, "fonte": "SAEB" },
+            { "ano": 2021, "valorBA": 272, "valorPPI": 253, "fonte": "SAEB" },
+            { "ano": 2023, "valorBA": 275, "valorPPI": 262, "fonte": "SAEB" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
+            "ativa": false,
+            "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            { "ano": 2021, "valorMetaGap": 24.0, "valorMetaBA": 272.0, "valorMetaPPI": 248.0 },
+            { "ano": 2023, "valorMetaGap": 20.0, "valorMetaBA": 275.0, "valorMetaPPI": 255.0 },
+            { "ano": 2025, "valorMetaGap": 15.0, "valorMetaBA": 278.0, "valorMetaPPI": 263.0 },
+            { "ano": 2029, "valorMetaGap": 8.0,  "valorMetaBA": 283.0, "valorMetaPPI": 275.0 },
+            { "ano": 2033, "valorMetaGap": 3.0,  "valorMetaBA": 288.0, "valorMetaPPI": 285.0 }
+          ]
         },
         {
           "indicadorRef": "ind-1",
           "metrica": "Matemática 9º ano",
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2015, "valorBA": 270, "valorPPI": 238, "fonte": "SAEB" },
+            { "ano": 2017, "valorBA": 272, "valorPPI": 240, "fonte": "SAEB" },
+            { "ano": 2019, "valorBA": 274, "valorPPI": 241, "fonte": "SAEB" },
+            { "ano": 2021, "valorBA": 276, "valorPPI": 243, "fonte": "SAEB" },
+            { "ano": 2023, "valorBA": 278, "valorPPI": 246, "fonte": "SAEB" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
+            "ativa": false,
+            "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            { "ano": 2021, "valorMetaGap": 26.0, "valorMetaBA": 276.0, "valorMetaPPI": 250.0 },
+            { "ano": 2023, "valorMetaGap": 22.0, "valorMetaBA": 278.0, "valorMetaPPI": 256.0 },
+            { "ano": 2025, "valorMetaGap": 17.0, "valorMetaBA": 281.0, "valorMetaPPI": 264.0 },
+            { "ano": 2029, "valorMetaGap": 10.0, "valorMetaBA": 286.0, "valorMetaPPI": 276.0 },
+            { "ano": 2033, "valorMetaGap": 4.0,  "valorMetaBA": 290.0, "valorMetaPPI": 286.0 }
+          ]
         }
       ]
     }
