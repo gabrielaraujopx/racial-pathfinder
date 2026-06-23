@@ -1051,7 +1051,7 @@ function calcEixoIndicadores(indicadores, eixo6) {
   };
 }
 
-// ── Eixo 06: cálculo do Índice de Impacto em Equidade ─────────
+// ── Eixo 06: cálculo do Índice de Redução de Gaps ─────────
 // Para cada item com série temporal suficiente (>= pontosMinimos),
 // calcula sobre TRÊS janelas:
 //   • geral  — todos os anos preenchidos
@@ -1060,8 +1060,8 @@ function calcEixoIndicadores(indicadores, eixo6) {
 // Em cada janela: gap por ponto, Δ acumulado (% ou pts absolutos
 // quando |gap inicial| < limiar), inclinação anual via regressão
 // linear (mínimos quadrados) + R², e flag "Volátil" (R²<0,5 OU
-// ≥2 reversões em séries de 4+ pts). O status (Fechando/Estagnado/
-// Abrindo) usa a INCLINAÇÃO como critério primário, comparada a
+// ≥2 reversões em séries de 4+ pts). O status (Avançando/Estagnado/
+// Retrocesso) usa a INCLINAÇÃO como critério primário, comparada a
 // 5% do gap inicial (modo %) ou 5% do limiarGapAbsoluto (modo abs).
 // O status oficial do indicador (usado na agregação do eixo) vem
 // SEMPRE da janela "geral", para estabilidade da pontuação.
@@ -1124,8 +1124,8 @@ function _calcJanelaEixo6(pontos, sent, limAbs, minN, exigeMin) {
   const volatil = (r2 < 0.5) || (n >= 4 && reversoes >= 2);
   const thr = modoAbsoluto ? 0.05 * limAbs : 0.05 * Math.abs(gapIni);
   let status;
-  if (m <= -thr) status = 'Fechando';
-  else if (m >= thr) status = 'Abrindo';
+  if (m <= -thr) status = 'Avançando';
+  else if (m >= thr) status = 'Retrocesso';
   else status = 'Estagnado';
   return {
     status,
@@ -1223,8 +1223,8 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
       deltaImpacto   = +(gapDepoisMedio - gapAntesMedio).toFixed(2);
       const thr = Math.max(0.05 * Math.abs(gapAntesMedio), 0.05 * limAbs);
       if (geral.pontuavel) {
-        if (deltaImpacto <= -thr)      statusEfetivo = 'Fechando';
-        else if (deltaImpacto >=  thr) statusEfetivo = 'Abrindo';
+        if (deltaImpacto <= -thr)      statusEfetivo = 'Avançando';
+        else if (deltaImpacto >=  thr) statusEfetivo = 'Retrocesso';
         else                            statusEfetivo = 'Estagnado';
       }
     }
@@ -1253,13 +1253,13 @@ function calcEixo6(eixo6Obj, coaliz) {
   const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto, ctx) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
   const barreiras  = itens.filter(x => x.calc.barreiraItem);
-  const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
+  const SCORES = { 'Avançando': 100, 'Estagnado': 50, 'Retrocesso': 0 };
   const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0, barreira: 0 };
   itens.forEach(x => {
     const s = x.calc.status;
-    if (s === 'Fechando') contagens.fechando++;
+    if (s === 'Avançando') contagens.fechando++;
     else if (s === 'Estagnado') contagens.estagnado++;
-    else if (s === 'Abrindo') contagens.abrindo++;
+    else if (s === 'Retrocesso') contagens.abrindo++;
     else if (s === 'Barreira de dados') contagens.barreira++;
     else contagens.insuficiente++;
   });
@@ -1343,16 +1343,16 @@ function impactoCor(nivel) {
   return '#8A8A8A';
 }
 function statusEvolucaoCor(s) {
-  if (s === 'Fechando')   return '#2D7A4F';
+  if (s === 'Avançando')   return '#2D7A4F';
   if (s === 'Estagnado')  return '#C8860A';
-  if (s === 'Abrindo')    return '#C0392B';
+  if (s === 'Retrocesso')    return '#C0392B';
   if (s === 'Barreira de dados') return '#7A6A60';
   return '#8A8A8A'; // Insuficiente
 }
 function statusEvolucaoIcone(s) {
-  if (s === 'Fechando')  return '▼';
+  if (s === 'Avançando')  return '▼';
   if (s === 'Estagnado') return '■';
-  if (s === 'Abrindo')   return '▲';
+  if (s === 'Retrocesso')   return '▲';
   if (s === 'Barreira de dados') return '⚖';
   return '○';
 }
@@ -1586,7 +1586,7 @@ function renderCoalizao() {
   `;
 }
 
-// ── Render: card do Índice de Impacto em Equidade ─────────────
+// ── Render: card do Índice de Redução de Gaps ─────────────
 function renderImpactoCard(imp) {
   const cor = impactoCor(imp.nivel);
   const cgs = imp.contagens;
@@ -1600,7 +1600,7 @@ function renderImpactoCard(imp) {
     : '';
   return `<div class="maturidade-card" style="margin-top:-4px;border-left:3px solid ${cor}">
     <div>
-      <div class="mat-geral-label">Índice de Impacto em Equidade</div>
+      <div class="mat-geral-label">Índice de Redução de Gaps</div>
       <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
       <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 05 · ${imp.pct}%</div>
       ${linhaDelta}
@@ -1609,9 +1609,9 @@ function renderImpactoCard(imp) {
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;min-width:240px">
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${chip('▼ Fechando', cgs.fechando, '#2D7A4F')}
+        ${chip('▼ Avançando', cgs.fechando, '#2D7A4F')}
         ${chip('■ Estagnado', cgs.estagnado, '#C8860A')}
-        ${chip('▲ Abrindo', cgs.abrindo, '#C0392B')}
+        ${chip('▲ Retrocesso', cgs.abrindo, '#C0392B')}
         ${chip('○ Insuficiente', cgs.insuficiente, '#8A8A8A')}
         ${cgs.barreira>0 ? chip('⚖ Barreira', cgs.barreira, '#7A6A60') : ''}
       </div>
@@ -1634,7 +1634,7 @@ function renderEixo6Form(c) {
   return `
     <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;line-height:1.5">
       📊 Mede a <strong>redução do gap racial</strong> ao longo do tempo, entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas). Cada item referencia um indicador já cadastrado no Eixo Indicadores e registra uma série temporal (ano a ano).<br>
-      <span style="color:#3A5A7A;font-weight:600">⚖ Eixo separado da Maturidade Operacional — compõe o "Índice de Impacto em Equidade".</span>
+      <span style="color:#3A5A7A;font-weight:600">⚖ Eixo separado da Maturidade Operacional — compõe o "Índice de Redução de Gaps".</span>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bege);border-radius:5px;font-size:12px;">
@@ -2034,7 +2034,7 @@ function renderSintese() {
     { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores, c.eixo6); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
-    { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6, c); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
+    { label: 'Índice de Redução de Gaps (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6, c); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
   ];
 
   main.innerHTML = `
@@ -2361,7 +2361,7 @@ async function exportPPTX() {
     s.addShape(pres.ShapeType.ellipse,{x:7.63,y:0.175,w:0.1,h:0.1,fill:{color:matCorHex(mat.nivel)},line:{color:matCorHex(mat.nivel)}});
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
-    // Faixa fina: Índice de Impacto em Equidade (BA×PPI) — separado da Maturidade
+    // Faixa fina: Índice de Redução de Gaps (BA×PPI) — separado da Maturidade
     const impH = 0.62;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
@@ -2374,17 +2374,17 @@ async function exportPPTX() {
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.12,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
     if (imp.semItens) {
-      s.addText('Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados',
+      s.addText('Índice de Redução de Gaps (BA×PPI): sem itens cadastrados',
         {x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
     } else {
-      const l1 = 'Índice de Impacto (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%';
+      const l1 = 'Índice de Redução de Gaps (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%';
       const l2 = (imp.gapAntesAgr != null)
         ? 'Gap médio antes → depois: ' + imp.gapAntesAgr + ' → ' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')'
         : 'Gap antes → depois: sem baseline válido';
       const l3 = 'Cobertura Eixo 02 → 05: ' + imp.nListados05 + '/' + (imp.nIndic02||imp.nListados05)
                + (imp.nBarreira05>0?' · barreira em '+imp.nBarreira05:'')
-               + ' · Fech ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
-               + ' · Abr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
+               + ' · Avan ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
+               + ' · Retr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
                + (imp.avisoBarreiraMassa ? '  ⚠ barreira em massa' : '');
       s.addText(l1, {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.22,fontSize:12,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
       s.addText(l2, {x:PAD,y:hdrH+0.22,w:W-PAD*2,h:0.18,fontSize:8.5,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
@@ -2663,13 +2663,13 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%'
+          : 'Índice de Redução de Gaps: '+e6.nivel+' · '+e6.pct+'%'
               +'   |   '+(e6.gapAntesAgr!=null
                   ? 'Gap médio antes→depois: '+e6.gapAntesAgr+'→'+e6.gapDepoisAgr+' (Δ '+(e6.deltaAgr>0?'+':'')+e6.deltaAgr+')'
                   : 'Sem baseline antes×depois')
               +'   |   Cobertura Eixo 02→05: '+e6.nListados05+'/'+(e6.nIndic02||e6.nListados05)
               +(e6.nBarreira05>0?' · barreira '+e6.nBarreira05:'')
-              +'   |   Fech '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Abr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
+              +'   |   Fech '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Retr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
               +(e6.coalizaoAnoInicio!=null?'   |   Marco: '+e6.coalizaoAnoInicio:'')
               +(e6.avisoBarreiraMassa?'   |   ⚠ barreira em massa':'');
         eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:8,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
@@ -2744,7 +2744,7 @@ async function exportPPTX() {
           eg.addText(dRuns,{x:colXs[5]+0.04,y:y+0.03,w:colWs2[5]-0.08,h:rowH-0.06,valign:'middle',align:'left',wrap:true,shrinkText:true});
           // Status badge (+ flag Volátil)
           const stCor = statusEvolucaoCor(calc.status).replace('#','');
-          const stBg  = calc.status==='Fechando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Abrindo'?'FCE8E8':'EEEAE3';
+          const stBg  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
           const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?'\n⚠ Volátil':'');
           const bH = calc.volatil ? 0.36 : 0.24;
           const bY = y + (rowH - bH)/2;
