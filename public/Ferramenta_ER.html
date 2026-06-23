@@ -1737,22 +1737,45 @@ function renderImpactoCard(imp) {
   const avisoBarMassa = imp.avisoBarreiraMassa
     ? `<div style="margin-top:6px;padding:6px 10px;background:#FBEFD8;border-left:3px solid #C8860A;border-radius:4px;font-size:11px;color:#7A5A0A"><strong>⚠ Metade ou mais dos gaps deste eixo estão sob barreira de dados</strong> — interpretar com cautela.</div>`
     : '';
+  const m = imp.meta || { pct:0, nivel:'Sem metas declaradas', contagens:{acima:0,dentro:0,abaixo:0,semReducao:0,retrocesso:0,semMeta:0}, nVsMetaValido:0 };
+  const corM = nivelMetaCor(m.nivel);
+  const mcgs = m.contagens;
   return `<div class="maturidade-card" style="margin-top:-4px;border-left:3px solid ${cor}">
-    <div>
+    <div style="flex:1.4">
       <div class="mat-geral-label">Índice de Redução de Gaps</div>
-      <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
-      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 05 · ${imp.pct}%</div>
+      <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:9px;color:var(--cinza-m);font-weight:700;letter-spacing:.5px;margin-bottom:2px">VISÃO GERAL</div>
+          <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
+          <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">${imp.pct}%</div>
+        </div>
+        <div style="flex:1;min-width:200px;border-left:1px dashed #D6CFC2;padding-left:14px">
+          <div style="font-size:9px;color:var(--cinza-m);font-weight:700;letter-spacing:.5px;margin-bottom:2px">VS METAS DA COALIZÃO</div>
+          <div class="mat-geral-valor" style="color:${corM};font-size:18px">${m.nivel}</div>
+          <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">${m.nVsMetaValido>0 ? (m.pct+'% · '+m.nVsMetaValido+' item(s) com meta') : 'Nenhum item com meta declarada'}</div>
+        </div>
+      </div>
       ${linhaDelta}
       ${linhaCob}
       ${avisoBarMassa}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;min-width:240px">
       <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <div style="font-size:9px;color:var(--cinza-m);font-weight:700;letter-spacing:.5px;width:100%">GERAL</div>
         ${chip('▼ Avançando', cgs.fechando, '#2D7A4F')}
         ${chip('■ Estagnado', cgs.estagnado, '#C8860A')}
         ${chip('▲ Retrocesso', cgs.abrindo, '#C0392B')}
         ${chip('○ Insuficiente', cgs.insuficiente, '#8A8A8A')}
         ${cgs.barreira>0 ? chip('⚖ Barreira', cgs.barreira, '#7A6A60') : ''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <div style="font-size:9px;color:var(--cinza-m);font-weight:700;letter-spacing:.5px;width:100%">VS META</div>
+        ${chip('▲▲ Acima', mcgs.acima, '#1A6B3C')}
+        ${chip('✓ Dentro', mcgs.dentro, '#2D7A4F')}
+        ${chip('↘ Abaixo', mcgs.abaixo, '#C8860A')}
+        ${chip('= Sem redução', mcgs.semReducao, '#B36F1E')}
+        ${chip('▲ Retrocesso', mcgs.retrocesso, '#C0392B')}
+        ${mcgs.semMeta>0 ? chip('— Sem meta', mcgs.semMeta, '#8A8A8A') : ''}
       </div>
       <div style="font-size:10px;color:var(--cinza-m);line-height:1.4">
         Mede a redução do gap entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas) ao longo do tempo.
