@@ -689,11 +689,36 @@
           "unidade": "%",
           "sentidoDesejado": "subir",
           "serie": [
-            { "ano": 2015, "valorBA": 70, "valorPPI": 42, "fonte": "Coalizão/INEP" },
-            { "ano": 2017, "valorBA": 72, "valorPPI": 46, "fonte": "Coalizão/INEP" },
-            { "ano": 2019, "valorBA": 74, "valorPPI": 50, "fonte": "Coalizão/INEP" },
-            { "ano": 2021, "valorBA": 76, "valorPPI": 54, "fonte": "Coalizão/INEP" },
-            { "ano": 2023, "valorBA": 78, "valorPPI": 58, "fonte": "Coalizão/INEP" }
+            {
+              "ano": 2015,
+              "valorBA": 70,
+              "valorPPI": 42,
+              "fonte": "Coalizão/INEP"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 72,
+              "valorPPI": 46,
+              "fonte": "Coalizão/INEP"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 74,
+              "valorPPI": 50,
+              "fonte": "Coalizão/INEP"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 76,
+              "valorPPI": 54,
+              "fonte": "Coalizão/INEP"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 78,
+              "valorPPI": 58,
+              "fonte": "Coalizão/INEP"
+            }
           ],
           "observacoes": "",
           "barreira": {
@@ -701,11 +726,36 @@
             "justificativa": ""
           },
           "metas": [
-            { "ano": 2021, "valorMetaGap": 16.0, "valorMetaBA": 76.0, "valorMetaPPI": 60.0 },
-            { "ano": 2023, "valorMetaGap": 12.0, "valorMetaBA": 78.0, "valorMetaPPI": 66.0 },
-            { "ano": 2025, "valorMetaGap": 8.0,  "valorMetaBA": 80.0, "valorMetaPPI": 72.0 },
-            { "ano": 2029, "valorMetaGap": 4.0,  "valorMetaBA": 84.0, "valorMetaPPI": 80.0 },
-            { "ano": 2033, "valorMetaGap": 2.0,  "valorMetaBA": 88.0, "valorMetaPPI": 86.0 }
+            {
+              "ano": 2021,
+              "valorMetaGap": 16.0,
+              "valorMetaBA": 76.0,
+              "valorMetaPPI": 60.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 12.0,
+              "valorMetaBA": 78.0,
+              "valorMetaPPI": 66.0
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 8.0,
+              "valorMetaBA": 80.0,
+              "valorMetaPPI": 72.0
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 4.0,
+              "valorMetaBA": 84.0,
+              "valorMetaPPI": 80.0
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 2.0,
+              "valorMetaBA": 88.0,
+              "valorMetaPPI": 86.0
+            }
           ]
         },
         {
@@ -714,10 +764,30 @@
           "unidade": "%",
           "sentidoDesejado": "subir",
           "serie": [
-            { "ano": 2018, "valorBA": 55, "valorPPI": 30, "fonte": "Coalizão" },
-            { "ano": 2020, "valorBA": 58, "valorPPI": 34, "fonte": "Coalizão" },
-            { "ano": 2022, "valorBA": 62, "valorPPI": 40, "fonte": "Coalizão" },
-            { "ano": 2023, "valorBA": 64, "valorPPI": 44, "fonte": "Coalizão" }
+            {
+              "ano": 2018,
+              "valorBA": 55,
+              "valorPPI": 30,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2020,
+              "valorBA": 58,
+              "valorPPI": 34,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2022,
+              "valorBA": 62,
+              "valorPPI": 40,
+              "fonte": "Coalizão"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 64,
+              "valorPPI": 44,
+              "fonte": "Coalizão"
+            }
           ],
           "observacoes": "",
           "barreira": {
@@ -844,11 +914,36 @@
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
           "serie": [
-            { "ano": 2015, "valorBA": 265, "valorPPI": 235, "fonte": "SAEB" },
-            { "ano": 2017, "valorBA": 268, "valorPPI": 240, "fonte": "SAEB" },
-            { "ano": 2019, "valorBA": 270, "valorPPI": 246, "fonte": "SAEB" },
-            { "ano": 2021, "valorBA": 272, "valorPPI": 253, "fonte": "SAEB" },
-            { "ano": 2023, "valorBA": 275, "valorPPI": 262, "fonte": "SAEB" }
+            {
+              "ano": 2015,
+              "valorBA": 265,
+              "valorPPI": 235,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 268,
+              "valorPPI": 240,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 270,
+              "valorPPI": 246,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 272,
+              "valorPPI": 253,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 275,
+              "valorPPI": 262,
+              "fonte": "SAEB"
+            }
           ],
           "observacoes": "",
           "barreira": {
@@ -856,11 +951,36 @@
             "justificativa": ""
           },
           "metas": [
-            { "ano": 2021, "valorMetaGap": 24.0, "valorMetaBA": 272.0, "valorMetaPPI": 248.0 },
-            { "ano": 2023, "valorMetaGap": 20.0, "valorMetaBA": 275.0, "valorMetaPPI": 255.0 },
-            { "ano": 2025, "valorMetaGap": 15.0, "valorMetaBA": 278.0, "valorMetaPPI": 263.0 },
-            { "ano": 2029, "valorMetaGap": 8.0,  "valorMetaBA": 283.0, "valorMetaPPI": 275.0 },
-            { "ano": 2033, "valorMetaGap": 3.0,  "valorMetaBA": 288.0, "valorMetaPPI": 285.0 }
+            {
+              "ano": 2021,
+              "valorMetaGap": 24.0,
+              "valorMetaBA": 272.0,
+              "valorMetaPPI": 248.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 20.0,
+              "valorMetaBA": 275.0,
+              "valorMetaPPI": 255.0
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 15.0,
+              "valorMetaBA": 278.0,
+              "valorMetaPPI": 263.0
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 8.0,
+              "valorMetaBA": 283.0,
+              "valorMetaPPI": 275.0
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 3.0,
+              "valorMetaBA": 288.0,
+              "valorMetaPPI": 285.0
+            }
           ]
         },
         {
@@ -869,11 +989,36 @@
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
           "serie": [
-            { "ano": 2015, "valorBA": 270, "valorPPI": 238, "fonte": "SAEB" },
-            { "ano": 2017, "valorBA": 272, "valorPPI": 240, "fonte": "SAEB" },
-            { "ano": 2019, "valorBA": 274, "valorPPI": 241, "fonte": "SAEB" },
-            { "ano": 2021, "valorBA": 276, "valorPPI": 243, "fonte": "SAEB" },
-            { "ano": 2023, "valorBA": 278, "valorPPI": 246, "fonte": "SAEB" }
+            {
+              "ano": 2015,
+              "valorBA": 270,
+              "valorPPI": 238,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2017,
+              "valorBA": 272,
+              "valorPPI": 240,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2019,
+              "valorBA": 274,
+              "valorPPI": 241,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2021,
+              "valorBA": 276,
+              "valorPPI": 243,
+              "fonte": "SAEB"
+            },
+            {
+              "ano": 2023,
+              "valorBA": 278,
+              "valorPPI": 246,
+              "fonte": "SAEB"
+            }
           ],
           "observacoes": "",
           "barreira": {
@@ -881,11 +1026,36 @@
             "justificativa": ""
           },
           "metas": [
-            { "ano": 2021, "valorMetaGap": 26.0, "valorMetaBA": 276.0, "valorMetaPPI": 250.0 },
-            { "ano": 2023, "valorMetaGap": 22.0, "valorMetaBA": 278.0, "valorMetaPPI": 256.0 },
-            { "ano": 2025, "valorMetaGap": 17.0, "valorMetaBA": 281.0, "valorMetaPPI": 264.0 },
-            { "ano": 2029, "valorMetaGap": 10.0, "valorMetaBA": 286.0, "valorMetaPPI": 276.0 },
-            { "ano": 2033, "valorMetaGap": 4.0,  "valorMetaBA": 290.0, "valorMetaPPI": 286.0 }
+            {
+              "ano": 2021,
+              "valorMetaGap": 26.0,
+              "valorMetaBA": 276.0,
+              "valorMetaPPI": 250.0
+            },
+            {
+              "ano": 2023,
+              "valorMetaGap": 22.0,
+              "valorMetaBA": 278.0,
+              "valorMetaPPI": 256.0
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 17.0,
+              "valorMetaBA": 281.0,
+              "valorMetaPPI": 264.0
+            },
+            {
+              "ano": 2029,
+              "valorMetaGap": 10.0,
+              "valorMetaBA": 286.0,
+              "valorMetaPPI": 276.0
+            },
+            {
+              "ano": 2033,
+              "valorMetaGap": 4.0,
+              "valorMetaBA": 290.0,
+              "valorMetaPPI": 286.0
+            }
           ]
         }
       ]
@@ -1014,32 +1184,28 @@
           },
           "metas": [
             {
-              "ano": 2018,
-              "valorMetaGap": 26.4
-            },
-            {
-              "ano": 2020,
-              "valorMetaGap": 19.8
-            },
-            {
-              "ano": 2022,
-              "valorMetaGap": 13.2
-            },
-            {
-              "ano": 2023,
-              "valorMetaGap": 9.9
+              "ano": 2024,
+              "valorMetaBA": 78.0,
+              "valorMetaPPI": 68.5,
+              "valorMetaGap": 9.5
             },
             {
               "ano": 2026,
-              "valorMetaGap": 7.82
+              "valorMetaBA": 80.0,
+              "valorMetaPPI": 72.0,
+              "valorMetaGap": 8.0
             },
             {
               "ano": 2029,
-              "valorMetaGap": 5.74
+              "valorMetaBA": 82.5,
+              "valorMetaPPI": 76.5,
+              "valorMetaGap": 6.0
             },
             {
               "ano": 2033,
-              "valorMetaGap": 2.97
+              "valorMetaBA": 85.0,
+              "valorMetaPPI": 82.0,
+              "valorMetaGap": 3.0
             }
           ]
         },
@@ -1087,46 +1253,28 @@
           },
           "metas": [
             {
-              "ano": 2018,
-              "valorMetaGap": 22.37,
-              "valorMetaBA": 75.0,
-              "valorMetaPPI": 52.63
-            },
-            {
-              "ano": 2020,
-              "valorMetaGap": 17.74,
-              "valorMetaBA": 75.8,
-              "valorMetaPPI": 58.06
-            },
-            {
-              "ano": 2022,
-              "valorMetaGap": 13.11,
-              "valorMetaBA": 76.6,
-              "valorMetaPPI": 63.49
-            },
-            {
-              "ano": 2023,
-              "valorMetaGap": 10.8,
-              "valorMetaBA": 77.0,
-              "valorMetaPPI": 66.2
+              "ano": 2024,
+              "valorMetaBA": 78.0,
+              "valorMetaPPI": null,
+              "valorMetaGap": null
             },
             {
               "ano": 2026,
-              "valorMetaGap": 8.53,
-              "valorMetaBA": 78.2,
-              "valorMetaPPI": 69.67
+              "valorMetaBA": 80.0,
+              "valorMetaPPI": null,
+              "valorMetaGap": null
             },
             {
               "ano": 2029,
-              "valorMetaGap": 6.26,
-              "valorMetaBA": 79.4,
-              "valorMetaPPI": 73.14
+              "valorMetaBA": 82.5,
+              "valorMetaPPI": null,
+              "valorMetaGap": null
             },
             {
               "ano": 2033,
-              "valorMetaGap": 3.24,
-              "valorMetaBA": 81.0,
-              "valorMetaPPI": 77.76
+              "valorMetaBA": 85.5,
+              "valorMetaPPI": null,
+              "valorMetaGap": null
             }
           ]
         },
@@ -1174,46 +1322,28 @@
           },
           "metas": [
             {
-              "ano": 2018,
-              "valorMetaGap": 16.0,
-              "valorMetaBA": 70.0,
-              "valorMetaPPI": 54.0
-            },
-            {
-              "ano": 2020,
-              "valorMetaGap": 12.0,
-              "valorMetaBA": 70.8,
-              "valorMetaPPI": 58.8
-            },
-            {
-              "ano": 2022,
-              "valorMetaGap": 8.0,
-              "valorMetaBA": 71.6,
-              "valorMetaPPI": 63.6
-            },
-            {
-              "ano": 2023,
-              "valorMetaGap": 6.0,
-              "valorMetaBA": 72.0,
-              "valorMetaPPI": 66.0
+              "ano": 2024,
+              "valorMetaBA": null,
+              "valorMetaPPI": 68.0,
+              "valorMetaGap": null
             },
             {
               "ano": 2026,
-              "valorMetaGap": 4.74,
-              "valorMetaBA": 73.2,
-              "valorMetaPPI": 68.46
+              "valorMetaBA": null,
+              "valorMetaPPI": 71.5,
+              "valorMetaGap": null
             },
             {
               "ano": 2029,
-              "valorMetaGap": 3.48,
-              "valorMetaBA": 74.4,
-              "valorMetaPPI": 70.92
+              "valorMetaBA": null,
+              "valorMetaPPI": 75.0,
+              "valorMetaGap": null
             },
             {
               "ano": 2033,
-              "valorMetaGap": 1.8,
-              "valorMetaBA": 76.0,
-              "valorMetaPPI": 74.2
+              "valorMetaBA": null,
+              "valorMetaPPI": 79.5,
+              "valorMetaGap": null
             }
           ]
         }
@@ -1701,27 +1831,27 @@
           },
           "metas": [
             {
-              "ano": 2022,
-              "valorMetaGap": 18.0
-            },
-            {
-              "ano": 2023,
-              "valorMetaGap": 12.0
-            },
-            {
               "ano": 2024,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 11.16
             },
             {
               "ano": 2026,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 9.48
             },
             {
               "ano": 2029,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 6.96
             },
             {
               "ano": 2033,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 3.6
             }
           ]
@@ -1812,81 +1942,13 @@
           "metrica": "Escolas c/ plano (%)",
           "unidade": "%",
           "sentidoDesejado": "subir",
-          "serie": [
-            {
-              "ano": 2016,
-              "valorBA": 12,
-              "valorPPI": 8,
-              "fonte": "SAEB/INEP"
-            },
-            {
-              "ano": 2018,
-              "valorBA": 18,
-              "valorPPI": 12,
-              "fonte": "SAEB/INEP"
-            },
-            {
-              "ano": 2020,
-              "valorBA": 28,
-              "valorPPI": 20,
-              "fonte": "SAEB/INEP"
-            },
-            {
-              "ano": 2022,
-              "valorBA": 42,
-              "valorPPI": 32,
-              "fonte": "SAEB/INEP"
-            },
-            {
-              "ano": 2023,
-              "valorBA": 52,
-              "valorPPI": 44,
-              "fonte": "SAEB/INEP"
-            }
-          ],
+          "serie": [],
           "observacoes": "",
           "barreira": {
             "ativa": false,
             "justificativa": ""
           },
-          "metas": [
-            {
-              "ano": 2022,
-              "valorMetaGap": 4.27,
-              "valorMetaBA": 52.0,
-              "valorMetaPPI": 47.73
-            },
-            {
-              "ano": 2023,
-              "valorMetaGap": 2.4,
-              "valorMetaBA": 52.4,
-              "valorMetaPPI": 50.0
-            },
-            {
-              "ano": 2024,
-              "valorMetaGap": 2.23,
-              "valorMetaBA": 52.8,
-              "valorMetaPPI": 50.57
-            },
-            {
-              "ano": 2026,
-              "valorMetaGap": 1.9,
-              "valorMetaBA": 53.6,
-              "valorMetaPPI": 51.7
-            },
-            {
-              "ano": 2029,
-              "valorMetaGap": 1.39,
-              "valorMetaBA": 54.8,
-              "valorMetaPPI": 53.41
-            },
-            {
-              "ano": 2033,
-              "valorMetaGap": 0.72,
-              "valorMetaBA": 56.4,
-              "valorMetaPPI": 55.68
-            }
-          ]
+          "metas": []
         },
         {
           "indicadorRef": "ind-3",
@@ -1927,27 +1989,15 @@
           "metas": [
             {
               "ano": 2022,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 14.0
             },
             {
               "ano": 2023,
+              "valorMetaBA": null,
+              "valorMetaPPI": null,
               "valorMetaGap": 6.0
-            },
-            {
-              "ano": 2024,
-              "valorMetaGap": 5.58
-            },
-            {
-              "ano": 2026,
-              "valorMetaGap": 4.74
-            },
-            {
-              "ano": 2029,
-              "valorMetaGap": 3.48
-            },
-            {
-              "ano": 2033,
-              "valorMetaGap": 1.8
             }
           ]
         }
