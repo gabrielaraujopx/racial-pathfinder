@@ -2247,11 +2247,11 @@ function renderSintese() {
       fn: c => {
         const e = calcEixo6(c.eixo6, c);
         const m = e.meta || { nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0 };
-        const clM = m.nivel==='Superando metas'?'mat-alta'
-                  : m.nivel==='No ritmo da meta'?'mat-avancada'
-                  : m.nivel==='Aquém da meta'?'mat-desenv'
-                  : m.nivel==='Sem redução vs meta'?'mat-baixa'
-                  : m.nivel==='Em retrocesso vs meta'?'mat-baixa'
+        const clM = m.nivel==='Acima'?'mat-alta'
+                  : m.nivel==='Dentro'?'mat-avancada'
+                  : m.nivel==='Abaixo'?'mat-desenv'
+                  : m.nivel==='Sem redução'?'mat-baixa'
+                  : m.nivel==='Retrocesso'?'mat-baixa'
                   : 'mat-vazia';
         const clG = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia';
         return {
@@ -2630,11 +2630,11 @@ async function exportPPTX() {
           if (e.semItens) return {isImpacto:true, metaNivel:'Sem dados', metaPct:null, geralNivel:'', geralPct:null, bg:'EEEAE3', cor:'8A8A8A'};
           const m = e.meta || {nivel:'Sem metas declaradas', pct:0, nVsMetaValido:0};
           const corM = (nivelMetaCor(m.nivel)||'#8A8A8A').replace('#','');
-          const bgM  = m.nivel==='Superando metas'?'E8F4EE'
-                     : m.nivel==='No ritmo da meta'?'D4EDE0'
-                     : m.nivel==='Aquém da meta'?'FEF3DC'
-                     : m.nivel==='Sem redução vs meta'?'FBE5D6'
-                     : m.nivel==='Em retrocesso vs meta'?'FCE8E8'
+          const bgM  = m.nivel==='Acima'?'E8F4EE'
+                     : m.nivel==='Dentro'?'D4EDE0'
+                     : m.nivel==='Abaixo'?'FEF3DC'
+                     : m.nivel==='Sem redução'?'FBE5D6'
+                     : m.nivel==='Retrocesso'?'FCE8E8'
                      : 'EEEAE3';
           return {
             isImpacto:true,
