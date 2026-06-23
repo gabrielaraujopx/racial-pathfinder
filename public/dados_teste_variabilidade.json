@@ -2030,7 +2030,7 @@
       "limiarGapAbsoluto": 1.0,
       "pptAnoInicial": null,
       "pptAnoFinal": null,
-      "coalizaoAnoInicio": null,
+      "coalizaoAnoInicio": 2021,
       "incluirGraficos": false,
       "itens": [
         {
