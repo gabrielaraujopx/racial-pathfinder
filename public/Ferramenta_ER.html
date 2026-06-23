@@ -1400,23 +1400,23 @@ function calcEixo6(eixo6Obj, coaliz) {
   const pct = pctBruto;
   // ── VISÃO vs META (paralela à visão geral) ──────────────────
   const SCORES_META = {
-    'Redução acima da meta': 100,
-    'Redução dentro da meta': 80,
-    'Redução abaixo da meta': 40,
-    'Não há redução': 10,
-    'Em retrocesso': 0,
+    'Acima': 100,
+    'Dentro': 80,
+    'Abaixo': 40,
+    'Sem redução': 10,
+    'Retrocesso': 0,
   };
   const contagensMeta = {
     acima:0, dentro:0, abaixo:0, semReducao:0, retrocesso:0, semMeta:0,
   };
   itens.forEach(x => {
     const sm = x.calc.statusMeta;
-    if (sm === 'Redução acima da meta')      contagensMeta.acima++;
-    else if (sm === 'Redução dentro da meta') contagensMeta.dentro++;
-    else if (sm === 'Redução abaixo da meta') contagensMeta.abaixo++;
-    else if (sm === 'Não há redução')         contagensMeta.semReducao++;
-    else if (sm === 'Em retrocesso')          contagensMeta.retrocesso++;
-    else                                       contagensMeta.semMeta++;
+    if (sm === 'Acima')            contagensMeta.acima++;
+    else if (sm === 'Dentro')      contagensMeta.dentro++;
+    else if (sm === 'Abaixo')      contagensMeta.abaixo++;
+    else if (sm === 'Sem redução') contagensMeta.semReducao++;
+    else if (sm === 'Retrocesso')  contagensMeta.retrocesso++;
+    else                            contagensMeta.semMeta++;
   });
   const itensComMeta = itens.filter(x => SCORES_META[x.calc.statusMeta] != null);
   const nVsMetaValido = itensComMeta.length;
@@ -1429,14 +1429,14 @@ function calcEixo6(eixo6Obj, coaliz) {
   } else {
     const mediaMeta = itensComMeta.reduce((a,x)=>a+SCORES_META[x.calc.statusMeta],0) / nVsMetaValido;
     pctMeta = Math.round(mediaMeta * fatorCobertura * fatorMedicaoMeta);
-    nivelMeta = pctMeta >= 80 ? 'Superando metas'
-              : pctMeta >= 60 ? 'No ritmo da meta'
-              : pctMeta >= 30 ? 'Aquém da meta'
-              : pctMeta >= 10 ? 'Sem redução vs meta'
-              :                  'Em retrocesso vs meta';
-    // Trava qualitativa: se nº de retrocessos > nº acima+dentro, teto Aquém da meta
+    nivelMeta = pctMeta >= 80 ? 'Acima'
+              : pctMeta >= 60 ? 'Dentro'
+              : pctMeta >= 30 ? 'Abaixo'
+              : pctMeta >= 10 ? 'Sem redução'
+              :                  'Retrocesso';
+    // Trava qualitativa: se nº de retrocessos > nº acima+dentro, teto Abaixo
     if (contagensMeta.retrocesso > (contagensMeta.acima + contagensMeta.dentro)) {
-      if (pctMeta >= 60) nivelMeta = 'Aquém da meta';
+      if (pctMeta >= 60) nivelMeta = 'Abaixo';
     }
   }
   const meta = {
