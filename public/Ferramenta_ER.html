@@ -2502,7 +2502,7 @@ function addEixo6Meta(i) {
   const it = _e6().itens[i]; if (!it) return;
   if (!Array.isArray(it.metas)) it.metas = [];
   const ultAno = it.metas.reduce((m, x) => Math.max(m, parseInt(x.ano,10)||0), 0);
-  it.metas.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorMetaGap: null });
+  it.metas.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorMetaBA: null, valorMetaPPI: null, valorMetaGap: null });
   saveState(); renderCoalizao();
 }
 function removeEixo6Meta(i, j) {
@@ -2514,6 +2514,8 @@ function upEixo6Meta(i, j, campo, val) {
   const it = _e6().itens[i]; if (!it || !it.metas || !it.metas[j]) return;
   if (campo === 'ano')           it.metas[j].ano = val === '' ? '' : parseInt(val, 10);
   else if (campo === 'valorMetaGap') it.metas[j].valorMetaGap = val === '' ? null : Number(val);
+  else if (campo === 'valorMetaBA')  it.metas[j].valorMetaBA  = val === '' ? null : Number(val);
+  else if (campo === 'valorMetaPPI') it.metas[j].valorMetaPPI = val === '' ? null : Number(val);
   saveState(); refreshImpacto();
 }
 function refreshImpacto() {
