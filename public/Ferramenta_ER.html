@@ -815,7 +815,11 @@ function defaultEixo6() {
     // Último ano em que a coalizão ainda NÃO atuava de forma consistente.
     // Usado como ponto de sobreposição entre as janelas "Antes" e "Depois".
     coalizaoAnoInicio: null,
+    // Barreira de dados deixou de ser por eixo — agora é por item (item.barreira).
+    // Campo mantido apenas para retrocompat de JSONs antigos (sempre tratado como inativo).
     barreira: { ativa: false, justificativa: '' },
+    // Quando true, o PPT gera slide(s) extra com gráficos de linha BA×PPI por item.
+    incluirGraficos: false,
     itens: [],
   };
 }
@@ -828,7 +832,6 @@ function normalizeEixo6(e) {
     const n = parseInt(v, 10);
     return Number.isFinite(n) ? n : null;
   };
-  const b = (e.barreira && typeof e.barreira === 'object') ? e.barreira : {};
   const itens = Array.isArray(e.itens) ? e.itens.map(it => ({
     indicadorRef: String(it.indicadorRef || ''),
     metrica: String(it.metrica || ''),
@@ -845,6 +848,12 @@ function normalizeEixo6(e) {
     pptAnoInicialOverride: _yr(it.pptAnoInicialOverride),
     pptAnoFinalOverride:   _yr(it.pptAnoFinalOverride),
     coalizaoAnoInicioOverride: _yr(it.coalizaoAnoInicioOverride),
+    // Barreira de dados por item: marca o gap como "não mensurável por falta
+    // de dados públicos". Não pontua, não entra na média, mas conta como
+    // listado (cobertura cruzada Eixo 02 × Eixo 05).
+    barreira: (it.barreira && typeof it.barreira === 'object')
+      ? { ativa: !!it.barreira.ativa, justificativa: String(it.barreira.justificativa || '') }
+      : { ativa: false, justificativa: '' },
   })) : [];
   return {
     pontosMinimos: Number.isFinite(pm) && pm >= 2 ? pm : 3,
@@ -852,7 +861,8 @@ function normalizeEixo6(e) {
     pptAnoInicial: _yr(e.pptAnoInicial),
     pptAnoFinal:   _yr(e.pptAnoFinal),
     coalizaoAnoInicio: _yr(e.coalizaoAnoInicio),
-    barreira: { ativa: !!b.ativa, justificativa: String(b.justificativa || '') },
+    barreira: { ativa: false, justificativa: '' }, // retrocompat: sempre inativo
+    incluirGraficos: !!e.incluirGraficos,
     itens,
   };
 }
@@ -1134,6 +1144,24 @@ function _calcJanelaEixo6(pontos, sent, limAbs, minN, exigeMin) {
 }
 function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
   ctx = ctx || {};
+  // ── Barreira de dados por item: curto-circuita o cálculo ──────
+  // O item conta como "listado" (cobertura cruzada), mas não pontua e
+  // não compõe a média de scores. Status especial "Barreira de dados".
+  if (item && item.barreira && item.barreira.ativa) {
+    return {
+      status: 'Barreira de dados',
+      gapAtual: null, gapInicial: null, variacaoPct: null, deltaAbs: null, modoAbsoluto: false,
+      inclinacao: null, r2: null, volatil: false, reversoes: 0,
+      anos: 0, anoInicial: null, anoFinal: null, pontuavel: false,
+      geral: null, antes: null, depois: null,
+      semBaseline: true,
+      gapAntesMedio: null, gapDepoisMedio: null, deltaImpacto: null,
+      marcoAno: null, marcoBruto: null,
+      recortePpt: { de: null, ate: null },
+      barreiraItem: true,
+      justificativaBarreira: String(item.barreira.justificativa || ''),
+    };
+  }
   const serie = (item.serie || [])
     .filter(p => p && p.ano !== '' && p.ano != null
               && p.valorBA != null && !isNaN(p.valorBA)
@@ -1167,23 +1195,31 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
                : (ctx.pptAnoInicial != null ? ctx.pptAnoInicial : null);
   const pptAte = item.pptAnoFinalOverride   != null ? item.pptAnoFinalOverride
                : (ctx.pptAnoFinal   != null ? ctx.pptAnoFinal   : null);
-  // ── Status efetivo = comparação direta ANTES vs DEPOIS da coalizão ──
-  // Mede o IMPACTO da coalizão: gap médio depois - gap médio antes.
-  // Fallback: sem baseline válido (sem antes E depois ambos com ≥1 ponto),
-  // mantém o status da janela "geral" (regressão linear) e marca semBaseline.
+  // ── Status efetivo = comparação ANTES × DEPOIS com JANELA SIMÉTRICA ──
+  // Toma N = min(#pts antes, #pts a partir do marco) e usa os N pontos
+  // imediatamente adjacentes ao marco em cada lado. Evita o viés de
+  // comparar "6 anos antes" com "4 anos depois" quando a coalizão é
+  // jovem em relação à série.
+  // Fallback: sem baseline válido em algum dos lados → mantém o status
+  // da janela "geral" (regressão linear) e marca semBaseline.
   const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
   let statusEfetivo = geral.status;
   let semBaseline = true;
   let gapAntesMedio = null, gapDepoisMedio = null, deltaImpacto = null;
+  let janelaN = 0;
   if (marcoEfetivo != null && serie.length > 0) {
-    // "antes" = estritamente anterior ao marco; "depois" = a partir do marco (inclusive).
     const ptsAntesStrict  = serie.filter(p => p.ano <  marcoEfetivo);
     const ptsDepoisStrict = serie.filter(p => p.ano >= marcoEfetivo);
-    if (ptsAntesStrict.length >= 1 && ptsDepoisStrict.length >= 1) {
+    const N = Math.min(ptsAntesStrict.length, ptsDepoisStrict.length);
+    if (N >= 1) {
       semBaseline = false;
+      janelaN = N;
+      // Toma os N pontos mais próximos do marco em cada lado.
+      const antesN  = ptsAntesStrict.slice(-N);
+      const depoisN = ptsDepoisStrict.slice(0, N);
       const avg = arr => arr.reduce((a,p)=>a+calcGap(p),0) / arr.length;
-      gapAntesMedio  = +avg(ptsAntesStrict).toFixed(2);
-      gapDepoisMedio = +avg(ptsDepoisStrict).toFixed(2);
+      gapAntesMedio  = +avg(antesN).toFixed(2);
+      gapDepoisMedio = +avg(depoisN).toFixed(2);
       deltaImpacto   = +(gapDepoisMedio - gapAntesMedio).toFixed(2);
       const thr = Math.max(0.05 * Math.abs(gapAntesMedio), 0.05 * limAbs);
       if (geral.pontuavel) {
@@ -1199,12 +1235,15 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
     geral, antes, depois,
     semBaseline,
     gapAntesMedio, gapDepoisMedio, deltaImpacto,
+    janelaSimetricaN: janelaN,
     marcoAno: marcoEfetivo,
     marcoBruto: marcoBruto,
     recortePpt: { de: pptDe, ate: pptAte },
+    barreiraItem: false,
+    justificativaBarreira: '',
   });
 }
-function calcEixo6(eixo6Obj) {
+function calcEixo6(eixo6Obj, coaliz) {
   const e6 = normalizeEixo6(eixo6Obj);
   const ctx = {
     pptAnoInicial: e6.pptAnoInicial,
@@ -1213,67 +1252,108 @@ function calcEixo6(eixo6Obj) {
   };
   const itens = e6.itens.map(it => ({ ...it, calc: calcItemEixo6(it, e6.pontosMinimos, e6.limiarGapAbsoluto, ctx) }));
   const pontuaveis = itens.filter(x => x.calc.pontuavel);
+  const barreiras  = itens.filter(x => x.calc.barreiraItem);
   const SCORES = { 'Fechando': 100, 'Estagnado': 50, 'Abrindo': 0 };
-  const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0 };
+  const contagens = { fechando: 0, estagnado: 0, abrindo: 0, insuficiente: 0, barreira: 0 };
   itens.forEach(x => {
     const s = x.calc.status;
     if (s === 'Fechando') contagens.fechando++;
     else if (s === 'Estagnado') contagens.estagnado++;
     else if (s === 'Abrindo') contagens.abrindo++;
+    else if (s === 'Barreira de dados') contagens.barreira++;
     else contagens.insuficiente++;
   });
-  let pctBruto = 0, fatorCob = 0, nivel = 'Sem dados';
-  if (pontuaveis.length > 0) {
+  // ── Cobertura cruzada Eixo 02 × Eixo 05 ──────────────────────
+  // A não-listagem de indicadores no Eixo 05 derruba o índice; a
+  // listagem com barreira NÃO derruba (apenas gera aviso).
+  const nIndic02 = (coaliz && Array.isArray(coaliz.indicadores)) ? coaliz.indicadores.length : 0;
+  const nListados05 = itens.length;
+  const nBarreira   = barreiras.length;
+  const denomCob = nIndic02 > 0 ? Math.max(3, nIndic02) : Math.max(3, nListados05);
+  const fatorCobertura = denomCob > 0 ? Math.min(1, nListados05 / denomCob) : 0;
+  const naoBarreira = Math.max(1, nListados05 - nBarreira);
+  const fatorMedicao = naoBarreira > 0 ? pontuaveis.length / naoBarreira : 0;
+  // Agregação antes×depois (apenas itens com baseline válido)
+  const comBase = pontuaveis.filter(x => !x.calc.semBaseline && x.calc.gapAntesMedio != null);
+  let gapAntesAgr = null, gapDepoisAgr = null, deltaAgr = null;
+  if (comBase.length > 0) {
+    gapAntesAgr  = +(comBase.reduce((a,x)=>a+x.calc.gapAntesMedio,0)  / comBase.length).toFixed(2);
+    gapDepoisAgr = +(comBase.reduce((a,x)=>a+x.calc.gapDepoisMedio,0) / comBase.length).toFixed(2);
+    deltaAgr     = +(gapDepoisAgr - gapAntesAgr).toFixed(2);
+  }
+  let pctBruto = 0, nivel = 'Sem dados';
+  if (nListados05 === 0) {
+    nivel = 'Sem dados';
+    pctBruto = 0;
+  } else if (pontuaveis.length === 0) {
+    // Listou itens mas nenhum é mensurável (todos Insuficiente/Barreira)
+    nivel = 'Sem medição';
+    pctBruto = 0;
+  } else {
     const mediaScore = pontuaveis.reduce((a, x) => a + SCORES[x.calc.status], 0) / pontuaveis.length;
-    fatorCob = Math.min(1, pontuaveis.length / 3);
-    pctBruto = Math.round(mediaScore * fatorCob);
+    pctBruto = Math.round(mediaScore * fatorCobertura * fatorMedicao);
     nivel = pctBruto >= 70 ? 'Reduzindo gaps'
           : pctBruto >= 40 ? 'Avanço parcial'
-          : pctBruto >= 20 ? 'Pouco avanço'
+          : pctBruto >= 20 ? 'Avanço incipiente'
           :                  'Sem avanço';
+    // Travas qualitativas: sem nenhum Fechando, não há "avanço real"
+    if (contagens.fechando === 0) {
+      if (contagens.abrindo > contagens.estagnado) {
+        nivel = 'Gaps se abrindo';
+      } else if (contagens.abrindo === 0 && contagens.estagnado > 0) {
+        nivel = 'Estagnado';
+      } else {
+        // teto: nunca passa de "Avanço incipiente"
+        if (pctBruto >= 40) nivel = 'Avanço incipiente';
+      }
+    }
   }
-  // Compensação por barreira de dados públicos (mesma fórmula dos demais eixos)
-  let pct = pctBruto, compensado = false, justificativaBarreira = '';
-  if (e6.barreira.ativa) {
-    pct = Math.round(pctBruto + (100 - pctBruto) * BARREIRA_FATOR);
-    compensado = true;
-    justificativaBarreira = e6.barreira.justificativa || '';
-    nivel = pct >= 70 ? 'Reduzindo gaps'
-          : pct >= 40 ? 'Avanço parcial'
-          : pct >= 20 ? 'Pouco avanço'
-          :             'Sem avanço';
-  }
+  // Aviso de barreira em massa (≥50% dos listados sob barreira). Não afeta cálculo.
+  const avisoBarreiraMassa = nListados05 > 0 && (nBarreira / nListados05) >= 0.5;
+  const pct = pctBruto;
   return {
-    pct, pctBruto, nivel, compensado, justificativaBarreira,
+    pct, pctBruto, nivel,
+    compensado: false, justificativaBarreira: '', // legado (não há mais compensação)
     itens, contagens,
     cobertura: pontuaveis.length,
     totalItens: itens.length,
+    nListados05, nBarreira05: nBarreira, nPontuaveis05: pontuaveis.length,
+    nIndic02, denomCob,
+    fatorCobertura: +fatorCobertura.toFixed(3),
+    fatorMedicao:   +fatorMedicao.toFixed(3),
+    gapAntesAgr, gapDepoisAgr, deltaAgr,
+    avisoBarreiraMassa,
     pontosMinimos: e6.pontosMinimos,
     limiarGapAbsoluto: e6.limiarGapAbsoluto,
     pptAnoInicial: e6.pptAnoInicial,
     pptAnoFinal:   e6.pptAnoFinal,
     coalizaoAnoInicio: e6.coalizaoAnoInicio,
-    barreira: e6.barreira,
+    incluirGraficos: !!e6.incluirGraficos,
     semItens: itens.length === 0,
   };
 }
 function impactoCor(nivel) {
   if (nivel === 'Reduzindo gaps') return '#2D7A4F';
   if (nivel === 'Avanço parcial') return '#1A6B3C';
-  if (nivel === 'Pouco avanço')   return '#C8860A';
+  if (nivel === 'Avanço incipiente') return '#C8860A';
+  if (nivel === 'Estagnado')      return '#C8860A';
   if (nivel === 'Sem avanço')     return '#C0392B';
+  if (nivel === 'Gaps se abrindo') return '#C0392B';
+  if (nivel === 'Sem medição')    return '#7A6A60';
   return '#8A8A8A';
 }
 function statusEvolucaoCor(s) {
   if (s === 'Fechando')   return '#2D7A4F';
   if (s === 'Estagnado')  return '#C8860A';
   if (s === 'Abrindo')    return '#C0392B';
+  if (s === 'Barreira de dados') return '#7A6A60';
   return '#8A8A8A'; // Insuficiente
 }
 function statusEvolucaoIcone(s) {
   if (s === 'Fechando')  return '▼';
   if (s === 'Estagnado') return '■';
   if (s === 'Abrindo')   return '▲';
+  if (s === 'Barreira de dados') return '⚖';
   return '○';
 }
 
@@ -1397,7 +1477,7 @@ function showSintese() {
 function renderCoalizao() {
   const c = state.coaliz[state.currentCoalizao];
   const mat = calcMaturidade(c);
-  const imp = calcEixo6(c.eixo6);
+  const imp = calcEixo6(c.eixo6, c);
   const main = document.getElementById('main-content');
 
   main.innerHTML = `
@@ -1509,17 +1589,23 @@ function renderCoalizao() {
 // ── Render: card do Índice de Impacto em Equidade ─────────────
 function renderImpactoCard(imp) {
   const cor = impactoCor(imp.nivel);
-  const ajusteNota = imp.compensado
-    ? `<div title="${(imp.justificativaBarreira||'').replace(/"/g,'&quot;')}" style="font-size:10px;color:#7A6A60;margin-top:4px;font-style:italic">⚖ ajustado por barreira de dados (bruto: ${imp.pctBruto}%)</div>`
-    : '';
   const cgs = imp.contagens;
   const chip = (lbl, n, c) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;background:${c}1A;color:${c};font-size:11px;font-weight:600">${lbl} ${n}</span>`;
+  const linhaDelta = (imp.gapAntesAgr != null)
+    ? `<div style="font-size:11px;color:var(--cinza);margin-top:4px">Gap médio (antes → depois): <strong>${imp.gapAntesAgr}</strong> → <strong>${imp.gapDepoisAgr}</strong> <span style="color:${imp.deltaAgr<0?'#2D7A4F':imp.deltaAgr>0?'#C0392B':'#C8860A'};font-weight:700">(Δ ${imp.deltaAgr>0?'+':''}${imp.deltaAgr})</span></div>`
+    : `<div style="font-size:11px;color:var(--cinza-m);margin-top:4px;font-style:italic">Gap antes → depois: sem baseline válido em nenhum item</div>`;
+  const linhaCob = `<div style="font-size:11px;color:var(--cinza);margin-top:2px">Cobertura Eixo 02 → 05: <strong>${imp.nListados05}</strong> de <strong>${imp.nIndic02||imp.nListados05}</strong> indicadores listados${imp.nBarreira05>0?` · <strong>${imp.nBarreira05}</strong> com barreira de dados`:''}</div>`;
+  const avisoBarMassa = imp.avisoBarreiraMassa
+    ? `<div style="margin-top:6px;padding:6px 10px;background:#FBEFD8;border-left:3px solid #C8860A;border-radius:4px;font-size:11px;color:#7A5A0A"><strong>⚠ Metade ou mais dos gaps deste eixo estão sob barreira de dados</strong> — interpretar com cautela.</div>`
+    : '';
   return `<div class="maturidade-card" style="margin-top:-4px;border-left:3px solid ${cor}">
     <div>
       <div class="mat-geral-label">Índice de Impacto em Equidade</div>
       <div class="mat-geral-valor" style="color:${cor}">${imp.nivel}</div>
-      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 05 · ${imp.pct}% · cobertura ${imp.cobertura}/${imp.totalItens} ${imp.totalItens===1?'item':'itens'}</div>
-      ${ajusteNota}
+      <div style="font-size:11px;color:var(--cinza-m);margin-top:2px">Eixo 05 · ${imp.pct}%</div>
+      ${linhaDelta}
+      ${linhaCob}
+      ${avisoBarMassa}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;min-width:240px">
       <div style="display:flex;flex-wrap:wrap;gap:6px">
@@ -1527,6 +1613,7 @@ function renderImpactoCard(imp) {
         ${chip('■ Estagnado', cgs.estagnado, '#C8860A')}
         ${chip('▲ Abrindo', cgs.abrindo, '#C0392B')}
         ${chip('○ Insuficiente', cgs.insuficiente, '#8A8A8A')}
+        ${cgs.barreira>0 ? chip('⚖ Barreira', cgs.barreira, '#7A6A60') : ''}
       </div>
       <div style="font-size:10px;color:var(--cinza-m);line-height:1.4">
         Mede a redução do gap entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas) ao longo do tempo.
@@ -1544,7 +1631,6 @@ function renderEixo6Form(c) {
     label: (ind.texto || '(indicador sem nome)').slice(0, 80),
   }));
   const semIndicadores = indicadoresRefs.length === 0;
-  const b = e6.barreira || { ativa:false, justificativa:'' };
   return `
     <div style="font-size:11px;color:var(--cinza-m);margin-bottom:12px;padding:8px 12px;background:var(--bege);border-radius:5px;line-height:1.5">
       📊 Mede a <strong>redução do gap racial</strong> ao longo do tempo, entre <strong>BA</strong> (Brancos e Amarelos) e <strong>PPI</strong> (Pretos, Pardos e Indígenas). Cada item referencia um indicador já cadastrado no Eixo Indicadores e registra uma série temporal (ano a ano).<br>
@@ -1580,18 +1666,16 @@ function renderEixo6Form(c) {
       <span style="color:var(--cinza-m);font-size:11px">· o ano marcado aparece como último ponto do "Antes" E primeiro ponto do "Depois" (continuidade visual)</span>
     </div>
 
-    <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;">
-      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;color:var(--cinza)">
-        <input type="checkbox" ${b.ativa?'checked':''} style="margin-top:3px"
-          onchange="upEixo6Barreira('ativa', this.checked)">
-        <span><strong>Há barreira de acesso a dados públicos</strong> que limita este eixo (fator externo à coalizão).
-        <span style="color:var(--cinza-m);font-weight:400">Quando marcado, a nota é compensada em 50% da lacuna.</span></span>
+    <div style="margin-bottom:12px;padding:10px 12px;background:#FBF5EA;border-left:3px solid #C8860A;border-radius:5px;font-size:12px;color:var(--cinza)">
+      <strong>⚖ Barreira de dados públicos:</strong> agora marcada <strong>por item</strong> (gap), não mais por eixo. Itens com barreira não pontuam e não compõem a média, mas continuam contando como "listados" na cobertura cruzada com o Eixo 02.
+    </div>
+
+    <div style="margin-bottom:12px;padding:10px 12px;background:#EEF0F4;border-left:3px solid #1A4E7A;border-radius:5px;font-size:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--cinza)">
+        <input type="checkbox" ${e6.incluirGraficos?'checked':''} onchange="upEixo6Config('incluirGraficos', this.checked)">
+        <span><strong>Incluir slide(s) de visualização gráfica BA × PPI no PPT</strong>
+        <span style="color:var(--cinza-m);font-weight:400">— após o slide do Eixo 05 desta coalizão, gera gráfico de linha (BA vs PPI) por item listado, em grid de até 4 por slide.</span></span>
       </label>
-      <div id="barreira-just-eixo6" style="display:${b.ativa?'block':'none'};margin-top:8px">
-        <textarea rows="2" maxlength="280" class="campo-input" style="width:100%"
-          placeholder="Ex: dados desagregados por raça/cor não disponíveis em painéis públicos para esta etapa..."
-          oninput="upEixo6Barreira('justificativa', this.value)">${(b.justificativa||'').replace(/</g,'&lt;')}</textarea>
-      </div>
     </div>
 
     ${semIndicadores ? `<div style="padding:12px;background:#FCE8E8;border-left:3px solid #C0392B;border-radius:5px;font-size:12px;color:#7A2A20;margin-bottom:12px">
@@ -1687,6 +1771,18 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
         <input type="number" min="1900" max="2100" value="${it.coalizaoAnoInicioOverride ?? ''}" placeholder="—" style="width:70px;padding:3px 6px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px"
           onchange="upEixo6Item(${i},'coalizaoAnoInicioOverride',this.value)">
         <span style="color:var(--cinza-m);font-size:9px">${heredadoMarco}</span>
+      </div>
+
+      <div style="margin-top:8px;padding:8px 10px;background:${(it.barreira&&it.barreira.ativa)?'#FBEFD8':'#FAF8F2'};border:1px solid ${(it.barreira&&it.barreira.ativa)?'#C8860A':'#E0D9C8'};border-radius:5px;font-size:11px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--cinza)">
+          <input type="checkbox" ${(it.barreira&&it.barreira.ativa)?'checked':''} onchange="upEixo6ItemBarreira(${i},'ativa',this.checked)">
+          <span><strong>⚖ Barreira de dados públicos para este gap</strong>
+          <span style="color:var(--cinza-m);font-weight:400">— item conta como listado, mas não pontua nem entra na média.</span></span>
+        </label>
+        ${(it.barreira&&it.barreira.ativa) ? `
+        <textarea rows="2" maxlength="280" style="width:100%;margin-top:6px;padding:5px 7px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px;font-family:inherit"
+          placeholder="Ex: microdados de Censo Escolar não disponibilizam recorte racial por município..."
+          oninput="upEixo6ItemBarreira(${i},'justificativa',this.value)">${(it.barreira.justificativa||'').replace(/</g,'&lt;')}</textarea>` : ''}
       </div>
 
       ${(calc.geral || calc.antes || calc.depois) ? `
@@ -1938,7 +2034,7 @@ function renderSintese() {
     { label: 'Eixo Indicadores', fn: c => { const e = calcEixoIndicadores(c.indicadores, c.eixo6); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Estratégias', fn: c => { const e = calcEixo(c.estrategias,'estrategias'); return { tag: e.nivel+' ('+e.pct+'%)', cl: e.nivel==='Consolidado'?'mat-alta':e.nivel==='Avançado'?'mat-avancada':e.nivel==='Em desenvolvimento'?'mat-desenv':'mat-baixa' }; } },
     { label: 'Eixo Lacunas', fn: c => { const e = calcEixoLacunas(c.lacunas, c.estadoLacunas); return { tag: (e.nivelLacunas||'—')+' ('+e.pct+'%)', cl: lacunasMatClass(e.nivelLacunas) }; } },
-    { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':e.nivel==='Pouco avanço'?'mat-desenv':e.nivel==='Sem avanço'?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
+    { label: 'Índice de Impacto em Equidade (BA×PPI)', fn: c => { const e = calcEixo6(c.eixo6, c); const cl = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia'; return { tag: e.semItens?'—':(e.nivel+' ('+e.pct+'%)'), cl }; } },
   ];
 
   main.innerHTML = `
@@ -2084,22 +2180,29 @@ function upEixo6Config(campo, val) {
       const n = parseInt(val, 10);
       e6[campo] = Number.isFinite(n) ? n : null;
     }
+  } else if (campo === 'incluirGraficos') {
+    e6.incluirGraficos = !!val;
+    saveState();
+    return; // não precisa re-renderizar tudo
   }
   saveState(); renderCoalizao();
 }
-function upEixo6Barreira(campo, val) {
-  const e6 = _e6();
-  if (!e6.barreira) e6.barreira = { ativa:false, justificativa:'' };
-  e6.barreira[campo] = (campo === 'ativa') ? !!val : String(val||'');
-  saveState();
-  const just = document.getElementById('barreira-just-eixo6');
-  if (just) just.style.display = e6.barreira.ativa ? 'block' : 'none';
-  refreshImpacto();
+function upEixo6ItemBarreira(i, campo, val) {
+  const it = _e6().itens[i]; if (!it) return;
+  if (!it.barreira) it.barreira = { ativa:false, justificativa:'' };
+  if (campo === 'ativa') {
+    it.barreira.ativa = !!val;
+    saveState(); renderCoalizao();
+  } else {
+    it.barreira.justificativa = String(val||'');
+    saveState(); refreshImpacto();
+  }
 }
 function addEixo6Item() {
   _e6().itens.push({
     indicadorRef: '', metrica: '', unidade: '%', sentidoDesejado: 'subir',
     serie: [], observacoes: '',
+    barreira: { ativa: false, justificativa: '' },
   });
   saveState(); renderCoalizao();
 }
@@ -2143,7 +2246,7 @@ function upEixo6Ponto(i, j, campo, val) {
 function refreshImpacto() {
   // Re-renderiza somente o card de impacto + status badges dos itens, sem perder foco
   const c = state.coaliz[state.currentCoalizao];
-  const imp = calcEixo6(c.eixo6);
+  const imp = calcEixo6(c.eixo6, c);
   renderNav();
   const cards = document.querySelectorAll('.maturidade-card');
   if (cards.length >= 2) {
@@ -2243,7 +2346,7 @@ async function exportPPTX() {
   for (let ci = 0; ci < state.coaliz.length; ci++) {
     const c   = state.coaliz[ci];
     const mat = calcMaturidade(c);
-    const imp = calcEixo6(c.eixo6);
+    const imp = calcEixo6(c.eixo6, c);
     const W=10, H=5.625, PAD=0.28;
     const s   = pres.addSlide();
     s.background = { color: C.creme };
@@ -2259,19 +2362,34 @@ async function exportPPTX() {
     s.addText(mat.nivel,{x:7.76,y:0.06,w:1.88,h:0.34,fontSize:11,bold:true,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
 
     // Faixa fina: Índice de Impacto em Equidade (BA×PPI) — separado da Maturidade
-    const impH = 0.42;
+    const impH = 0.62;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
                     : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
                     : imp.nivel==='Avanço parcial' ? 'D4EDE0'
-                    : imp.nivel==='Pouco avanço'   ? 'FEF3DC'
+                    : imp.nivel==='Avanço incipiente' ? 'FEF3DC'
+                    : imp.nivel==='Estagnado'      ? 'FEF3DC'
+                    : imp.nivel==='Sem medição'    ? 'EEEAE3'
                                                    : 'FCE8E8';
-    const impTxt = imp.semItens
-      ? 'Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados'
-      : 'Índice de Impacto em Equidade (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%  ·  cobertura ' + imp.cobertura + '/' + imp.totalItens + (imp.compensado?'  ·  ajustado por barreira de dados':'');
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:W,h:impH,fill:{color:impBg},line:{color:impBg}});
     s.addShape(pres.ShapeType.rect,{x:0,y:hdrH,w:0.12,h:impH,fill:{color:impCorHex},line:{color:impCorHex}});
-    s.addText(impTxt,{x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+    if (imp.semItens) {
+      s.addText('Índice de Impacto em Equidade (BA×PPI): sem itens cadastrados',
+        {x:PAD,y:hdrH,w:W-PAD*2,h:impH,fontSize:13,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+    } else {
+      const l1 = 'Índice de Impacto (BA×PPI): ' + imp.nivel + ' · ' + imp.pct + '%';
+      const l2 = (imp.gapAntesAgr != null)
+        ? 'Gap médio antes → depois: ' + imp.gapAntesAgr + ' → ' + imp.gapDepoisAgr + ' (Δ ' + (imp.deltaAgr>0?'+':'') + imp.deltaAgr + ')'
+        : 'Gap antes → depois: sem baseline válido';
+      const l3 = 'Cobertura Eixo 02 → 05: ' + imp.nListados05 + '/' + (imp.nIndic02||imp.nListados05)
+               + (imp.nBarreira05>0?' · barreira em '+imp.nBarreira05:'')
+               + ' · Fech ' + imp.contagens.fechando + ' · Estag ' + imp.contagens.estagnado
+               + ' · Abr ' + imp.contagens.abrindo + ' · Insuf ' + imp.contagens.insuficiente
+               + (imp.avisoBarreiraMassa ? '  ⚠ barreira em massa' : '');
+      s.addText(l1, {x:PAD,y:hdrH+0.02,w:W-PAD*2,h:0.22,fontSize:12,bold:true,color:impCorHex,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l2, {x:PAD,y:hdrH+0.22,w:W-PAD*2,h:0.18,fontSize:8.5,color:C.cinza,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+      s.addText(l3, {x:PAD,y:hdrH+0.40,w:W-PAD*2,h:0.18,fontSize:8.5,color:C.cinzaM,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+    }
 
     // ── Faixa Diagnóstico + Visão de Sucesso ──
     const diagY  = hdrH + impH;
@@ -2545,11 +2663,16 @@ async function exportPPTX() {
         eg.addShape(pres.ShapeType.rect,{x:0,y:0.64,w:0.08,h:0.22,fill:{color:impCorHex2},line:{color:impCorHex2}});
         const subT = e6.semItens
           ? 'Sem itens pontuáveis'
-          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%   |   Itens: '+e6.totalItens+'   |   Cobertura: '+e6.cobertura+'/'+e6.totalItens+'   |   Pontos mín.: '+e6.pontosMinimos+'   |   Limiar: '+e6.limiarGapAbsoluto+' pts'
-              +(e6.coalizaoAnoInicio!=null?'   |   Marco coalizão: '+e6.coalizaoAnoInicio:'')
-              +((e6.pptAnoInicial!=null||e6.pptAnoFinal!=null)?'   |   Recorte: '+(e6.pptAnoInicial??'—')+'→'+(e6.pptAnoFinal??'—'):'')
-              +(e6.compensado?'   |   Ajustado por barreira':'');
-        eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:9,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+          : 'Índice de Impacto: '+e6.nivel+' · '+e6.pct+'%'
+              +'   |   '+(e6.gapAntesAgr!=null
+                  ? 'Gap médio antes→depois: '+e6.gapAntesAgr+'→'+e6.gapDepoisAgr+' (Δ '+(e6.deltaAgr>0?'+':'')+e6.deltaAgr+')'
+                  : 'Sem baseline antes×depois')
+              +'   |   Cobertura Eixo 02→05: '+e6.nListados05+'/'+(e6.nIndic02||e6.nListados05)
+              +(e6.nBarreira05>0?' · barreira '+e6.nBarreira05:'')
+              +'   |   Fech '+e6.contagens.fechando+' · Estag '+e6.contagens.estagnado+' · Abr '+e6.contagens.abrindo+' · Insuf '+e6.contagens.insuficiente
+              +(e6.coalizaoAnoInicio!=null?'   |   Marco: '+e6.coalizaoAnoInicio:'')
+              +(e6.avisoBarreiraMassa?'   |   ⚠ barreira em massa':'');
+        eg.addText(subT,{x:PAD,y:0.64,w:W-PAD*2,h:0.22,fontSize:8,bold:true,color:impCorHex2,fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
         // Header tabela
         headers.forEach((h,i) => {
           eg.addShape(pres.ShapeType.rect,{x:colXs[i],y:headerY,w:colWs2[i],h:headerH,fill:{color:C.marrom},line:{color:C.marrom}});
@@ -2631,6 +2754,86 @@ async function exportPPTX() {
         });
       });
     }
+
+    // ── SLIDES OPCIONAIS: GRÁFICOS BA × PPI ───────────────────
+    // Gerados após o slide do Eixo 05 quando a coalizão marca
+    // "Incluir slide(s) de visualização gráfica" (até 4 por slide).
+    if (imp.totalItens > 0 && imp.incluirGraficos) {
+      const W=10, H=5.625, PAD=0.28;
+      const itensG = imp.itens;
+      const perPage = 4; // 2×2
+      const totalPages = Math.ceil(itensG.length / perPage);
+      const indLookupG = {};
+      (c.indicadores || []).forEach((ind, idx) => { indLookupG['ind-'+idx] = ind.texto || '(indicador sem nome)'; });
+      for (let pg = 0; pg < totalPages; pg++) {
+        const slG = pres.addSlide();
+        slG.background = { color: C.creme };
+        // Header
+        slG.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.marrom},line:{color:C.marrom}});
+        const ttl = 'Eixo 05 — Gráficos BA × PPI · '+c.nome + (totalPages>1?' ('+(pg+1)+'/'+totalPages+')':'');
+        slG.addText(ttl,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
+        slG.addText('Linha BA (Brancos e Amarelos) × PPI (Pretos, Pardos e Indígenas) por ano · marco da coalizão em destaque',
+          {x:PAD,y:0.40,w:W-PAD*2,h:0.20,fontSize:9,color:'FFD8C0',fontFace:'Calibri'});
+
+        const gridTop  = 0.78;
+        const gridLeft = PAD;
+        const cellW    = (W - PAD*2 - 0.16) / 2;
+        const cellH    = (H - gridTop - 0.30 - 0.16) / 2;
+        const slice    = itensG.slice(pg*perPage, pg*perPage+perPage);
+        slice.forEach((it, k) => {
+          const col = k % 2, row = Math.floor(k / 2);
+          const cx = gridLeft + col * (cellW + 0.16);
+          const cy = gridTop  + row * (cellH + 0.16);
+          // Card de fundo
+          slG.addShape(pres.ShapeType.roundRect,{x:cx,y:cy,w:cellW,h:cellH,fill:{color:C.branco},line:{color:C.begeE},rectRadius:0.06});
+          // Título do indicador
+          const nomeInd = indLookupG[it.indicadorRef] || it.metrica || '(indicador sem nome)';
+          slG.addText(nomeInd,{x:cx+0.10,y:cy+0.06,w:cellW-0.20,h:0.28,fontSize:10,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true,shrinkText:true});
+          // Subtítulo: unidade · marco
+          const sub = (it.unidade?'Unidade: '+it.unidade:'') + (it.calc && it.calc.marcoAno!=null ? '   ·   Marco: '+it.calc.marcoAno : '');
+          if (sub) slG.addText(sub,{x:cx+0.10,y:cy+0.34,w:cellW-0.20,h:0.16,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:false,shrinkText:true});
+          // Conteúdo: gráfico OU card de barreira
+          const chartY = cy + 0.52;
+          const chartH = cellH - 0.58;
+          if (it.barreira && it.barreira.ativa) {
+            slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F0E8DF'},line:{color:C.begeE}});
+            slG.addText('⚖ Sem dados — barreira reconhecida',
+              {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:11,bold:true,color:'7A6A60',fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
+            if (it.barreira.justificativa) {
+              slG.addText((it.barreira.justificativa||'').slice(0,180),
+                {x:cx+0.14,y:chartY+chartH-0.36,w:cellW-0.28,h:0.32,fontSize:7,color:C.cinzaM,fontFace:'Calibri',italic:true,valign:'bottom',align:'center',wrap:true,shrinkText:true});
+            }
+          } else {
+            const serieG = (it.serie || [])
+              .filter(p => p && p.ano!=null && p.ano!=='' && p.valorBA!=null && !isNaN(p.valorBA) && p.valorPPI!=null && !isNaN(p.valorPPI))
+              .slice().sort((a,b)=>a.ano-b.ano);
+            if (serieG.length === 0) {
+              slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F8F4EC'},line:{color:C.begeE}});
+              slG.addText('Sem pontos válidos na série temporal',
+                {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
+            } else {
+              const labels = serieG.map(p => String(p.ano));
+              const dataChart = [
+                { name: 'BA (Brancos e Amarelos)', labels, values: serieG.map(p => +p.valorBA) },
+                { name: 'PPI (Pretos, Pardos e Indígenas)', labels, values: serieG.map(p => +p.valorPPI) },
+              ];
+              slG.addChart(pres.ChartType.line, dataChart, {
+                x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
+                chartColors: ['5C2E0A','E05A1A'],
+                lineSize: 2.5,
+                lineDataSymbol: 'circle',
+                lineDataSymbolSize: 7,
+                showLegend: true, legendPos: 'b', legendFontSize: 8,
+                catAxisLabelFontSize: 8, valAxisLabelFontSize: 8,
+                catAxisLabelColor: '5A4A40', valAxisLabelColor: '5A4A40',
+                showTitle: false,
+                plotArea: { fill: { color: 'FDFBF6' } },
+              });
+            }
+          }
+        });
+      }
+    }
   }
 
   // ── SLIDE SÍNTESE ─────────────────────────────────────────
@@ -2661,7 +2864,7 @@ async function exportPPTX() {
       { label:'Eixo Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
       { label:'Eixo Lacunas',      fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
-      { label:'Impacto (BA×PPI)',  fn: c => { const e=calcEixo6(c.eixo6); if (e.semItens) return {nivel:'Sem dados', pct:null, bg:'EEEAE3', cor:'8A8A8A'}; const bg = e.nivel==='Reduzindo gaps'?'E8F4EE':e.nivel==='Avanço parcial'?'D4EDE0':e.nivel==='Pouco avanço'?'FEF3DC':'FCE8E8'; return {nivel:e.nivel, pct:e.pct+'%', bg, cor:impactoCor(e.nivel).replace('#','')}; }},
+      { label:'Impacto (BA×PPI)',  fn: c => { const e=calcEixo6(c.eixo6, c); if (e.semItens) return {nivel:'Sem dados', pct:null, bg:'EEEAE3', cor:'8A8A8A'}; const bg = e.nivel==='Reduzindo gaps'?'E8F4EE':e.nivel==='Avanço parcial'?'D4EDE0':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'FEF3DC':e.nivel==='Sem medição'?'EEEAE3':'FCE8E8'; return {nivel:e.nivel, pct:e.pct+'%', bg, cor:impactoCor(e.nivel).replace('#','')}; }},
     ];
 
     dimsSint.forEach((dim,row) => {
