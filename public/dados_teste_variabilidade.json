@@ -688,24 +688,41 @@
           "metrica": "Alfabetização aos 7 (%)",
           "unidade": "%",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2015, "valorBA": 70, "valorPPI": 42, "fonte": "Coalizão/INEP" },
+            { "ano": 2017, "valorBA": 72, "valorPPI": 46, "fonte": "Coalizão/INEP" },
+            { "ano": 2019, "valorBA": 74, "valorPPI": 50, "fonte": "Coalizão/INEP" },
+            { "ano": 2021, "valorBA": 76, "valorPPI": 54, "fonte": "Coalizão/INEP" },
+            { "ano": 2023, "valorBA": 78, "valorPPI": 58, "fonte": "Coalizão/INEP" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "Ausência de microdados raciais para alfabetização em painéis públicos."
+            "ativa": false,
+            "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            { "ano": 2021, "valorMetaGap": 16.0, "valorMetaBA": 76.0, "valorMetaPPI": 60.0 },
+            { "ano": 2023, "valorMetaGap": 12.0, "valorMetaBA": 78.0, "valorMetaPPI": 66.0 },
+            { "ano": 2025, "valorMetaGap": 8.0,  "valorMetaBA": 80.0, "valorMetaPPI": 72.0 },
+            { "ano": 2029, "valorMetaGap": 4.0,  "valorMetaBA": 84.0, "valorMetaPPI": 80.0 },
+            { "ano": 2033, "valorMetaGap": 2.0,  "valorMetaBA": 88.0, "valorMetaPPI": 86.0 }
+          ]
         },
         {
           "indicadorRef": "ind-3",
           "metrica": "Formação específica (%)",
           "unidade": "%",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2018, "valorBA": 55, "valorPPI": 30, "fonte": "Coalizão" },
+            { "ano": 2020, "valorBA": 58, "valorPPI": 34, "fonte": "Coalizão" },
+            { "ano": 2022, "valorBA": 62, "valorPPI": 40, "fonte": "Coalizão" },
+            { "ano": 2023, "valorBA": 64, "valorPPI": 44, "fonte": "Coalizão" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "INEP não divulga formação por raça/cor."
+            "ativa": false,
+            "justificativa": ""
           },
           "metas": []
         },
@@ -826,26 +843,50 @@
           "metrica": "Português 9º ano",
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2015, "valorBA": 265, "valorPPI": 235, "fonte": "SAEB" },
+            { "ano": 2017, "valorBA": 268, "valorPPI": 240, "fonte": "SAEB" },
+            { "ano": 2019, "valorBA": 270, "valorPPI": 246, "fonte": "SAEB" },
+            { "ano": 2021, "valorBA": 272, "valorPPI": 253, "fonte": "SAEB" },
+            { "ano": 2023, "valorBA": 275, "valorPPI": 262, "fonte": "SAEB" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
+            "ativa": false,
+            "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            { "ano": 2021, "valorMetaGap": 24.0, "valorMetaBA": 272.0, "valorMetaPPI": 248.0 },
+            { "ano": 2023, "valorMetaGap": 20.0, "valorMetaBA": 275.0, "valorMetaPPI": 255.0 },
+            { "ano": 2025, "valorMetaGap": 15.0, "valorMetaBA": 278.0, "valorMetaPPI": 263.0 },
+            { "ano": 2029, "valorMetaGap": 8.0,  "valorMetaBA": 283.0, "valorMetaPPI": 275.0 },
+            { "ano": 2033, "valorMetaGap": 3.0,  "valorMetaBA": 288.0, "valorMetaPPI": 285.0 }
+          ]
         },
         {
           "indicadorRef": "ind-1",
           "metrica": "Matemática 9º ano",
           "unidade": "Ponto SAEB",
           "sentidoDesejado": "subir",
-          "serie": [],
+          "serie": [
+            { "ano": 2015, "valorBA": 270, "valorPPI": 238, "fonte": "SAEB" },
+            { "ano": 2017, "valorBA": 272, "valorPPI": 240, "fonte": "SAEB" },
+            { "ano": 2019, "valorBA": 274, "valorPPI": 241, "fonte": "SAEB" },
+            { "ano": 2021, "valorBA": 276, "valorPPI": 243, "fonte": "SAEB" },
+            { "ano": 2023, "valorBA": 278, "valorPPI": 246, "fonte": "SAEB" }
+          ],
           "observacoes": "",
           "barreira": {
-            "ativa": true,
-            "justificativa": "Microdados SAEB com recorte racial não disponíveis para todas as redes."
+            "ativa": false,
+            "justificativa": ""
           },
-          "metas": []
+          "metas": [
+            { "ano": 2021, "valorMetaGap": 26.0, "valorMetaBA": 276.0, "valorMetaPPI": 250.0 },
+            { "ano": 2023, "valorMetaGap": 22.0, "valorMetaBA": 278.0, "valorMetaPPI": 256.0 },
+            { "ano": 2025, "valorMetaGap": 17.0, "valorMetaBA": 281.0, "valorMetaPPI": 264.0 },
+            { "ano": 2029, "valorMetaGap": 10.0, "valorMetaBA": 286.0, "valorMetaPPI": 276.0 },
+            { "ano": 2033, "valorMetaGap": 4.0,  "valorMetaBA": 290.0, "valorMetaPPI": 286.0 }
+          ]
         }
       ]
     }
@@ -1989,7 +2030,7 @@
       "limiarGapAbsoluto": 1.0,
       "pptAnoInicial": null,
       "pptAnoFinal": null,
-      "coalizaoAnoInicio": null,
+      "coalizaoAnoInicio": 2021,
       "incluirGraficos": false,
       "itens": [
         {
