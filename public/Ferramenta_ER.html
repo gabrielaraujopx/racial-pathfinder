@@ -1169,6 +1169,8 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
       recortePpt: { de: null, ate: null },
       barreiraItem: true,
       justificativaBarreira: String(item.barreira.justificativa || ''),
+      statusMeta: 'Barreira de dados',
+      metaInfo: null,
     };
   }
   const serie = (item.serie || [])
@@ -1250,7 +1252,70 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
     recortePpt: { de: pptDe, ate: pptAte },
     barreiraItem: false,
     justificativaBarreira: '',
-  });
+  }, _calcStatusVsMeta(item, serie, marcoEfetivo, sent, limAbs));
+}
+
+// ── Status vs Meta declarada pela coalizão ────────────────────
+// Compara a redução observada do gap com a redução esperada pela
+// meta no último ano com dados. Retorna { statusMeta, metaInfo }.
+function _calcStatusVsMeta(item, serie, marcoEfetivo, sent, limAbs) {
+  const metas = Array.isArray(item.metas) ? item.metas : [];
+  if (metas.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
+  if (!serie || serie.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
+  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  // Ano mais recente com dado e que possui meta declarada ≤ a ele.
+  const anosComDado = Array.from(new Set(serie.map(p=>p.ano))).sort((a,b)=>a-b);
+  const ultAnoDado = anosComDado[anosComDado.length-1];
+  const metasAplicaveis = metas.filter(m => m.ano <= ultAnoDado);
+  if (metasAplicaveis.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
+  const meta = metasAplicaveis[metasAplicaveis.length-1];
+  // Encontra ponto da série no ano da meta (ou o mais próximo ≤)
+  const ptsNoAno = serie.filter(p => p.ano === meta.ano);
+  let gapReal;
+  if (ptsNoAno.length > 0) {
+    gapReal = ptsNoAno.reduce((a,p)=>a+calcGap(p),0)/ptsNoAno.length;
+  } else {
+    const ptsAteAno = serie.filter(p => p.ano <= meta.ano);
+    if (ptsAteAno.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
+    const ult = ptsAteAno[ptsAteAno.length-1];
+    gapReal = calcGap(ult);
+  }
+  // Baseline: gap no marco (ou primeiro ponto da série se sem marco)
+  let gapMarco = null;
+  if (marcoEfetivo != null) {
+    const ptsMarco = serie.filter(p => p.ano === marcoEfetivo);
+    if (ptsMarco.length > 0) gapMarco = ptsMarco.reduce((a,p)=>a+calcGap(p),0)/ptsMarco.length;
+  }
+  if (gapMarco == null) gapMarco = calcGap(serie[0]);
+  // Normaliza pelo sentido: nosso calcGap já devolve "gap" onde positivo = BA acima do grupo desejado.
+  // delta negativo = reduziu o gap (bom).
+  const deltaReal     = +(gapReal - gapMarco).toFixed(3);
+  const deltaEsperado = +(meta.valorMetaGap - gapMarco).toFixed(3);
+  const tol     = Math.max(0.10 * Math.abs(deltaEsperado), 0.05 * Math.max(Math.abs(gapMarco), limAbs));
+  const tolZero = Math.max(0.05 * Math.abs(gapMarco), 0.05 * limAbs);
+  let statusMeta;
+  if (deltaReal > tolZero) {
+    statusMeta = 'Em retrocesso';
+  } else if (Math.abs(deltaReal) <= tolZero) {
+    statusMeta = 'Não há redução';
+  } else if (deltaReal <= deltaEsperado - tol) {
+    statusMeta = 'Redução acima da meta';
+  } else if (Math.abs(deltaReal - deltaEsperado) <= tol) {
+    statusMeta = 'Redução dentro da meta';
+  } else {
+    statusMeta = 'Redução abaixo da meta';
+  }
+  return {
+    statusMeta,
+    metaInfo: {
+      anoMeta: meta.ano,
+      valorMetaGap: +meta.valorMetaGap.toFixed(2),
+      gapReal: +gapReal.toFixed(2),
+      gapMarco: +gapMarco.toFixed(2),
+      deltaReal,
+      deltaEsperado,
+    },
+  };
 }
 function calcEixo6(eixo6Obj, coaliz) {
   const e6 = normalizeEixo6(eixo6Obj);
