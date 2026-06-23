@@ -3226,14 +3226,37 @@ async function exportPPTX() {
             {text:fmtDelta(calc.depois),options:{fontSize:8,bold:true,color:'7A5A0A',fontFace:'Calibri'}},
           ];
           eg.addText(dRuns,{x:colXs[5]+0.04,y:y+0.03,w:colWs2[5]-0.08,h:rowH-0.06,valign:'middle',align:'left',wrap:true,shrinkText:true});
-          // Status badge (+ flag Volátil)
-          const stCor = statusEvolucaoCor(calc.status).replace('#','');
-          const stBg  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
-          const stTxt = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?'\n⚠ Volátil':'');
-          const bH = calc.volatil ? 0.36 : 0.24;
-          const bY = y + (rowH - bH)/2;
-          eg.addShape(pres.ShapeType.roundRect,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fill:{color:stBg},line:{color:stBg},rectRadius:0.04});
-          eg.addText(stTxt,{x:colXs[6]+0.06,y:bY,w:colWs2[6]-0.12,h:bH,fontSize:8,bold:true,color:stCor,fontFace:'Calibri',valign:'middle',align:'center',wrap:true,shrinkText:true});
+          // Status — duas badges: Geral (evolução) + vs Meta
+          const stCorG = statusEvolucaoCor(calc.status).replace('#','');
+          const stBgG  = calc.status==='Avançando'?'E8F4EE':calc.status==='Estagnado'?'FEF3DC':calc.status==='Retrocesso'?'FCE8E8':'EEEAE3';
+          const stTxtG = statusEvolucaoIcone(calc.status)+' '+calc.status + (calc.volatil?' ⚠':'');
+          const sm = calc.statusMeta || 'Sem meta declaradа';
+          const stCorM = (statusMetaCor(sm)||'#8A8A8A').replace('#','');
+          const stBgM  = sm==='Acima'?'E8F4EE'
+                       : sm==='Dentro'?'D4EDE0'
+                       : sm==='Abaixo'?'FEF3DC'
+                       : sm==='Sem redução'?'FBE5D6'
+                       : sm==='Retrocesso'?'FCE8E8'
+                       : 'EEEAE3';
+          const bH = 0.22;
+          const gap = 0.04;
+          const totalBH = bH*2 + gap;
+          const bY1 = y + (rowH - totalBH)/2;
+          const bY2 = bY1 + bH + gap;
+          const bX  = colXs[6]+0.06;
+          const bW  = colWs2[6]-0.12;
+          // Geral
+          eg.addShape(pres.ShapeType.roundRect,{x:bX,y:bY1,w:bW,h:bH,fill:{color:stBgG},line:{color:stBgG},rectRadius:0.04});
+          eg.addText([
+            {text:'Geral: ',options:{fontSize:6,bold:true,color:'7A6A60',fontFace:'Calibri'}},
+            {text:stTxtG, options:{fontSize:8,bold:true,color:stCorG,fontFace:'Calibri'}},
+          ],{x:bX,y:bY1,w:bW,h:bH,valign:'middle',align:'center',wrap:false,shrinkText:true});
+          // vs Meta
+          eg.addShape(pres.ShapeType.roundRect,{x:bX,y:bY2,w:bW,h:bH,fill:{color:stBgM},line:{color:stBgM},rectRadius:0.04});
+          eg.addText([
+            {text:'vs Meta: ',options:{fontSize:6,bold:true,color:'7A6A60',fontFace:'Calibri'}},
+            {text:sm,        options:{fontSize:8,bold:true,color:stCorM,fontFace:'Calibri'}},
+          ],{x:bX,y:bY2,w:bW,h:bH,valign:'middle',align:'center',wrap:false,shrinkText:true});
           y += rowH;
         });
       });
