@@ -1,106 +1,158 @@
-## Eixo 05 — Redesenho do Índice + JSON de teste, docs e gráficos BA×PPI no PPT
+## Eixo 05 — Visão dupla (geral × meta), renomeações, unidade por indicador e reordenação do PPT
 
-Tudo entregue numa rodada só. Mudanças em `public/Ferramenta_ER.html` + 3 artefatos novos.
-
----
-
-### Parte A — Lógica do Índice de Impacto (Eixo 05)
-
-#### A1. Barreira de dados por item (não por eixo)
-- Remove o toggle de barreira geral do Eixo 05; cada item ganha `barreira:{ativa, justificativa}`.
-- Item com barreira: status **`Barreira de dados`** (⚖), não pontua, não entra na média, mas conta como "listado" para a cobertura cruzada.
-- Sem compensação numérica.
-
-#### A2. Status por antes × depois com janela simétrica
-```
-marco        = item.coalizaoAnoInicio || ctx.coalizaoAnoInicio
-N            = min(#pts ano<marco, #pts ano>=marco)
-gap_antes    = média dos N pontos imediatamente antes do marco
-gap_depois   = média dos N pontos a partir do marco
-delta        = (gap_depois - gap_antes) normalizado pelo sentidoDesejado
-thr          = max(0.05·|gap_antes|, 0.05·limiarGapAbsoluto)
-delta<=-thr → Fechando | delta>=thr → Abrindo | senão → Estagnado
-```
-- `N==0` em algum lado → `Insuficiente`.
-- Sem marco → fallback regressão `geral` + flag `semBaseline`.
-- `item.barreira.ativa` curto-circuita tudo.
-
-#### A3. Cobertura cruzada Eixo 02 × Eixo 05 entra no cálculo
-```
-nIndic02       = total de indicadores do Eixo 02
-nListados05    = itens listados (inclui barreira)
-nPontuaveis05  = itens com status Fechando/Estagnado/Abrindo
-nBarreira05    = itens Barreira de dados
-denomCob       = max(3, nIndic02)
-fatorCobertura = nListados05 / denomCob          // penaliza ausência
-fatorMedicao   = nPontuaveis05 / max(1, nListados05 - nBarreira05)
-mediaScore     = média scores dos pontuáveis
-pctBruto       = round(mediaScore · fatorCobertura · fatorMedicao)
-```
-- `nPontuaveis05==0` → pct=0, nível **`Sem medição`**.
-- Sem Eixo 02 → `denomCob = max(3, nListados05)`.
-
-Travas qualitativas (após pctBruto):
-- `nFechando==0` → teto **Avanço incipiente**.
-- `nFechando==0 ∧ nAbrindo>nEstagnado` → **Gaps se abrindo**.
-- `nFechando==0 ∧ nAbrindo==0 ∧ nEstagnado>0` → **Estagnado**.
-
-Faixas (se nenhuma trava): ≥70 Reduzindo gaps · ≥40 Avanço parcial · ≥20 Avanço incipiente · <20 Sem avanço.
-
-#### A4. Visibilidade antes×depois + cobertura cruzada (UI + PPT)
-- **Card UI** e **faixa Impacto do slide-resumo** + **rodapé do slide do Eixo 05**: 3 linhas — (1) nível·pct, (2) `Gap médio antes→depois: X → Y (Δ ±z)`, (3) `Cobertura Eixo 02→05: N/M · barreira em K · Fech/Estag/Abr/Insuf`.
-
-#### A5. Aviso de barreira em massa
-- `nBarreira05 / max(1,nListados05) >= 0.5` → badge laranja "⚠ Metade ou mais dos gaps sob barreira — interpretar com cautela" no card UI e faixa amarela fina no topo do slide Eixo 05.
+Todas as mudanças em `public/Ferramenta_ER.html` + atualização dos 2 docs em `/mnt/documents/` + `public/dados_teste_variabilidade.json`.
 
 ---
 
-### Parte B — Visualização gráfica BA × PPI no PPT (novo)
+### Parte A — Renomeação global do índice e dos status
 
-- **Checkbox no Eixo 05**: "Incluir slide(s) de visualização gráfica BA×PPI no PPT" (`e6.incluirGraficos`, default false). Persistido na coalizão.
-- Quando marcado, **após o slide do Eixo 05** de cada coalizão, gera 1+ slides com **gráficos de linha** (um por indicador listado):
-  - 2 séries por gráfico: linha **BA** (`brancosAmarelos`) e linha **PPI** (`pretosPardosIndigenas`), eixo X = ano da série temporal do item (não usa o gap calculado).
-  - Marco da coalizão desenhado como linha vertical pontilhada com rótulo "Início coalizão".
-  - Título do gráfico = nome do indicador; subtítulo = "Fonte: …" se houver.
-  - Item com `barreira.ativa` aparece como card vazio com selo ⚖ "Sem dados — barreira reconhecida".
-- **Layout por slide**: grid 2×2 (até 4 gráficos por slide). Se a coalizão tiver >4 itens, quebra em slides adicionais (`Eixo 05 — Gráficos BA×PPI (2/3)`).
-- Usa `pres.addChart(pres.ChartType.line, ...)` do pptxgenjs (já carregado no arquivo). Cores: BA = `#7A6A60` (marrom escuro do tema), PPI = `#C97B3A` (laranja do tema). Linha do marco em cinza tracejada.
-
----
-
-### Parte C — JSON de teste atualizado
-
-Substitui `public/dados_teste_variabilidade.json` (também copiado para `/mnt/documents/`) cobrindo:
-
-- **C1**: coalizão com Eixo 02 = 8 indicadores, Eixo 05 = só 3 itens → testa queda do `fatorCobertura` (3/8).
-- **C2**: coalizão com Eixo 02 = 8, Eixo 05 = 8, sendo 5 com `barreira.ativa=true` → testa que **não derruba** mas dispara aviso de barreira em massa (5/8 ≥ 50%).
-- **C3**: Anos Finais — 2 itens com barreira (substitui o caso "Sem medição"), valida nível `Sem medição`.
-- **C4**: Tecnologia — Estag/Estag/Abrindo, sem Fechando → valida trava "Avanço incipiente" + nível "Gaps se abrindo" se `nAbr>nEstag` (mantido aqui em "Estagnado prevalece").
-- **C5**: coalizão com marco 2021 e série 2015–2025 com pontos assimétricos → valida janela simétrica (toma 4 antes / 4 depois).
-- **C6**: coalizão totalmente positiva — todos Fechando, ≥70% → "Reduzindo gaps".
-- **C7**: coalizão sem `coalizaoAnoInicio` em alguns itens → valida fallback `semBaseline` e badge "sem baseline".
-- **C8**: coalizão com `incluirGraficos=true` e séries BA/PPI ricas para validar visualmente os slides de gráfico (inclusive um item com barreira para validar card vazio).
-
-Garante cobertura de todos `statusQualidade`, `tipoRacial`, `criticidade`, `sentidoDesejado`, barreiras de Eixos 02/03/04 (intactas).
+- **"Índice de Impacto em Equidade" → "Índice de Redução de Gaps"** em UI, PPT (faixa do slide-síntese, título do slide do Eixo 05, rodapés), JSON (`tituloEixo6` se houver) e nos 2 documentos.
+- **Renomeação dos status dos itens** (em tudo: UI, PPT, JSON interno, docs, migração de coalizões legadas):
+  - `Fechando` → `Avançando` (▼ verde mantém)
+  - `Abrindo` → `Retrocesso` (▲ vermelho mantém)
+  - `Estagnado` permanece
+- Migração: `normalizeCoalizao` reescreve `status` antigos nos JSONs carregados; helpers `corStatus`/`iconeStatus` e `SCORES` passam a usar os novos nomes; chips do card e legendas do PPT refletem.
+- Travas qualitativas atuais (`nFechando==0` → teto Avanço incipiente, etc.) passam a olhar para `nAvancando==0`.
 
 ---
 
-### Parte D — Documentação (2 documentos em `/mnt/documents/`)
+### Parte B — Unidade própria por indicador
 
-#### D1. `Logica_Sistematizacao_Executivo.md` (objetivo, ~3 páginas)
-- O que mede a ferramenta, para quem.
-- Os 5 eixos em 1 parágrafo cada.
-- Como o **Índice de Impacto** é lido: significado dos níveis, o que conta como "avanço", por que cobertura cruzada importa, papel da barreira de dados — **em linguagem de gestor, com 1 exemplo numérico narrado** ("se a coalizão lista 8 indicadores no Eixo 02 mas só acompanha 3 gaps, o índice começa em 3/8 da nota possível…").
-- Sem fórmulas: tabelas comparativas e analogias.
+Hoje a unidade já existe no item (`it.unidade`, default `%`), mas vários pontos do PPT/UI ainda forçam `%`:
 
-#### D2. `Logica_Sistematizacao_Detalhado.md` (completo, ~10 páginas)
-- Estrutura por eixo: campos, regras de obrigatoriedade, cálculo da maturidade, barreiras.
-- Eixo 05 detalhado: fórmula janela simétrica, cobertura cruzada, fatores, travas qualitativas, faixas, casos de borda.
-- Cada fórmula seguida de **leitura em português** ("isso quer dizer que…") e **2 exemplos numéricos** trabalhados.
-- Tabela de status possíveis × cor × significado.
-- Apêndice: campos do JSON, mapeamento Eixo 02 ↔ Eixo 05, regras de migração de coalizões legadas.
+- **Slide gráficos BA×PPI**: eixo Y rotulado com `it.unidade` (Ponto SAEB, IDEB, %, valores absolutos…), sem `%` fixo.
+- **Tabela do item no slide do Eixo 05**: colunas BA/PPI/Gap usam `it.unidade` (já parcialmente faz; corrigir Gap e cabeçalho do slide).
+- **Card UI do Índice**: linha "Gap médio antes→depois" passa a omitir unidade quando coalizão mistura unidades, e por-item respeita `it.unidade`.
+- **Validação**: `it.unidade` vira campo obrigatório (texto livre, default `%`). Vazio bloqueia salvar o item.
 
-Ambos referenciam o JSON de teste e indicam quais coalizões ilustram cada regra.
+---
+
+### Parte C — Visão dupla: geral × vs-meta
+
+#### C1. Estrutura de meta no item
+Cada item do Eixo 05 ganha:
+```
+metas: [{ ano: number, valorMetaGap: number }, ...]   // ordenada por ano
+```
+- Coalizão lista ano-a-ano até o horizonte que quiser (ex.: 2025–2035).
+- `valorMetaGap` é o gap-alvo naquele ano, **na mesma unidade do indicador**, com sinal coerente com `sentidoDesejado` (gap esperado entre BA e PPI).
+- UI: tabela editável dentro do item (linhas {ano, valor}, botão "+ ano"), abaixo da série BA×PPI.
+
+#### C2. Cálculo do status vs-meta por item
+Para o último ano `Y` da série temporal do item que tenha meta declarada (`Y_meta = max ano em metas com ano ≤ último ano da série`):
+```
+gapReal(Y_meta)     = média(gap dos pontos do ano Y_meta)   // se múltiplos
+gapMeta(Y_meta)     = valorMetaGap em Y_meta
+gapMarco            = gap no ano do marco (mesma janela do cálculo geral)
+delta_real          = (gapReal − gapMarco) normalizado pelo sentidoDesejado
+delta_esperado      = (gapMeta − gapMarco) normalizado pelo sentidoDesejado
+                      // ambos: negativo = reduziu (bom)
+tol                 = max(0.10·|delta_esperado|, 0.05·|gapMarco|)
+```
+Status vs-meta:
+- `delta_real > +tol` → **"Em retrocesso"** (gap piorou)
+- `|delta_real| ≤ tol_zero` (tol_zero = 0.05·|gapMarco|) → **"Não há redução"**
+- `delta_real ≤ delta_esperado − tol` (reduziu mais que o esperado) → **"Redução acima da meta"**
+- `|delta_real − delta_esperado| ≤ tol` → **"Redução dentro da meta"**
+- `delta_real < 0` mas insuficiente → **"Redução abaixo da meta"**
+
+Casos especiais:
+- `metas.length == 0` → **"Sem meta declarada"** (cinza); não entra no agregado vs-meta.
+- `item.barreira.ativa` → **"Barreira de dados"** (já existente); idem.
+- Sem ponto no ano da última meta acessível → cai para a meta cujo ano é o mais próximo ≤ último ano com dado; se nenhum, "Sem meta declarada".
+
+#### C3. Nível agregado vs-meta (paralelo ao geral)
+Sobre os itens com vs-meta válido (exclui "Sem meta declarada" e "Barreira de dados"):
+```
+SCORES_META = { 'Redução acima da meta':100, 'Redução dentro da meta':80,
+                'Redução abaixo da meta':40, 'Não há redução':10, 'Em retrocesso':0 }
+mediaMeta   = média dos scores
+pctMeta     = round(mediaMeta · fatorCobertura · fatorMedicaoMeta)
+              // fatorCobertura = mesmo da visão geral
+              // fatorMedicaoMeta = nVsMetaValido / max(1, nListados - nBarreira)
+```
+Níveis vs-meta (faixas paralelas, nomes próprios):
+- ≥80 **"Superando metas"**
+- ≥60 **"No ritmo da meta"**
+- ≥30 **"Aquém da meta"**
+- ≥10 **"Sem redução vs meta"**
+- <10 ou nenhum item com meta válida e ≥1 retrocesso → **"Em retrocesso vs meta"**
+- `nVsMetaValido == 0` → **"Sem metas declaradas"** (cinza, não compara).
+
+Travas qualitativas mantidas: se `nRetrocesso > nAcima+nDentro` → teto "Aquém da meta".
+
+#### C4. Onde a visão dupla aparece
+**Card UI (`Índice de Redução de Gaps`)**: passa a ter 2 colunas lado a lado:
+- Esquerda — **Visão geral**: nível·pct, gap médio antes→depois, contagens Avançando/Estagnado/Retrocesso/Insuf.
+- Direita — **Visão vs meta**: nível·pct, contagens Acima/Dentro/Abaixo/Sem redução/Retrocesso/Sem meta.
+- Aviso de barreira em massa permanece (rodapé do card).
+
+**Por-item (UI e PPT)**: cada item exibe 2 selos lado a lado — selo geral (▼/■/▲) + selo vs-meta colorido (verde/azul/amarelo/laranja/vermelho/cinza).
+
+**Slide-síntese (PPT)**: faixa do índice em 2 linhas:
+- L1: `Índice de Redução de Gaps — Geral: <nivel> · <pct>%`
+- L2: `vs Meta: <nivelMeta> · <pctMeta>%   ·   Cobertura Eixo 02→05: N/M`
+
+**Slide do Eixo 05 (PPT)**: rodapé em 3 blocos:
+- Bloco 1 — Geral (nivel·pct + Avan/Est/Retr/Insuf + gap antes→depois)
+- Bloco 2 — vs Meta (nivelMeta·pctMeta + Acima/Dentro/Abaixo/SemRed/Retr/SemMeta)
+- Bloco 3 — Cobertura + aviso barreira se ≥50%
+
+Cada card de item no slide do Eixo 05 ganha 2ª linha de status: `Geral: Avançando · vs Meta: Dentro da meta`.
+
+---
+
+### Parte D — PPT: nova ordem e gráficos com rótulos
+
+#### D1. Ordem nova
+```
+1. Capa
+2. Slide-síntese  (subiu para logo após a capa)
+3. Slides dos Eixos 01–04
+4. Slide do Eixo 05 (Índice de Redução de Gaps)
+5. Eixo 05 — Gráficos BA × PPI   ← antes dos Gaps
+6. Eixo 05 — Gaps BA × PPI
+7. Demais slides finais (se houver)
+```
+Reordenação simples no loop de geração do PPT em `Ferramenta_ER.html` (~2540–2800).
+
+#### D2. Rótulos nos pontos dos gráficos
+Em `pres.addChart(pres.ChartType.line, …)` dos gráficos BA×PPI:
+- `showValue: true`, `dataLabelPosition: 't'` (topo do ponto), `dataLabelFontSize: 8`, `dataLabelFormatCode` derivado da unidade:
+  - `%` → `'0.0"%"'`
+  - inteiro (SAEB, valores, IDEB sem decimais) → `'#,##0'`
+  - default decimal → `'#,##0.0'`
+- Linha do marco vertical mantém rótulo "Início coalizão".
+- Eixo Y: rótulo = `it.unidade`.
+
+---
+
+### Parte E — JSON de teste atualizado
+
+Substituir `public/dados_teste_variabilidade.json` (+ cópia em `/mnt/documents/`) para cobrir o novo modelo:
+
+- **C1** (Anos Iniciais): metas declaradas 2024→2035 com valorMetaGap em pontos SAEB; itens hoje "dentro" e "abaixo" da meta.
+- **C2** (Anos Finais): meta agressiva → status vs-meta = "Redução abaixo da meta"; geral = Avançando (mostra o split que motivou a mudança).
+- **C3** (Tecnologia): unidade `%`, sem meta declarada em 2 itens → testa "Sem meta declarada" no agregado.
+- **C4** (Alfabetização): metas batidas → "Redução acima da meta"; visão geral Avançando + vs-meta "Superando metas".
+- **C5**: coalizão com gap em retrocesso real → testa "Em retrocesso" geral e vs-meta.
+- **C6** (massa de barreiras): 5/8 itens com barreira; aviso laranja persiste.
+- **C7**: coalizão com `incluirGraficos=true`, unidades mistas (SAEB, IDEB, %, valor absoluto) para validar rótulos dos pontos.
+- Renomeia todos `status:"Fechando"`/`"Abrindo"` herdados para os novos rótulos.
+
+---
+
+### Parte F — Documentação (atualizar os 2 arquivos)
+
+`/mnt/documents/Logica_Sistematizacao_Executivo.md` e `Logica_Sistematizacao_Detalhado.md`:
+- Renomeação do índice e dos status (com tabela de-para).
+- Nova seção **"Visão geral × Visão vs meta"** com:
+  - O que cada uma responde (gestor).
+  - Tabela das 5 faixas vs-meta com cores e significado.
+  - Exemplo narrado: coalizão com meta 2024→2035 atingindo 60% do esperado em 2026 → "Redução abaixo da meta".
+- Detalhado ganha as fórmulas de `delta_real`, `delta_esperado`, `tol`, `pctMeta` e 2 exemplos numéricos.
+- Seção PPT atualizada com nova ordem dos slides e rótulos nos pontos.
+- Apêndice JSON: novo campo `item.metas[]` com schema e exemplo.
 
 ---
 
@@ -108,27 +160,29 @@ Ambos referenciam o JSON de teste e indicam quais coalizões ilustram cada regra
 
 `public/Ferramenta_ER.html`:
 
-| Bloco | Linhas | Mudança |
+| Bloco | Linhas aprox. | Mudança |
 |---|---|---|
-| `defaultEixo6` / `normalizeEixo6` | 809–855 | Remove `e6.barreira`, adiciona `e6.incluirGraficos`, `item.barreira` |
-| `calcItemEixo6` | 1135–1206 | `_statusAntesDepois` com janela simétrica; curto-circuito de barreira |
-| `calcEixo6` | 1207–1259 | Recebe `c`; nova fórmula cobertura cruzada; travas; nível `Sem medição` |
-| Chamadas a `calcEixo6` | 1400, 1941, 2146, 2246, 2664 | Passar `c` |
-| UI Eixo 05 | 1547–1601 | Remove barreira geral, adiciona checkbox `incluirGraficos` e toggle barreira por item |
-| Card Índice (UI) | 1511+ | 3 linhas + badge aviso barreira em massa |
-| PPT slide-resumo | 2246–2275 | Faixa Impacto com 3 linhas + badge |
-| PPT slide Eixo 05 | 2540–2560 | Rodapé com 3 blocos + faixa amarela se barreira em massa |
-| PPT slides gráficos (novo) | após 2560 | Geração condicional de slides com `addChart` BA/PPI |
-| Migração | `normalizeCoalizao` | `e6.barreira` antigo → ignorado; itens herdam `barreira:{ativa:false}` |
+| Constantes `SCORES`, helpers `corStatus`/`iconeStatus` | 1256, 1346–1356 | Novos nomes (Avançando/Retrocesso) |
+| `calcItemEixo6` | 1135–1235 | Status geral renomeado + novo `statusMeta` por item |
+| `calcEixo6` | 1207–1340 | Retorna `{ geral:{...}, meta:{...} }`; novas faixas/travas vs-meta |
+| `normalizeEixo6`/item | 809–865 | Adiciona `item.metas[]`; valida `unidade` obrigatória |
+| `normalizeCoalizao` | migração | Mapeia status legados Fechando/Abrindo |
+| UI card índice | 1589–1640 | 2 colunas (geral × meta) + nome do índice |
+| UI item Eixo 05 | 1740–1830 | Sub-tabela `metas` + selo vs-meta |
+| `upEixo6Item`/`upEixo6Config` | 2180+ | Handlers para `metas[]` (add/remove/edit) |
+| PPT slide-síntese | 2360–2390 | Faixa em 2 linhas com nome novo |
+| PPT loop principal | 2540–2800 | Reordena: síntese 2º, gráficos antes dos gaps |
+| PPT slide Eixo 05 | 2540–2760 | Rodapé 3 blocos, selo duplo por item, unidade própria |
+| PPT gráficos | 2761–2800 | `showValue:true`, format por unidade, eixo Y com unidade |
 
-Novos artefatos:
-- `public/dados_teste_variabilidade.json` (substituído) + cópia em `/mnt/documents/`
-- `/mnt/documents/Logica_Sistematizacao_Executivo.md`
-- `/mnt/documents/Logica_Sistematizacao_Detalhado.md`
+Artefatos:
+- `public/dados_teste_variabilidade.json` (substituído + cópia `/mnt/documents/`)
+- `/mnt/documents/Logica_Sistematizacao_Executivo.md` (atualizado)
+- `/mnt/documents/Logica_Sistematizacao_Detalhado.md` (atualizado)
 
 ---
 
 ### Fora de escopo
-- Barreiras dos Eixos 02/03/04 (mantidas).
-- DOCX (sem alteração).
-- Radar/dashboard (apenas novos rótulos de nível).
+- Maturidade dos Eixos 01–04, radar, dashboard (apenas refletem novos rótulos onde citarem o índice).
+- DOCX.
+- Validação cruzada entre meta e marco (ex.: meta antes do marco) — apenas avisa, não bloqueia.
