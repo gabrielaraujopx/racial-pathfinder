@@ -2678,22 +2678,22 @@ async function exportPPTX() {
         const r  = dim.fn(c);
         const cx = gridX+labelW+col*cellW;
         sint.addShape(pres.ShapeType.rect,{x:cx,y:rowY,w:cellW,h:cellH,fill:{color:rowBg},line:{color:C.begeE}});
-        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
+        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.04,y:rowY+0.05,w:cellW-0.08,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
         if (r.isImpacto) {
           // vs Meta principal (linha 1, fonte maior) + Geral secundário (linha 2, menor/cinza)
-          const h1 = (cellH-0.10) * 0.62;
+          const h1 = (cellH-0.10) * 0.70;
           const h2 = (cellH-0.10) - h1;
-          const txtM = r.metaPct ? (r.metaNivel+'\n('+r.metaPct+')') : r.metaNivel;
-          sint.addText(txtM,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:h1,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+          const txtM = r.metaNivel;
+          sint.addText(txtM,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:h1,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           if (r.geralNivel) {
-            sint.addText('Geral: '+r.geralNivel+' · '+r.geralPct,{x:cx+0.06,y:rowY+0.05+h1,w:cellW-0.12,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+            sint.addText('Geral: '+r.geralNivel,{x:cx+0.05,y:rowY+0.05+h1,w:cellW-0.10,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           }
         } else if (r.pct) {
           const halfH = (cellH-0.10)/2;
-          sint.addText(r.nivel,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:halfH,fontSize:11,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:false,shrinkText:true});
-          sint.addText('('+r.pct+')',{x:cx+0.06,y:rowY+0.05+halfH,w:cellW-0.12,h:halfH,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
+          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:true,shrinkText:true});
+          sint.addText('('+r.pct+')',{x:cx+0.05,y:rowY+0.05+halfH,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
         } else {
-          sint.addText(r.nivel,{x:cx+0.06,y:rowY+0.05,w:cellW-0.12,h:cellH-0.10,fontSize:12,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
+          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:cellH-0.10,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
         }
       });
     });
