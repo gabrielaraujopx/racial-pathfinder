@@ -2342,6 +2342,7 @@ function addEixo6Item() {
     indicadorRef: '', metrica: '', unidade: '%', sentidoDesejado: 'subir',
     serie: [], observacoes: '',
     barreira: { ativa: false, justificativa: '' },
+    metas: [],
   });
   saveState(); renderCoalizao();
 }
@@ -2380,6 +2381,25 @@ function upEixo6Ponto(i, j, campo, val) {
   if (campo === 'ano')      it.serie[j].ano = val === '' ? '' : parseInt(val, 10);
   else if (campo === 'fonte') it.serie[j].fonte = String(val||'');
   else                       it.serie[j][campo] = val === '' ? null : Number(val);
+  saveState(); refreshImpacto();
+}
+// ── Mutações de metas (vs-meta da coalizão) ──────────────────
+function addEixo6Meta(i) {
+  const it = _e6().itens[i]; if (!it) return;
+  if (!Array.isArray(it.metas)) it.metas = [];
+  const ultAno = it.metas.reduce((m, x) => Math.max(m, parseInt(x.ano,10)||0), 0);
+  it.metas.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorMetaGap: null });
+  saveState(); renderCoalizao();
+}
+function removeEixo6Meta(i, j) {
+  const it = _e6().itens[i]; if (!it || !it.metas) return;
+  it.metas.splice(j, 1);
+  saveState(); renderCoalizao();
+}
+function upEixo6Meta(i, j, campo, val) {
+  const it = _e6().itens[i]; if (!it || !it.metas || !it.metas[j]) return;
+  if (campo === 'ano')           it.metas[j].ano = val === '' ? '' : parseInt(val, 10);
+  else if (campo === 'valorMetaGap') it.metas[j].valorMetaGap = val === '' ? null : Number(val);
   saveState(); refreshImpacto();
 }
 function refreshImpacto() {
