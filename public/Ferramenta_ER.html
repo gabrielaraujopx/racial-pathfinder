@@ -1468,20 +1468,20 @@ function calcEixo6(eixo6Obj, coaliz) {
   };
 }
 function statusMetaCor(s) {
-  if (s === 'Redução acima da meta')  return '#1A6B3C';
-  if (s === 'Redução dentro da meta') return '#2D7A4F';
-  if (s === 'Redução abaixo da meta') return '#C8860A';
-  if (s === 'Não há redução')         return '#B36F1E';
-  if (s === 'Em retrocesso')          return '#C0392B';
-  if (s === 'Barreira de dados')      return '#7A6A60';
+  if (s === 'Acima')             return '#1A6B3C';
+  if (s === 'Dentro')            return '#2D7A4F';
+  if (s === 'Abaixo')            return '#C8860A';
+  if (s === 'Sem redução')       return '#B36F1E';
+  if (s === 'Retrocesso')        return '#C0392B';
+  if (s === 'Barreira de dados') return '#7A6A60';
   return '#8A8A8A';
 }
 function nivelMetaCor(n) {
-  if (n === 'Superando metas')        return '#1A6B3C';
-  if (n === 'No ritmo da meta')       return '#2D7A4F';
-  if (n === 'Aquém da meta')          return '#C8860A';
-  if (n === 'Sem redução vs meta')    return '#B36F1E';
-  if (n === 'Em retrocesso vs meta')  return '#C0392B';
+  if (n === 'Acima')              return '#1A6B3C';
+  if (n === 'Dentro')             return '#2D7A4F';
+  if (n === 'Abaixo')             return '#C8860A';
+  if (n === 'Sem redução')        return '#B36F1E';
+  if (n === 'Retrocesso')         return '#C0392B';
   return '#8A8A8A';
 }
 function impactoCor(nivel) {
