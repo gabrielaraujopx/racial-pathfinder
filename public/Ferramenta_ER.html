@@ -841,6 +841,7 @@ function normalizeEixo6(e) {
       ano: p.ano === '' || p.ano == null ? '' : parseInt(p.ano, 10),
       valorBA:  (p.valorBA  === '' || p.valorBA  == null) ? null : Number(p.valorBA),
       valorPPI: (p.valorPPI === '' || p.valorPPI == null) ? null : Number(p.valorPPI),
+      valorGap: (p.valorGap === '' || p.valorGap == null) ? null : Number(p.valorGap),
       fonte: String(p.fonte || ''),
     })) : [],
     observacoes: String(it.observacoes || ''),
