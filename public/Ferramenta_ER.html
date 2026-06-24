@@ -2743,10 +2743,6 @@ async function exportPPTX() {
     });
 
     const dimsSint = [
-      { label:'Maturidade Geral', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
-      { label:'Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
-      { label:'Lacunas Identificadas', fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
       { label:'Índice de Redução de Gaps', isImpacto:true, fn: c => {
           const e=calcEixo6(c.eixo6, c);
           if (e.semItens) return {isImpacto:true, metaNivel:'Sem dados', metaPct:null, geralNivel:'', geralPct:null, bg:'EEEAE3', cor:'8A8A8A'};
@@ -2769,6 +2765,10 @@ async function exportPPTX() {
             corGeral: impactoCor(e.nivel).replace('#',''),
           };
       }},
+      { label:'Maturidade Operacional', fn: c => { const m=calcMaturidade(c); return {nivel:m.nivel, pct:null, bg:m.nivel==='Alta'?'E8F4EE':m.nivel==='Avançada'?'D4EDE0':m.nivel==='Média'?'E8F0F8':m.nivel==='Em consolidação'?'EEF0F4':m.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:matCorHex(m.nivel)}; }},
+      { label:'Indicadores', fn: c => { const e=calcEixoIndicadores(c.indicadores, c.eixo6); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
+      { label:'Estratégias',  fn: c => { const e=calcEixo(c.estrategias,'estrategias'); return {nivel:e.nivel, pct:e.pct+'%', bg:e.nivel==='Consolidado'?'E8F4EE':e.nivel==='Avançado'?'D4EDE0':e.nivel==='Em desenvolvimento'?'FEF3DC':'FCE8E8', cor:eixoNivCor(e.nivel)}; }},
+      { label:'Lacunas Identificadas', fn: c => { const e=calcEixoLacunas(c.lacunas, c.estadoLacunas); const nL=e.nivelLacunas||'—'; const bg = nL==='Baixa criticidade'||nL==='Sem lacunas relevantes'?'E8F4EE':nL==='Criticidade moderada'?'FEF3DC':nL==='Criticidade alta'?'FBE5D6':nL==='Em mapeamento'?'EEEAE3':'FCE8E8'; const cor = (lacunasColor(nL)||'#8A8A8A').replace('#',''); return {nivel:nL, pct:e.pct+'%', bg, cor}; }},
     ];
 
     dimsSint.forEach((dim,row) => {
@@ -2780,22 +2780,23 @@ async function exportPPTX() {
         const r  = dim.fn(c);
         const cx = gridX+labelW+col*cellW;
         sint.addShape(pres.ShapeType.rect,{x:cx,y:rowY,w:cellW,h:cellH,fill:{color:rowBg},line:{color:C.begeE}});
-        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.04,y:rowY+0.05,w:cellW-0.08,h:cellH-0.10,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
+        sint.addShape(pres.ShapeType.roundRect,{x:cx+0.02,y:rowY+0.03,w:cellW-0.04,h:cellH-0.06,fill:{color:r.bg},line:{color:r.bg},rectRadius:0.05});
+        const _short = (s) => s === 'Em desenvolvimento' ? 'Em desenv.' : s;
         if (r.isImpacto) {
           // vs Meta principal (linha 1, fonte maior) + Geral secundário (linha 2, menor/cinza)
-          const h1 = (cellH-0.10) * 0.70;
-          const h2 = (cellH-0.10) - h1;
-          const txtM = r.metaNivel;
-          sint.addText(txtM,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:h1,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+          const h1 = (cellH-0.06) * 0.70;
+          const h2 = (cellH-0.06) - h1;
+          const txtM = _short(r.metaNivel);
+          sint.addText(txtM,{x:cx+0.03,y:rowY+0.03,w:cellW-0.06,h:h1,fontSize:8,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           if (r.geralNivel) {
-            sint.addText('Geral: '+r.geralNivel,{x:cx+0.05,y:rowY+0.05+h1,w:cellW-0.10,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+            sint.addText('Geral: '+_short(r.geralNivel),{x:cx+0.03,y:rowY+0.03+h1,w:cellW-0.06,h:h2,fontSize:7,color:'7A6A60',align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
           }
         } else if (r.pct) {
-          const halfH = (cellH-0.10)/2;
-          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:true,shrinkText:true});
-          sint.addText('('+r.pct+')',{x:cx+0.05,y:rowY+0.05+halfH,w:cellW-0.10,h:halfH,fontSize:9,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
+          const halfH = (cellH-0.06)/2;
+          sint.addText(_short(r.nivel),{x:cx+0.03,y:rowY+0.03,w:cellW-0.06,h:halfH,fontSize:8,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'bottom',wrap:true,shrinkText:true});
+          sint.addText('('+r.pct+')',{x:cx+0.03,y:rowY+0.03+halfH,w:cellW-0.06,h:halfH,fontSize:8,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'top',wrap:false});
         } else {
-          sint.addText(r.nivel,{x:cx+0.05,y:rowY+0.05,w:cellW-0.10,h:cellH-0.10,fontSize:10,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
+          sint.addText(_short(r.nivel),{x:cx+0.03,y:rowY+0.03,w:cellW-0.06,h:cellH-0.06,fontSize:8,bold:true,color:r.cor,align:'center',fontFace:'Calibri',valign:'middle',wrap:true,shrinkText:true});
         }
       });
     });
