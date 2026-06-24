@@ -3200,11 +3200,12 @@ async function exportPPTX() {
         let series = [], anosUni = [], labels = [], fmtCode = '#,##0.0';
 
         if (kind === 'A') {
-          // ── Gap unificado ──
-          const gapReal = serieG.map(p => ({
-            ano: p.ano,
-            v: sentido === 'descer' ? (+p.valorPPI - +p.valorBA) : (+p.valorBA - +p.valorPPI)
-          }));
+          // ── Gap unificado ── aceita pontos com BA+PPI OU com valorGap declarado.
+          const gapReal = (it.serie || [])
+            .filter(p => p && p.ano!=null && p.ano!=='' && _pontoTemGap(p))
+            .slice().sort((a,b)=>a.ano-b.ano)
+            .map(p => ({ ano: p.ano, v: _gapDoPonto(p, sentido === 'descer' ? 'descer' : 'subir') }))
+            .filter(o => o.v != null && Number.isFinite(o.v));
           const gapAlvo = metasArr.map(m => {
             let g = (m.valorMetaGap == null) ? null : +m.valorMetaGap;
             if (g == null && m.valorMetaBA != null && m.valorMetaPPI != null) {
