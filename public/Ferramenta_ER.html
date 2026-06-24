@@ -2623,11 +2623,47 @@ async function exportPPTX() {
                          :           {bg:'FCE8E8',cor:'C0392B',label:nota.toFixed(1)};
 
   // Estimador conservador de altura de texto (em polegadas)
-  // Usa largura real em pixels (96dpi) e fator empírico de 0.55 char/px
+  // Mede o texto com canvas (mesma fonte do PPT) e simula word-wrap para
+  // contar linhas reais. Evita superestimar altura e disparar paginação
+  // prematura nos eixos 02/03/04 das coalizões.
+  let _measureCtx = null;
+  try {
+    if (typeof document !== 'undefined') {
+      _measureCtx = document.createElement('canvas').getContext('2d');
+    }
+  } catch (_) { _measureCtx = null; }
   const estH = (txt, wIn, fs) => {
-    const chPerLine = Math.max(8, Math.floor(wIn * 96 * 0.55 / (fs * 0.6)));
-    const lines     = Math.max(1, Math.ceil((txt||'—').length / chPerLine));
-    return lines * fs * 0.0155 + 0.02; // margem mínima — caixa abraça o texto
+    const s = (txt == null || txt === '') ? '—' : String(txt);
+    const maxPx = wIn * 96;
+    let lines = 0;
+    if (_measureCtx) {
+      _measureCtx.font = fs + 'pt Calibri, "Helvetica Neue", Arial, sans-serif';
+      const paragraphs = s.split('\n');
+      for (const para of paragraphs) {
+        const words = para.split(/\s+/).filter(Boolean);
+        if (!words.length) { lines += 1; continue; }
+        let curW = 0;
+        let lineCount = 0;
+        for (const w of words) {
+          const wW = _measureCtx.measureText(w + ' ').width;
+          if (curW === 0) { curW = wW; lineCount = 1; continue; }
+          if (curW + wW > maxPx) { lineCount += 1; curW = wW; }
+          else { curW += wW; }
+        }
+        lines += Math.max(1, lineCount);
+      }
+    } else {
+      // Fallback sem DOM: heurística calibrada (~0.85 char-density)
+      const chPerLine = Math.max(8, Math.floor(wIn * 96 * 0.85 / (fs * 0.6)));
+      const paragraphs = s.split('\n');
+      for (const para of paragraphs) {
+        lines += Math.max(1, Math.ceil(para.length / chPerLine));
+      }
+    }
+    lines = Math.max(1, lines);
+    // line-height ~1.20 do Calibri: 11pt → ~0.183"/linha; margem 0.03 para
+    // pequena folga sem desperdiçar espaço no rodapé.
+    return lines * fs * 0.0170 + 0.03;
   };
 
   // ── CAPA ──────────────────────────────────────────────────
