@@ -3084,22 +3084,216 @@ async function exportPPTX() {
 
     // ── SLIDES OPCIONAIS: GRÁFICOS BA × PPI ───────────────────
     // Gerados após o slide do Eixo 05 quando a coalizão marca
-    // "Incluir slide(s) de visualização gráfica" (até 4 por slide).
+    // "Incluir slide(s) de visualização gráfica". Dois modos:
+    //   A = Gap unificado (1 gráfico/indicador, até 4 indicadores/slide)
+    //   B = BA×PPI separado (Real + Projetado, 2 gráficos × 2 indicadores/slide)
     if (imp.totalItens > 0 && imp.incluirGraficos) {
       const W=10, H=5.625, PAD=0.28;
       const itensG = imp.itens;
-      const perPage = 4; // 2×2
+      const chartMode = state.pptChartMode || 'A';
+      // Em ambos os modos, 4 "cells" por slide. Mode A = 4 indicadores.
+      // Mode B = 2 indicadores (cada um ocupa 2 cells lado a lado).
+      const indPerPage = (chartMode === 'B') ? 2 : 4;
+      const perPage = indPerPage;
       const totalPages = Math.ceil(itensG.length / perPage);
       const indLookupG = {};
       (c.indicadores || []).forEach((ind, idx) => { indLookupG['ind-'+idx] = ind.texto || '(indicador sem nome)'; });
+
+      // Helper: desenha um gráfico (modo A ou um lado de B) dentro de uma célula.
+      const renderChartCell = (slG, it, cx, cy, cellW, cellH, kind) => {
+        // kind: 'A'   = Gap Real + Gap-Alvo unificado
+        //       'real'= Modo B esquerda — BA × PPI histórico
+        //       'proj'= Modo B direita  — Meta BA × Meta PPI
+        // Card de fundo
+        slG.addShape(pres.ShapeType.roundRect,{x:cx,y:cy,w:cellW,h:cellH,fill:{color:C.branco},line:{color:C.begeE},rectRadius:0.06});
+        const nomeInd = indLookupG[it.indicadorRef] || it.metrica || '(indicador sem nome)';
+        const titleSuf = kind === 'real' ? '  ·  Real' : kind === 'proj' ? '  ·  Projetado/Meta' : '';
+        slG.addText(nomeInd + titleSuf,
+          {x:cx+0.10,y:cy+0.06,w:cellW-0.20,h:0.28,fontSize:10,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true,shrinkText:true});
+        const sub = (it.unidade?'Unidade: '+it.unidade:'') + (it.calc && it.calc.marcoAno!=null ? '   ·   Marco: '+it.calc.marcoAno : '');
+        if (sub) slG.addText(sub,{x:cx+0.10,y:cy+0.34,w:cellW-0.20,h:0.16,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:false,shrinkText:true});
+        const chartY = cy + 0.52;
+        const chartH = cellH - 0.58;
+        // Barreira: card "sem dados"
+        if (it.barreira && it.barreira.ativa) {
+          slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F0E8DF'},line:{color:C.begeE}});
+          slG.addText('⚖ Sem dados — barreira reconhecida',
+            {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:11,bold:true,color:'7A6A60',fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
+          if (it.barreira.justificativa) {
+            slG.addText((it.barreira.justificativa||'').slice(0,180),
+              {x:cx+0.14,y:chartY+chartH-0.36,w:cellW-0.28,h:0.32,fontSize:7,color:C.cinzaM,fontFace:'Calibri',italic:true,valign:'bottom',align:'center',wrap:true,shrinkText:true});
+          }
+          return;
+        }
+        const serieG = (it.serie || [])
+          .filter(p => p && p.ano!=null && p.ano!=='' && p.valorBA!=null && !isNaN(p.valorBA) && p.valorPPI!=null && !isNaN(p.valorPPI))
+          .slice().sort((a,b)=>a.ano-b.ano);
+        const metasArr = (it.metas || []).slice().sort((a,b)=>a.ano-b.ano);
+        const sentido = it.sentidoDesejado === 'descer' ? 'descer' : 'subir';
+        const u = (it.unidade||'').trim();
+        const isPct = u === '%' || /percent/i.test(u);
+
+        // Constrói séries conforme o tipo de célula
+        let series = [], anosUni = [], labels = [], fmtCode = '#,##0.0';
+
+        if (kind === 'A') {
+          // ── Gap unificado ──
+          const gapReal = serieG.map(p => ({
+            ano: p.ano,
+            v: sentido === 'descer' ? (+p.valorPPI - +p.valorBA) : (+p.valorBA - +p.valorPPI)
+          }));
+          const gapAlvo = metasArr.map(m => {
+            let g = (m.valorMetaGap == null) ? null : +m.valorMetaGap;
+            if (g == null && m.valorMetaBA != null && m.valorMetaPPI != null) {
+              g = sentido === 'descer'
+                ? (+m.valorMetaPPI - +m.valorMetaBA)
+                : (+m.valorMetaBA - +m.valorMetaPPI);
+            }
+            return { ano: m.ano, v: g };
+          }).filter(o => o.v != null && Number.isFinite(o.v));
+          if (gapReal.length === 0 && gapAlvo.length === 0) {
+            slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F8F4EC'},line:{color:C.begeE}});
+            slG.addText('Sem pontos válidos na série temporal',
+              {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
+            return;
+          }
+          anosUni = Array.from(new Set([...gapReal.map(o=>o.ano), ...gapAlvo.map(o=>o.ano)])).sort((a,b)=>a-b);
+          labels = anosUni.map(a => String(a));
+          const valsAll = [...gapReal.map(o=>o.v), ...gapAlvo.map(o=>o.v)];
+          const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
+          fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
+          const gapRealBy = Object.fromEntries(gapReal.map(o => [o.ano, +o.v.toFixed(3)]));
+          const gapAlvoBy = Object.fromEntries(gapAlvo.map(o => [o.ano, +o.v.toFixed(3)]));
+          const mk = (name, by) => ({ name, labels, values: anosUni.map(a => by[a] != null ? by[a] : null) });
+          if (gapReal.length) series.push({
+            type: pres.ChartType.line,
+            data: [ mk('Gap Real (BA − PPI)' + (sentido==='descer'?' [invertido]':''), gapRealBy) ],
+            options: {
+              chartColors: ['5C2E0A'], lineSize: 2.5,
+              lineDataSymbol: 'circle', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 't',
+              dataLabelFontSize: 7, dataLabelColor: '5C2E0A',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+          if (gapAlvo.length) series.push({
+            type: pres.ChartType.line,
+            data: [ mk('Gap-Alvo (meta)', gapAlvoBy) ],
+            options: {
+              chartColors: ['2D7A4F'], lineSize: 2,
+              lineDataSymbol: 'diamond', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 'b',
+              dataLabelFontSize: 7, dataLabelColor: '2D7A4F',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+        } else if (kind === 'real') {
+          if (serieG.length === 0) {
+            slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F8F4EC'},line:{color:C.begeE}});
+            slG.addText('Sem série histórica válida',
+              {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
+            return;
+          }
+          anosUni = serieG.map(p=>p.ano);
+          labels = anosUni.map(a => String(a));
+          const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI]);
+          const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
+          fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
+          const baBy  = Object.fromEntries(serieG.map(p => [p.ano, +p.valorBA]));
+          const ppiBy = Object.fromEntries(serieG.map(p => [p.ano, +p.valorPPI]));
+          const mk = (name, by) => ({ name, labels, values: anosUni.map(a => by[a] != null ? by[a] : null) });
+          series.push({
+            type: pres.ChartType.line,
+            data: [ mk('BA (Brancos e Amarelos)', baBy) ],
+            options: {
+              chartColors: ['5C2E0A'], lineSize: 2.5,
+              lineDataSymbol: 'circle', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 't',
+              dataLabelFontSize: 7, dataLabelColor: '5C2E0A',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+          series.push({
+            type: pres.ChartType.line,
+            data: [ mk('PPI (Pretos, Pardos e Indígenas)', ppiBy) ],
+            options: {
+              chartColors: ['E05A1A'], lineSize: 2.5,
+              lineDataSymbol: 'circle', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 'b',
+              dataLabelFontSize: 7, dataLabelColor: 'E05A1A',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+        } else {
+          // kind === 'proj'
+          const metasBA  = metasArr.filter(m => m.valorMetaBA  != null);
+          const metasPPI = metasArr.filter(m => m.valorMetaPPI != null);
+          if (metasBA.length === 0 && metasPPI.length === 0) {
+            slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F8F4EC'},line:{color:C.begeE}});
+            slG.addText('Sem metas BA/PPI declaradas',
+              {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
+            return;
+          }
+          anosUni = Array.from(new Set([...metasBA.map(m=>m.ano), ...metasPPI.map(m=>m.ano)])).sort((a,b)=>a-b);
+          labels = anosUni.map(a => String(a));
+          const valsAll = [...metasBA.map(m=>+m.valorMetaBA), ...metasPPI.map(m=>+m.valorMetaPPI)];
+          const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
+          fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
+          const baBy  = Object.fromEntries(metasBA.map(m => [m.ano, +m.valorMetaBA]));
+          const ppiBy = Object.fromEntries(metasPPI.map(m => [m.ano, +m.valorMetaPPI]));
+          const mk = (name, by) => ({ name, labels, values: anosUni.map(a => by[a] != null ? by[a] : null) });
+          if (metasBA.length) series.push({
+            type: pres.ChartType.line,
+            data: [ mk('Meta BA', baBy) ],
+            options: {
+              chartColors: ['A88670'], lineSize: 2,
+              lineDataSymbol: 'diamond', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 't',
+              dataLabelFontSize: 7, dataLabelColor: '7A5A40',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+          if (metasPPI.length) series.push({
+            type: pres.ChartType.line,
+            data: [ mk('Meta PPI', ppiBy) ],
+            options: {
+              chartColors: ['F2A87A'], lineSize: 2,
+              lineDataSymbol: 'diamond', lineDataSymbolSize: 5,
+              showValue: true, dataLabelPosition: 'b',
+              dataLabelFontSize: 7, dataLabelColor: 'C26A2A',
+              dataLabelFormatCode: fmtCode,
+            },
+          });
+        }
+
+        const baseAxis = {
+          catAxisLabelFontSize: 8, valAxisLabelFontSize: 8,
+          catAxisLabelColor: '5A4A40', valAxisLabelColor: '5A4A40',
+          showTitle: false,
+          plotArea: { fill: { color: 'FDFBF6' } },
+          showValAxisTitle: !!u,
+          valAxisTitle: u || '',
+          valAxisTitleFontSize: 8,
+          valAxisTitleColor: '7A6A60',
+          displayBlanksAs: 'gap',
+          showLegend: true, legendPos: 'b', legendFontSize: 8,
+          dataLabelFormatCode: fmtCode,
+        };
+        slG.addChart(series, { x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH, ...baseAxis });
+      };
+
       for (let pg = 0; pg < totalPages; pg++) {
         const slG = pres.addSlide();
         slG.background = { color: C.creme };
         // Header
         slG.addShape(pres.ShapeType.rect,{x:0,y:0,w:W,h:0.62,fill:{color:C.marrom},line:{color:C.marrom}});
-        const ttl = 'Eixo 05 — Gráficos BA × PPI · '+c.nome + (totalPages>1?' ('+(pg+1)+'/'+totalPages+')':'');
+        const modoTxt = chartMode === 'B' ? 'BA × PPI · Real + Projetado' : 'Gap Real × Gap-Alvo';
+        const ttl = 'Eixo 05 — '+modoTxt+' · '+c.nome + (totalPages>1?' ('+(pg+1)+'/'+totalPages+')':'');
         slG.addText(ttl,{x:PAD,y:0,w:W-PAD*2,h:0.40,fontSize:16,color:C.branco,fontFace:'Georgia',valign:'middle',shrinkText:true});
-        slG.addText('Linha BA (Brancos e Amarelos) × PPI (Pretos, Pardos e Indígenas) por ano · marco da coalizão em destaque',
+        const subt = chartMode === 'B'
+          ? 'Esquerda: BA × PPI histórico  ·  Direita: Meta/Projeção BA × PPI'
+          : 'Gap Real = BA−PPI ao longo da série histórica  ·  Gap-Alvo = meta declarada pela coalizão';
+        slG.addText(subt,
           {x:PAD,y:0.40,w:W-PAD*2,h:0.20,fontSize:9,color:'FFD8C0',fontFace:'Calibri'});
 
         const gridTop  = 0.78;
@@ -3107,144 +3301,25 @@ async function exportPPTX() {
         const cellW    = (W - PAD*2 - 0.16) / 2;
         const cellH    = (H - gridTop - 0.30 - 0.16) / 2;
         const slice    = itensG.slice(pg*perPage, pg*perPage+perPage);
-        slice.forEach((it, k) => {
-          const col = k % 2, row = Math.floor(k / 2);
-          const cx = gridLeft + col * (cellW + 0.16);
-          const cy = gridTop  + row * (cellH + 0.16);
-          // Card de fundo
-          slG.addShape(pres.ShapeType.roundRect,{x:cx,y:cy,w:cellW,h:cellH,fill:{color:C.branco},line:{color:C.begeE},rectRadius:0.06});
-          // Título do indicador
-          const nomeInd = indLookupG[it.indicadorRef] || it.metrica || '(indicador sem nome)';
-          slG.addText(nomeInd,{x:cx+0.10,y:cy+0.06,w:cellW-0.20,h:0.28,fontSize:10,bold:true,color:C.cinza,fontFace:'Calibri',valign:'top',wrap:true,shrinkText:true});
-          // Subtítulo: unidade · marco
-          const sub = (it.unidade?'Unidade: '+it.unidade:'') + (it.calc && it.calc.marcoAno!=null ? '   ·   Marco: '+it.calc.marcoAno : '');
-          if (sub) slG.addText(sub,{x:cx+0.10,y:cy+0.34,w:cellW-0.20,h:0.16,fontSize:8,color:C.cinzaM,fontFace:'Calibri',valign:'top',wrap:false,shrinkText:true});
-          // Conteúdo: gráfico OU card de barreira
-          const chartY = cy + 0.52;
-          const chartH = cellH - 0.58;
-          if (it.barreira && it.barreira.ativa) {
-            slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F0E8DF'},line:{color:C.begeE}});
-            slG.addText('⚖ Sem dados — barreira reconhecida',
-              {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:11,bold:true,color:'7A6A60',fontFace:'Calibri',valign:'middle',align:'center',wrap:true});
-            if (it.barreira.justificativa) {
-              slG.addText((it.barreira.justificativa||'').slice(0,180),
-                {x:cx+0.14,y:chartY+chartH-0.36,w:cellW-0.28,h:0.32,fontSize:7,color:C.cinzaM,fontFace:'Calibri',italic:true,valign:'bottom',align:'center',wrap:true,shrinkText:true});
-            }
-          } else {
-            const serieG = (it.serie || [])
-              .filter(p => p && p.ano!=null && p.ano!=='' && p.valorBA!=null && !isNaN(p.valorBA) && p.valorPPI!=null && !isNaN(p.valorPPI))
-              .slice().sort((a,b)=>a.ano-b.ano);
-            if (serieG.length === 0) {
-              slG.addShape(pres.ShapeType.rect,{x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fill:{color:'F8F4EC'},line:{color:C.begeE}});
-              slG.addText('Sem pontos válidos na série temporal',
-                {x:cx+0.10,y:chartY,w:cellW-0.20,h:chartH,fontSize:10,italic:true,color:C.cinzaM,fontFace:'Calibri',valign:'middle',align:'center'});
-            } else {
-              // ── Séries de meta (BA/PPI ano-a-ano) — independentes do histórico ──
-              // Cada Meta BA / Meta PPI tem sua própria linha cobrindo TODOS os anos
-              // em que foi declarada (inclusive antes/durante a série histórica),
-              // para permitir comparar metas passadas com o desempenho real.
-              const metasArr = (it.metas || []).slice().sort((a,b)=>a.ano-b.ano);
-              const metasBA  = metasArr.filter(m => m.valorMetaBA  != null);
-              const metasPPI = metasArr.filter(m => m.valorMetaPPI != null);
-              const temProjBA  = metasBA.length  > 0;
-              const temProjPPI = metasPPI.length > 0;
-              // Eixo X = união de TODOS os anos com qualquer valor (hist + metas).
-              const anosUni = Array.from(new Set([
-                ...serieG.map(p=>p.ano),
-                ...metasArr.map(m=>m.ano)
-              ])).sort((a,b)=>a-b);
-              const labels = anosUni.map(a => String(a));
-              const histBAByAno  = Object.fromEntries(serieG.map(p => [p.ano, +p.valorBA]));
-              const histPPIByAno = Object.fromEntries(serieG.map(p => [p.ano, +p.valorPPI]));
-              const metaBAByAno  = Object.fromEntries(metasBA.map(m => [m.ano, +m.valorMetaBA]));
-              const metaPPIByAno = Object.fromEntries(metasPPI.map(m => [m.ano, +m.valorMetaPPI]));
-              // Formato dos rótulos pela unidade do indicador
-              const u = (it.unidade||'').trim();
-              const isPct = u === '%' || /percent/i.test(u);
-              const valsAll = serieG.flatMap(p => [+p.valorBA, +p.valorPPI])
-                                .concat(metasBA.map(m=>+m.valorMetaBA), metasPPI.map(m=>+m.valorMetaPPI));
-              const todosInt = valsAll.every(v => Math.abs(v - Math.round(v)) < 0.005);
-              const fmtCode = isPct ? '0.0"%"' : (todosInt ? '#,##0' : '#,##0.0');
-              // Em séries longas, exibe rótulos só nas históricas para evitar embaralhamento.
-              const muitosAnos = anosUni.length >= 8;
-              const mkSerie = (name, byAno) => ({ name, labels, values: anosUni.map(a => byAno[a] != null ? byAno[a] : null) });
-              const baseAxis = {
-                catAxisLabelFontSize: 8, valAxisLabelFontSize: 8,
-                catAxisLabelColor: '5A4A40', valAxisLabelColor: '5A4A40',
-                showTitle: false,
-                plotArea: { fill: { color: 'FDFBF6' } },
-                showValAxisTitle: !!u,
-                valAxisTitle: u || '',
-                valAxisTitleFontSize: 8,
-                valAxisTitleColor: '7A6A60',
-                displayBlanksAs: 'gap',
-                showLegend: true, legendPos: 'b', legendFontSize: 8,
-                dataLabelFormatCode: fmtCode,
-              };
-              // Cada série é um sub-chart "combo" para que dataLabelPosition,
-              // cor e tamanho sejam independentes — evita rótulos sobrepostos.
-              const series = [];
-              series.push({
-                type: pres.ChartType.line,
-                data: [ mkSerie('BA (Brancos e Amarelos)', histBAByAno) ],
-                options: {
-                  chartColors: ['5C2E0A'], lineSize: 2.5,
-                  lineDataSymbol: 'circle', lineDataSymbolSize: 5,
-                  showValue: true, dataLabelPosition: 't',
-                  dataLabelFontSize: 7, dataLabelColor: '5C2E0A',
-                  dataLabelFormatCode: fmtCode,
-                },
-              });
-              series.push({
-                type: pres.ChartType.line,
-                data: [ mkSerie('PPI (Pretos, Pardos e Indígenas)', histPPIByAno) ],
-                options: {
-                  chartColors: ['E05A1A'], lineSize: 2.5,
-                  lineDataSymbol: 'circle', lineDataSymbolSize: 5,
-                  showValue: true, dataLabelPosition: 'b',
-                  dataLabelFontSize: 7, dataLabelColor: 'E05A1A',
-                  dataLabelFormatCode: fmtCode,
-                },
-              });
-              if (temProjBA) {
-                series.push({
-                  type: pres.ChartType.line,
-                  data: [ mkSerie('Meta BA (projeção)', metaBAByAno) ],
-                  options: {
-                    chartColors: ['A88670'], lineSize: 1.5,
-                    lineDataSymbol: 'diamond', lineDataSymbolSize: 4,
-                    showValue: !muitosAnos, dataLabelPosition: 't',
-                    dataLabelFontSize: 6, dataLabelColor: 'A88670',
-                    dataLabelFormatCode: fmtCode,
-                  },
-                });
-              }
-              if (temProjPPI) {
-                series.push({
-                  type: pres.ChartType.line,
-                  data: [ mkSerie('Meta PPI (projeção)', metaPPIByAno) ],
-                  options: {
-                    chartColors: ['F2A87A'], lineSize: 1.5,
-                    lineDataSymbol: 'diamond', lineDataSymbolSize: 4,
-                    showValue: !muitosAnos, dataLabelPosition: 'b',
-                    dataLabelFontSize: 6, dataLabelColor: 'C26A2A',
-                    dataLabelFormatCode: fmtCode,
-                  },
-                });
-              }
-              slG.addChart(series, {
-                x: cx+0.10, y: chartY, w: cellW-0.20, h: chartH,
-                ...baseAxis,
-              });
-              // Anotação 🎯 Gap-alvo — todos os anos com valorMetaGap mas sem BA/PPI projetados.
-              const metasGapOnly = metasArr.filter(m => m.valorMetaGap != null && (m.valorMetaBA == null || m.valorMetaPPI == null));
-              if (metasGapOnly.length > 0 && !temProjBA && !temProjPPI) {
-                const txt = '🎯 Gap-alvo: ' + metasGapOnly.map(m => m.ano+' → '+(+m.valorMetaGap.toFixed(2))+(u?' '+u:'')).join(' · ');
-                slG.addText(txt, {x:cx+0.10,y:cy+cellH-0.22,w:cellW-0.20,h:0.18,fontSize:7,italic:true,bold:true,color:'7A5A0A',fontFace:'Calibri',valign:'middle',wrap:false,shrinkText:true});
-              }
-            }
-          }
-        });
+        if (chartMode === 'B') {
+          // 2 indicadores × 2 cells = 4 cells em grid 2×2 (Real esq, Projetado dir, indicador por linha)
+          slice.forEach((it, k) => {
+            const row = k; // 0 ou 1
+            const cyB = gridTop + row * (cellH + 0.16);
+            // Esquerda: Real
+            renderChartCell(slG, it, gridLeft, cyB, cellW, cellH, 'real');
+            // Direita: Projetado
+            renderChartCell(slG, it, gridLeft + cellW + 0.16, cyB, cellW, cellH, 'proj');
+          });
+        } else {
+          // Modo A: 4 indicadores em grid 2×2
+          slice.forEach((it, k) => {
+            const col = k % 2, row = Math.floor(k / 2);
+            const cx = gridLeft + col * (cellW + 0.16);
+            const cy = gridTop  + row * (cellH + 0.16);
+            renderChartCell(slG, it, cx, cy, cellW, cellH, 'A');
+          });
+        }
       }
     }
     // ── SLIDE DEDICADO: EIXO 06 — GAPS BA×PPI E EVOLUÇÃO ──────
