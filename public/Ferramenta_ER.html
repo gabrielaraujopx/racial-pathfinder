@@ -2862,14 +2862,22 @@ async function exportPPTX() {
     s.addText('01 — DIAGNÓSTICO E CONTEXTO',{x:PAD,y:diagY+0.03,w:3.2,h:0.16,fontSize:10,bold:true,color:C.marrom,charSpacing:0.4,fontFace:'Calibri'});
 
     if (c.diagnostico && c.diagnostico.length > 0) {
-      const diagTexto = c.diagnostico
-        .map(d => {
-          const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
-          const f = (d.fonte||'').trim();
-          return f ? `${t} (Fonte: ${f})` : t;
-        })
-        .filter(Boolean).join('  ·  ');
-      s.addText(diagTexto,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,fontSize:7,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      const diagRuns = [];
+      c.diagnostico.forEach((d, di) => {
+        const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
+        if (!t) return;
+        const f = (d.fonte||'').trim();
+        if (diagRuns.length > 0) {
+          diagRuns.push({text:'  ·  ', options:{fontSize:7, color:C.cinzaM, fontFace:'Calibri'}});
+        }
+        diagRuns.push({text: t, options:{fontSize:7, color:C.cinza, fontFace:'Calibri'}});
+        if (f) {
+          diagRuns.push({text: ' ('+f+')', options:{fontSize:6, color:C.cinzaM, fontFace:'Calibri', italic:true}});
+        }
+      });
+      if (diagRuns.length) {
+        s.addText(diagRuns,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,wrap:true,valign:'top'});
+      }
     }
 
     const visX = W - visW - PAD + 0.05;
