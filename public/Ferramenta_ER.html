@@ -2520,7 +2520,7 @@ function addEixo6Ponto(i) {
   const it = _e6().itens[i]; if (!it) return;
   if (!Array.isArray(it.serie)) it.serie = [];
   const ultAno = it.serie.reduce((m, p) => Math.max(m, parseInt(p.ano,10)||0), 0);
-  it.serie.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorBA: null, valorPPI: null, fonte: '' });
+  it.serie.push({ ano: ultAno ? ultAno + 1 : new Date().getFullYear(), valorBA: null, valorPPI: null, valorGap: null, fonte: '' });
   saveState(); renderCoalizao();
 }
 function removeEixo6Ponto(i, j) {
