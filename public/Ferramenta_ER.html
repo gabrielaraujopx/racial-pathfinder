@@ -2634,7 +2634,11 @@ async function exportPPTX() {
   } catch (_) { _measureCtx = null; }
   const estH = (txt, wIn, fs) => {
     const s = (txt == null || txt === '') ? '—' : String(txt);
-    const maxPx = wIn * 96;
+    // Fator de segurança de largura (0.98): canvas do browser pode cair em
+    // fonte de fallback ligeiramente mais estreita que Calibri renderizada
+    // pelo PowerPoint. Margem pequena evita contagem de linhas para menos
+    // em textos próximos do limite, sem inflar itens curtos.
+    const maxPx = wIn * 96 * 0.98;
     let lines = 0;
     if (_measureCtx) {
       _measureCtx.font = fs + 'pt Calibri, "Helvetica Neue", Arial, sans-serif';
@@ -2661,9 +2665,11 @@ async function exportPPTX() {
       }
     }
     lines = Math.max(1, lines);
-    // line-height ~1.20 do Calibri: 11pt → ~0.183"/linha; margem 0.03 para
-    // pequena folga sem desperdiçar espaço no rodapé.
-    return lines * fs * 0.0170 + 0.03;
+    // line-height efetivo PowerPoint para Calibri ~1.22x: 11pt → ~0.187"/linha.
+    // Margem 0.05" cobre descender+ascender entre itens consecutivos
+    // (evita colisão visual tipo "Equitativa"/"Mentoria") sem desperdiçar
+    // espaço no rodapé.
+    return lines * fs * 0.0170 + 0.05;
   };
 
   // ── CAPA ──────────────────────────────────────────────────
