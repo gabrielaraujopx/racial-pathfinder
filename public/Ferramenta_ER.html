@@ -1404,9 +1404,9 @@ function calcEixo6(eixo6Obj, coaliz) {
   } else {
     const mediaScore = pontuaveis.reduce((a, x) => a + SCORES[x.calc.status], 0) / pontuaveis.length;
     pctBruto = Math.round(mediaScore * fatorCobertura * fatorMedicao);
-    nivel = pctBruto >= 70 ? 'Reduzindo gaps'
-          : pctBruto >= 40 ? 'Avanço parcial'
-          : pctBruto >= 20 ? 'Avanço incipiente'
+    nivel = pctBruto >= 70 ? 'Redução substancial'
+          : pctBruto >= 40 ? 'Avanço significativo'
+          : pctBruto >= 20 ? 'Avanço parcial'
           :                  'Sem avanço';
     // Travas qualitativas: sem nenhum Avançando, não há "avanço real"
     if (contagens.fechando === 0) {
@@ -1415,8 +1415,8 @@ function calcEixo6(eixo6Obj, coaliz) {
       } else if (contagens.abrindo === 0 && contagens.estagnado > 0) {
         nivel = 'Estagnado';
       } else {
-        // teto: nunca passa de "Avanço incipiente"
-        if (pctBruto >= 40) nivel = 'Avanço incipiente';
+        // teto: nunca passa de "Avanço parcial"
+        if (pctBruto >= 40) nivel = 'Avanço parcial';
       }
     }
   }
@@ -1463,6 +1463,28 @@ function calcEixo6(eixo6Obj, coaliz) {
     if (contagensMeta.retrocesso > (contagensMeta.acima + contagensMeta.dentro)) {
       if (pctMeta >= 60) nivelMeta = 'Abaixo';
     }
+  }
+  // ── Coerência Geral × vs Meta ─────────────────────────────
+  // vs Meta = Retrocesso/Sem redução/Abaixo é teto no Geral;
+  // vs Meta = Dentro/Acima é piso (cumprir/superar metas já mais
+  // ambiciosas que a tendência histórica = avanço forte).
+  if (nVsMetaValido > 0) {
+    const ordemGeral = ['Gaps se abrindo','Sem avanço','Estagnado',
+                        'Avanço parcial','Avanço significativo','Redução substancial'];
+    const tetoPorMeta = {
+      'Retrocesso':  'Gaps se abrindo',
+      'Sem redução': 'Estagnado',
+      'Abaixo':      'Avanço parcial',
+    };
+    const pisoPorMeta = {
+      'Dentro': 'Avanço significativo',
+      'Acima':  'Redução substancial',
+    };
+    const teto = tetoPorMeta[nivelMeta];
+    const piso = pisoPorMeta[nivelMeta];
+    const idx  = ordemGeral.indexOf(nivel);
+    if (teto && idx >= 0 && idx > ordemGeral.indexOf(teto)) nivel = teto;
+    if (piso && idx >= 0 && idx < ordemGeral.indexOf(piso)) nivel = piso;
   }
   const meta = {
     pct: pctMeta, nivel: nivelMeta,
