@@ -1114,8 +1114,8 @@ function calcEixoIndicadores(indicadores, eixo6) {
 // O status oficial do indicador (usado na agregação do eixo) vem
 // SEMPRE da janela "geral", para estabilidade da pontuação.
 function _calcJanelaEixo6(pontos, sent, limAbs, minN, exigeMin) {
-  // pontos: já ordenados e filtrados (BA/PPI válidos)
-  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  // pontos: já ordenados e filtrados (com gap utilizável)
+  const calcGap = p => _gapDoPonto(p, sent);
   const n = pontos.length;
   if (n === 0) {
     return {
@@ -1213,9 +1213,7 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
     };
   }
   const serie = (item.serie || [])
-    .filter(p => p && p.ano !== '' && p.ano != null
-              && p.valorBA != null && !isNaN(p.valorBA)
-              && p.valorPPI != null && !isNaN(p.valorPPI))
+    .filter(p => p && p.ano !== '' && p.ano != null && _pontoTemGap(p))
     .slice().sort((a, b) => a.ano - b.ano);
   const sent = item.sentidoDesejado === 'descer' ? 'descer' : 'subir';
   const minN = Math.max(2, parseInt(pontosMinimos, 10) || 3);
@@ -1252,7 +1250,7 @@ function calcItemEixo6(item, pontosMinimos, limiarGapAbsoluto, ctx) {
   // jovem em relação à série.
   // Fallback: sem baseline válido em algum dos lados → mantém o status
   // da janela "geral" (regressão linear) e marca semBaseline.
-  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  const calcGap = p => _gapDoPonto(p, sent);
   let statusEfetivo = geral.status;
   let semBaseline = true;
   let gapAntesMedio = null, gapDepoisMedio = null, deltaImpacto = null;
