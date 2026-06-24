@@ -2050,16 +2050,15 @@ function renderItemEixo6(it, i, indicadoresRefs, pontosMinimos, limiarGapAbsolut
           </thead>
           <tbody>
             ${(it.serie||[]).map((p, j) => {
-              let gapTxt = '—';
-              if (p.valorBA!=null && p.valorPPI!=null && !isNaN(p.valorBA) && !isNaN(p.valorPPI)) {
-                const g = it.sentidoDesejado==='descer' ? (p.valorPPI - p.valorBA) : (p.valorBA - p.valorPPI);
-                gapTxt = (g>0?'+':'') + g.toFixed(1);
-              }
+              const derivBAPPI = (p.valorBA!=null && p.valorPPI!=null && !isNaN(p.valorBA) && !isNaN(p.valorPPI))
+                ? (it.sentidoDesejado==='descer' ? (+p.valorPPI - +p.valorBA) : (+p.valorBA - +p.valorPPI))
+                : null;
+              const phGap = derivBAPPI != null ? (+derivBAPPI.toFixed(2)) : '';
               return `<tr>
                 <td style="padding:3px 6px"><input type="number" value="${p.ano===''||p.ano==null?'':p.ano}" style="width:60px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'ano',this.value)"></td>
                 <td style="padding:3px 6px"><input type="number" step="0.01" value="${p.valorBA==null?'':p.valorBA}" style="width:80px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'valorBA',this.value)"></td>
                 <td style="padding:3px 6px"><input type="number" step="0.01" value="${p.valorPPI==null?'':p.valorPPI}" style="width:80px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'valorPPI',this.value)"></td>
-                <td style="padding:3px 6px;font-weight:600;color:var(--cinza)">${gapTxt}</td>
+                <td style="padding:3px 6px"><input type="number" step="0.01" value="${p.valorGap==null?'':p.valorGap}" placeholder="${phGap}" title="Deixe vazio para usar o cálculo automático BA−PPI. Preencha quando só houver o gap ano-a-ano." style="width:80px;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px;background:#fff" oninput="upEixo6Ponto(${i},${j},'valorGap',this.value)"></td>
                 <td style="padding:3px 6px"><input value="${(p.fonte||'').replace(/"/g,'&quot;')}" placeholder="Ex: SAEB 2023" style="width:100%;padding:3px 5px;border:1px solid #D6CFC2;border-radius:3px;font-size:11px" oninput="upEixo6Ponto(${i},${j},'fonte',this.value)"></td>
                 <td style="padding:3px 6px;text-align:center"><button onclick="removeEixo6Ponto(${i},${j})" style="background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;line-height:1">×</button></td>
               </tr>`;
