@@ -2627,7 +2627,7 @@ async function exportPPTX() {
   const estH = (txt, wIn, fs) => {
     const chPerLine = Math.max(8, Math.floor(wIn * 96 * 0.55 / (fs * 0.6)));
     const lines     = Math.max(1, Math.ceil((txt||'—').length / chPerLine));
-    return lines * fs * 0.0155 + 0.04; // 0.04 de margem extra
+    return lines * fs * 0.0155 + 0.02; // margem mínima — caixa abraça o texto
   };
 
   // ── CAPA ──────────────────────────────────────────────────
