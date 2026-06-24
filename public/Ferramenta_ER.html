@@ -2805,9 +2805,15 @@ async function exportPPTX() {
     const _totPagCoal = Math.max(_pagInd.length, _pagEst.length, _pagLac.length, 1);
 
     for (let pgCoal = 0; pgCoal < _totPagCoal; pgCoal++) {
-    const _idxsIndPg = _pagInd[pgCoal] || [];
-    const _idxsEstPg = _pagEst[pgCoal] || [];
-    const _idxsLacPg = _pagLac[pgCoal] || [];
+    const _pgInd = _pagInd[pgCoal] || { idxs: [], gap: _gapIdeal };
+    const _pgEst = _pagEst[pgCoal] || { idxs: [], gap: _gapIdeal };
+    const _pgLac = _pagLac[pgCoal] || { idxs: [], gap: _gapIdeal };
+    const _idxsIndPg = _pgInd.idxs;
+    const _idxsEstPg = _pgEst.idxs;
+    const _idxsLacPg = _pgLac.idxs;
+    const _gapInd   = _pgInd.gap;
+    const _gapEst   = _pgEst.gap;
+    const _gapLac   = _pgLac.gap;
     const _pageSuf = _totPagCoal > 1 ? '  ·  parte '+(pgCoal+1)+'/'+_totPagCoal : '';
     const s   = pres.addSlide();
     s.background = { color: C.creme };
