@@ -2661,7 +2661,9 @@ async function exportPPTX() {
       }
     }
     lines = Math.max(1, lines);
-    return lines * fs * 0.0140 + 0.02;
+    // line-height ~1.20 do Calibri: 11pt → ~0.183"/linha; usamos 0.0170 com
+    // margem extra de 0.04 para garantir folga e evitar sobreposição.
+    return lines * fs * 0.0170 + 0.04;
   };
 
   // ── CAPA ──────────────────────────────────────────────────
