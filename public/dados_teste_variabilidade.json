@@ -13,6 +13,10 @@
       {
         "texto": "Coalizão atua em 5 municípios prioritários desde 2018.",
         "fonte": "Relatório Coalizão 2024"
+      },
+      {
+        "texto": "Necessidade de revisão dos critérios de matrícula por território.",
+        "fonte": ""
       }
     ],
     "visaoSucesso": "Universalizar acesso à pré-escola com paridade racial até 2028.",
@@ -140,8 +144,8 @@
     "eixo6": {
       "pontosMinimos": 3,
       "limiarGapAbsoluto": 1.0,
-      "pptAnoInicial": null,
-      "pptAnoFinal": null,
+      "pptAnoInicial": 2018,
+      "pptAnoFinal": 2024,
       "coalizaoAnoInicio": 2018,
       "incluirGraficos": true,
       "itens": [
@@ -204,6 +208,13 @@
               "valorBA": 87,
               "valorPPI": 80,
               "fonte": "SAEB/INEP"
+            },
+            {
+              "ano": 2024,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 6.5,
+              "fonte": "Estimativa Coalizão"
             }
           ],
           "observacoes": "",
@@ -253,6 +264,12 @@
               "valorMetaGap": 1.2,
               "valorMetaBA": 92.2,
               "valorMetaPPI": 91.0
+            },
+            {
+              "ano": 2025,
+              "valorMetaGap": 3.5,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             }
           ]
         },
@@ -877,19 +894,12 @@
         "status": "Em desenvolvimento"
       }
     ],
-    "lacunas": [
-      {
-        "texto": "Falta de articulação rede municipal × estadual",
-        "criticidade": "Alta",
-        "encaminhamento": "nao",
-        "recomendacao": ""
-      }
-    ],
-    "estadoLacunas": "mapeadas",
+    "lacunas": [],
+    "estadoLacunas": "em_mapeamento",
     "barreirasContexto": {
       "indicadores": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "INEP não publica microdados raciais por município para 9º ano EF; dependemos de tabulações estaduais."
       },
       "estrategias": {
         "ativa": false,
@@ -943,6 +953,20 @@
               "valorBA": 275,
               "valorPPI": 262,
               "fonte": "SAEB"
+            },
+            {
+              "ano": 2024,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 24.0,
+              "fonte": "Tabulação coalizão"
+            },
+            {
+              "ano": 2025,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 22.5,
+              "fonte": "Tabulação coalizão"
             }
           ],
           "observacoes": "",
@@ -980,6 +1004,12 @@
               "valorMetaGap": 3.0,
               "valorMetaBA": 288.0,
               "valorMetaPPI": 285.0
+            },
+            {
+              "ano": 2030,
+              "valorMetaGap": 12.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             }
           ]
         },
@@ -1022,8 +1052,8 @@
           ],
           "observacoes": "",
           "barreira": {
-            "ativa": false,
-            "justificativa": ""
+            "ativa": true,
+            "justificativa": "Indicador descontinuado pelo INEP em 2023; sem nova série oficial."
           },
           "metas": [
             {
@@ -1109,23 +1139,16 @@
         "status": "Piloto"
       }
     ],
-    "lacunas": [
-      {
-        "texto": "Conectividade rural deficiente",
-        "criticidade": "Alta",
-        "encaminhamento": "parcial",
-        "recomendacao": ""
-      }
-    ],
-    "estadoLacunas": "mapeadas",
+    "lacunas": [],
+    "estadoLacunas": "nao_identificadas",
     "barreirasContexto": {
       "indicadores": {
         "ativa": false,
         "justificativa": ""
       },
       "estrategias": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "Política nacional de conectividade escolar (PNED) ainda em implementação federal, fora do escopo da coalizão."
       },
       "lacunas": {
         "ativa": false,
@@ -1135,10 +1158,10 @@
     "eixo6": {
       "pontosMinimos": 3,
       "limiarGapAbsoluto": 1.0,
-      "pptAnoInicial": null,
-      "pptAnoFinal": null,
+      "pptAnoInicial": 2019,
+      "pptAnoFinal": 2026,
       "coalizaoAnoInicio": 2019,
-      "incluirGraficos": true,
+      "incluirGraficos": false,
       "itens": [
         {
           "indicadorRef": "ind-0",
@@ -1216,34 +1239,32 @@
           "sentidoDesejado": "subir",
           "serie": [
             {
-              "ano": 2016,
-              "valorBA": 72,
-              "valorPPI": 45,
-              "fonte": "SAEB/INEP"
-            },
-            {
               "ano": 2018,
-              "valorBA": 73,
-              "valorPPI": 46,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 42.0,
+              "fonte": "Estimativa coalizão"
             },
             {
               "ano": 2020,
-              "valorBA": 74,
-              "valorPPI": 46,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 38.0,
+              "fonte": "Estimativa coalizão"
             },
             {
               "ano": 2022,
-              "valorBA": 75,
-              "valorPPI": 47,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 31.5,
+              "fonte": "Estimativa coalizão"
             },
             {
-              "ano": 2023,
-              "valorBA": 75,
-              "valorPPI": 47,
-              "fonte": "SAEB/INEP"
+              "ano": 2024,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 25.0,
+              "fonte": "Estimativa coalizão"
             }
           ],
           "observacoes": "",
@@ -1253,28 +1274,22 @@
           },
           "metas": [
             {
-              "ano": 2024,
-              "valorMetaBA": 78.0,
-              "valorMetaPPI": null,
-              "valorMetaGap": null
-            },
-            {
               "ano": 2026,
-              "valorMetaBA": 80.0,
-              "valorMetaPPI": null,
-              "valorMetaGap": null
+              "valorMetaGap": 18.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             },
             {
-              "ano": 2029,
-              "valorMetaBA": 82.5,
-              "valorMetaPPI": null,
-              "valorMetaGap": null
+              "ano": 2028,
+              "valorMetaGap": 10.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             },
             {
-              "ano": 2033,
-              "valorMetaBA": 85.5,
-              "valorMetaPPI": null,
-              "valorMetaGap": null
+              "ano": 2030,
+              "valorMetaGap": 5.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             }
           ]
         },
@@ -1369,18 +1384,18 @@
         "fonte": "INEP",
         "tipo": "Alcance",
         "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
+        "statusQualidade": "Não tem",
+        "resultadoEstados": "N",
+        "resultadoNacional": "N"
       },
       {
         "texto": "Taxa de conclusão EM",
         "fonte": "PNAD/IBGE",
         "tipo": "Transformação",
         "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
+        "statusQualidade": "Não tem",
+        "resultadoEstados": "N",
+        "resultadoNacional": "N"
       },
       {
         "texto": "% PPI em currículo profissionalizante",
@@ -1402,15 +1417,8 @@
         "status": "Piloto"
       }
     ],
-    "lacunas": [
-      {
-        "texto": "Currículo profissionalizante sem recorte racial",
-        "criticidade": "Alta",
-        "encaminhamento": "sim",
-        "recomendacao": "Pauta no Conselho Nacional"
-      }
-    ],
-    "estadoLacunas": "mapeadas",
+    "lacunas": [],
+    "estadoLacunas": "nao_realizado",
     "barreirasContexto": {
       "indicadores": {
         "ativa": false,
@@ -1421,13 +1429,13 @@
         "justificativa": ""
       },
       "lacunas": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "Mapeamento sistemático de lacunas previsto para ciclo 2026 do planejamento estratégico."
       }
     },
     "eixo6": {
-      "pontosMinimos": 3,
-      "limiarGapAbsoluto": 1.0,
+      "pontosMinimos": 4,
+      "limiarGapAbsoluto": 2.0,
       "pptAnoInicial": null,
       "pptAnoFinal": null,
       "coalizaoAnoInicio": 2021,
@@ -1492,6 +1500,13 @@
               "valorBA": 58,
               "valorPPI": 38,
               "fonte": "SAEB/INEP"
+            },
+            {
+              "ano": 2024,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 15.0,
+              "fonte": "Coalizão"
             }
           ],
           "observacoes": "",
@@ -1762,21 +1777,39 @@
         "criticidade": "Média",
         "encaminhamento": "parcial",
         "recomendacao": ""
+      },
+      {
+        "texto": "Ausência de monitoramento racial da seleção de diretores",
+        "criticidade": "Alta",
+        "encaminhamento": "sim",
+        "recomendacao": "Articular com Consed para incluir variável raça/cor nos editais de gestão democrática"
+      },
+      {
+        "texto": "Baixa formação antirracista de equipes gestoras municipais",
+        "criticidade": "Média",
+        "encaminhamento": "nao",
+        "recomendacao": ""
+      },
+      {
+        "texto": "Pouca articulação entre redes municipais sobre boas práticas",
+        "criticidade": "Baixa",
+        "encaminhamento": "sim",
+        "recomendacao": "Mapear e publicar repositório anual"
       }
     ],
     "estadoLacunas": "mapeadas",
     "barreirasContexto": {
       "indicadores": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "Censo de gestoras escolares por raça não é divulgado anualmente pelo INEP."
       },
       "estrategias": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "Política de seleção de diretores é prerrogativa de cada rede estadual/municipal, fora do mandato da coalizão."
       },
       "lacunas": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "Lacunas dependem de dados raciais que estão indisponíveis em escala nacional."
       }
     },
     "eixo6": {
@@ -1822,12 +1855,19 @@
               "valorBA": 57,
               "valorPPI": 33,
               "fonte": "SAEB/INEP"
+            },
+            {
+              "ano": 2025,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 29.0,
+              "fonte": "Estimativa coalizão (sem desagregação)"
             }
           ],
           "observacoes": "",
           "barreira": {
-            "ativa": false,
-            "justificativa": ""
+            "ativa": true,
+            "justificativa": "Dado por raça/cor das gestoras só disponível em rodadas a cada 2 anos do Censo Escolar."
           },
           "metas": [
             {
@@ -1853,6 +1893,12 @@
               "valorMetaBA": null,
               "valorMetaPPI": null,
               "valorMetaGap": 3.6
+            },
+            {
+              "ano": 2028,
+              "valorMetaGap": 15.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             }
           ]
         },
@@ -2036,7 +2082,7 @@
         "texto": "Permanência média docente PPI",
         "fonte": "Coalizão",
         "tipo": "Alcance",
-        "tipoRacial": "geral",
+        "tipoRacial": "especifico_racial",
         "statusQualidade": "Tem parcialmente",
         "resultadoEstados": "P",
         "resultadoNacional": "N"
@@ -2052,15 +2098,8 @@
         "status": "Em desenvolvimento"
       }
     ],
-    "lacunas": [
-      {
-        "texto": "Não há mapeamento estruturado de carreira por raça",
-        "criticidade": "Alta",
-        "encaminhamento": "nao",
-        "recomendacao": ""
-      }
-    ],
-    "estadoLacunas": "mapeadas",
+    "lacunas": [],
+    "estadoLacunas": "em_mapeamento",
     "barreirasContexto": {
       "indicadores": {
         "ativa": false,
@@ -2078,8 +2117,8 @@
     "eixo6": {
       "pontosMinimos": 3,
       "limiarGapAbsoluto": 1.0,
-      "pptAnoInicial": null,
-      "pptAnoFinal": null,
+      "pptAnoInicial": 2020,
+      "pptAnoFinal": 2025,
       "coalizaoAnoInicio": 2021,
       "incluirGraficos": false,
       "itens": [
@@ -2091,27 +2130,52 @@
           "serie": [
             {
               "ano": 2018,
-              "valorBA": 60,
-              "valorPPI": 33,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 27.0,
+              "fonte": "Tabulação Coalizão"
+            },
+            {
+              "ano": 2019,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 26.2,
+              "fonte": "Tabulação Coalizão"
             },
             {
               "ano": 2020,
-              "valorBA": 60,
-              "valorPPI": 34,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 25.5,
+              "fonte": "Tabulação Coalizão"
+            },
+            {
+              "ano": 2021,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 24.0,
+              "fonte": "Tabulação Coalizão"
             },
             {
               "ano": 2022,
-              "valorBA": 61,
-              "valorPPI": 35,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 22.5,
+              "fonte": "Tabulação Coalizão"
             },
             {
               "ano": 2023,
-              "valorBA": 61,
-              "valorPPI": 35,
-              "fonte": "SAEB/INEP"
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 20.8,
+              "fonte": "Tabulação Coalizão"
+            },
+            {
+              "ano": 2024,
+              "valorBA": null,
+              "valorPPI": null,
+              "valorGap": 18.5,
+              "fonte": "Tabulação Coalizão"
             }
           ],
           "observacoes": "",
@@ -2121,46 +2185,22 @@
           },
           "metas": [
             {
-              "ano": 2020,
-              "valorMetaGap": 20.52,
-              "valorMetaBA": 61.0,
-              "valorMetaPPI": 40.48
+              "ano": 2025,
+              "valorMetaGap": 16.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             },
             {
-              "ano": 2022,
-              "valorMetaGap": 14.04,
-              "valorMetaBA": 61.8,
-              "valorMetaPPI": 47.76
+              "ano": 2027,
+              "valorMetaGap": 12.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             },
             {
-              "ano": 2023,
-              "valorMetaGap": 10.8,
-              "valorMetaBA": 62.2,
-              "valorMetaPPI": 51.4
-            },
-            {
-              "ano": 2024,
-              "valorMetaGap": 10.04,
-              "valorMetaBA": 62.6,
-              "valorMetaPPI": 52.56
-            },
-            {
-              "ano": 2026,
-              "valorMetaGap": 8.53,
-              "valorMetaBA": 63.4,
-              "valorMetaPPI": 54.87
-            },
-            {
-              "ano": 2029,
-              "valorMetaGap": 6.26,
-              "valorMetaBA": 64.6,
-              "valorMetaPPI": 58.34
-            },
-            {
-              "ano": 2033,
-              "valorMetaGap": 3.24,
-              "valorMetaBA": 66.2,
-              "valorMetaPPI": 62.96
+              "ano": 2030,
+              "valorMetaGap": 6.0,
+              "valorMetaBA": null,
+              "valorMetaPPI": null
             }
           ]
         },
