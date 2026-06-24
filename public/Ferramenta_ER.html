@@ -2991,8 +2991,7 @@ async function exportPPTX() {
       const fonteTxt = (ind.fonte||'').trim();
       const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
       const tH     = Math.max(circR, estH(txt, indTW, itemFS));
-      const totalH = tH + itmGap;
-      if (yI + totalH > colBot) return;
+      const totalH = tH + _gapInd;
       const cX  = PAD*0.6;
       const tX  = cX + leftZone;
       const emLac = lacunaSet.has(idx);
@@ -3023,8 +3022,7 @@ async function exportPPTX() {
       const est = c.estrategias[idx];
       const txt    = est.texto||'—';
       const tH     = Math.max(circR, estH(txt, eTW, itemFS));
-      const totalH = tH + itmGap;
-      if (yE + totalH > colBot) return;
+      const totalH = tH + _gapEst;
       const cX  = colW + PAD*0.6;
       const tX  = cX + leftZone;
       const bX  = tX + eTW + 0.03;
@@ -3054,8 +3052,7 @@ async function exportPPTX() {
       const boxH   = tH + recH;                        // caixa única: item + encaminhamento
       const iconH  = tRI + 0.02 + encR;
       const blockH = Math.max(iconH, boxH);
-      const totalH = blockH + itmGap;
-      if (yL + totalH > colBot) return;
+      const totalH = blockH + _gapLac;
 
       const cX = colW*2 + PAD*0.6;
       const tX = cX + lLeftW;
