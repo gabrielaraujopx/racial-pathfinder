@@ -1029,15 +1029,27 @@ function calcEixoLacunas(lacunas, estadoDecl) {
   return { pct: 0, nivel: 'Incipiente', nivelLacunas: 'Não mapeado', estado };
 }
 
+// Retorna true se o ponto da série tem informação de gap utilizável:
+// (a) BA e PPI numéricos, ou (b) valorGap numérico declarado diretamente.
+function _pontoTemGap(p) {
+  if (!p) return false;
+  if (p.valorGap != null && !isNaN(p.valorGap)) return true;
+  return p.valorBA != null && p.valorPPI != null &&
+         !isNaN(p.valorBA) && !isNaN(p.valorPPI);
+}
+// Gap do ponto: prioriza valorGap declarado; senão deriva de BA/PPI conforme sentido.
+function _gapDoPonto(p, sent) {
+  if (p && p.valorGap != null && !isNaN(p.valorGap)) return +p.valorGap;
+  if (!p || p.valorBA == null || p.valorPPI == null) return null;
+  return sent === 'subir' ? (+p.valorBA - +p.valorPPI) : (+p.valorPPI - +p.valorBA);
+}
 // Verifica se um indicador (índice idx em c.indicadores) tem ao menos um item
-// do Eixo 6 referenciando-o com pelo menos um ponto válido (BA e PPI numéricos).
+// do Eixo 6 referenciando-o com pelo menos um ponto válido (BA+PPI ou valorGap).
 function _indicadorTemRecorteRacial(idx, eixo6) {
   if (!eixo6 || !Array.isArray(eixo6.itens)) return false;
   const ref = 'ind-' + idx;
   return eixo6.itens.some(it => it && it.indicadorRef === ref &&
-    Array.isArray(it.serie) && it.serie.some(p =>
-      p && p.valorBA != null && p.valorPPI != null &&
-      !isNaN(p.valorBA) && !isNaN(p.valorPPI)));
+    Array.isArray(it.serie) && it.serie.some(_pontoTemGap));
 }
 
 // Eixo 02 (Indicadores da visão de sucesso):
