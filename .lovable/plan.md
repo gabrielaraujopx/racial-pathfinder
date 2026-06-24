@@ -1,43 +1,62 @@
-## Diagnóstico
+## Ajustes na ferramenta
 
-O ajuste anterior do `estH` (medição via canvas + line-height 0.0170) foi aplicado **apenas aos cálculos de altura compartilhados** entre Indicadores, Estratégias e Lacunas — então em tese todas as colunas usam o mesmo estimador. Mas o usuário observou:
+### 1) Campo "Fonte" perde foco / scrolla até o topo a cada letra digitada
 
-- **Eixo Estratégias (Gestão Escolar e Pré-escola)**: itens 1 e 2 quase colados — "equitativa" do item 1 encostando em "mentoria" do item 2.
-- Lacunas: precisa ser revalidada com o mesmo padrão.
+**Causa**
+Os inputs de fonte chamam `renderCoalizao()` (re-render total da aba) a cada `oninput`:
+- `public/Ferramenta_ER.html:1698` — fonte do Diagnóstico (`upDiagFonte` → `renderCoalizao()` na linha 2383)
+- `public/Ferramenta_ER.html:2204` — fonte do Indicador (`upItem(...);renderCoalizao()` inline)
+- Padrão também presente em outros campos que disparam re-render visual (ex.: badge "⚠ Sem fonte" e borda vermelha).
 
-Causas prováveis a investigar com o PPT real gerado a partir do JSON do usuário (`/mnt/user-uploads/ER_dados_2026-06-24.json`):
+Cada keystroke destrói o `<input>` focado e recria toda a árvore, então o foco volta ao topo da página.
 
-1. **Coluna Estratégias é mais estreita** (~1.93") que Indicadores e Lacunas porque reserva 0.90" para o badge de status à direita. Texto longo quebra em mais linhas → o `estH` precisa ser ainda mais preciso aqui. Se o canvas browser estiver renderizando com fonte de fallback (Arial em vez de Calibri), a largura medida é ~3-5% menor que a real do PowerPoint, e em coluna estreita isso vira 1 linha a menos no estimador → colisão.
-2. O `_gapBase = 0.08"` (≈ 5.8pt) é o único espaço entre itens. Se o `estH` subestimar mesmo 0.05" por item, dois itens consecutivos com texto longo se sobrepõem visualmente.
-3. Em Lacunas, há a complicação extra do bloco `[texto + recomendação]` numa única `addText` multi-runs — o cálculo soma `tH + recH` como se fossem caixas separadas, mas o PowerPoint renderiza tudo numa caixa só, podendo herdar line-height diferente.
+**Correção**
+Mudar a estratégia "atualiza estado + re-render total no oninput" para:
+1. **No `oninput`:** apenas mutar o estado (`saveState()` + `refreshMat()`, sem `renderCoalizao()`). Atualizar **somente o que é visual e local ao card** via DOM direto: remover/adicionar a classe da borda vermelha e ocultar/mostrar o badge "⚠ Sem fonte" conforme o input ficar vazio ou preenchido. Trocar o `background` do próprio input (`#FFF5F5` ↔ `#fff`) e a cor da borda.
+2. **No `onchange` (blur):** aí sim chamar `renderCoalizao()` uma única vez para garantir consistência total (ex.: cobertura/lacuna do Eixo 2 que dependem da existência de fonte).
 
-## Plano de correção
+Aplicar o mesmo padrão a:
+- Fonte do Diagnóstico (`upDiagFonte`) — remover `renderCoalizao()` do final, mover para blur.
+- Fonte do Indicador (linha 2204) — remover `;renderCoalizao()` do `oninput`, adicionar `onchange="renderCoalizao()"`.
+- Fonte do Eixo 6 série histórica (linha 2051, `upEixo6Ponto(...,'fonte',...)`) — mesma checagem (já não dispara render, mas validar).
+- Demais inputs de texto livre que hoje chamem `renderCoalizao()` no `oninput` (varredura final para não deixar regressão).
 
-Tudo no arquivo `public/Ferramenta_ER.html`, mexendo apenas no estimador `estH` e nas funções de altura `_hEstPre` / `_hLacPre`:
+Para os badges/bordas que dependem do valor: dar `id` estável ao card e ao badge (`item-card-ind-${i}`, `badge-fonte-ind-${i}`) para que o handler atualize só esses nós.
 
-1. **Reproduzir o problema**: rodar o export com o JSON real do usuário via Playwright, renderizar os slides de Gestão Escolar e Pré-escola (eixo Estratégias) e Lacunas em imagens, medir o overlap em polegadas.
+### 2) Eixo 5 (Gaps BA×PPI) — permitir gap-real direto na série histórica
 
-2. **Calibrar o `estH` para underestimação de largura**:
-   - Aplicar um fator de segurança de largura no canvas: usar `maxPx = wIn * 96 * 0.96` (assumir que 4% do espaço útil é consumido pela diferença Calibri vs fallback do browser). Isso aumenta a contagem de linhas só nas situações em que o texto realmente está perto do limite — não afeta itens curtos.
-   - Manter o line-height 0.0170 e margem 0.03" (já validados em Indicadores).
+Hoje a coluna **Gap** da série temporal (linhas 2040–2054) é **só leitura**: só é calculada se BA **e** PPI estiverem preenchidos. Se a coalizão só tem o gap ano-a-ano (sem BA/PPI individualizados), o ponto fica inválido e o gráfico ignora.
 
-3. **Reforçar a folga vertical nas funções de altura por coluna**:
-   - `_hEstPre`: somar uma pequena folga de descender (`+ 0.02`) só quando `estH` retornar > 1 linha, para evitar colisão de descenders de uma linha com ascenders da próxima do item seguinte.
-   - `_hLacPre`: quando há recomendação, calcular `estH(txt+'\n'+recTxt, lTW, max(itemFS,7))` como bloco único (em vez de soma separada), garantindo que a estimativa reflita o que o PowerPoint efetivamente renderiza dentro da mesma caixa multi-run.
+Replicar o comportamento já usado em **Metas** (`valorMetaGap`):
 
-4. **Validar visualmente** rodando o export novamente, renderizando especificamente:
-   - Gestão Escolar parte 1 (coluna Estratégias)
-   - Pré-escola parte 1 e parte 2 (coluna Estratégias)
-   - Todos os slides de eixo de qualquer coalizão com Lacunas preenchidas
-   
-   Critério de sucesso: nenhum par de itens com gap visual < ~0.05" e nenhuma palavra de um item encostando em outro. Se ainda houver colisão, aumentar o `_gapBase` de 0.08 → 0.10 (último recurso, custa ~0.1" por item paginado, mas pode forçar +1 paginação em casos extremos — só faço se a calibração de width não resolver).
+**Modelo de dados**
+- Adicionar campo `valorGap` em cada ponto de `it.serie`.
+- `addEixo6Ponto` (linha 2510): incluir `valorGap: null` no objeto criado.
+- Normalização de importação JSON (`public/Ferramenta_ER.html:840`): preservar `valorGap` quando presente.
 
-5. **Não mexer** em: layout, fontes, cores, badges, largura de colunas, capa, sumário, gráficos BA×PPI ou qualquer slide fora dos eixos de coalizão.
+**Handler**
+- `upEixo6Ponto` (linha 2518): tratar `campo === 'valorGap'` igual aos demais numéricos.
 
-## Arquivos afetados
+**UI da linha da série (linha 2046–2053)**
+- Substituir o `<td>` somente-leitura por um `<input type="number">` editável, espelhando o padrão de Metas (linha 2089):
+  - Se BA e PPI estiverem ambos preenchidos → mostrar valor calculado como **placeholder** (e o campo fica opcional; quando vazio usa o derivado).
+  - Se a pessoa digita um valor manual em Gap, esse valor **prevalece** sobre o derivado.
+  - Mostrar uma dica curta (igual Metas) indicando "deixe vazio para usar o cálculo BA−PPI".
 
-- `public/Ferramenta_ER.html` — apenas o bloco do `estH` (linhas 2625–2667) e as funções `_hEstPre` / `_hLacPre` (linhas 2821–2829).
+**Cálculo e gráficos** (`renderEixo6Chart`, linhas 3178–3215 e equivalentes para células B/C)
+- Trocar o filtro atual (linha 3179) que exige `valorBA` **e** `valorPPI` por: aceitar pontos válidos se **(BA e PPI)** OU **`valorGap` numérico**.
+- Ao montar `gapReal` (linha 3191): se `p.valorGap != null && Number.isFinite(p.valorGap)`, usar ele; caso contrário, calcular via BA/PPI.
+- Aplicar a mesma lógica nas demais células do Eixo 5 que dependem da série (B/C/etc.) onde o cálculo é feito a partir de BA/PPI — varrer e padronizar.
 
-## Risco
+**Validação de "recorte racial trabalhado"** (`_indicadorTemRecorteRacial`, linha 1034)
+- Hoje só aceita ponto com BA **e** PPI numéricos.
+- Atualizar para considerar trabalhado também quando o ponto tem `valorGap` numérico (consistente com a regra "se só temos o gap, ainda é recorte racial sendo monitorado").
 
-Baixo. O ajuste é conservador: aumentar levemente a altura estimada pode disparar paginação 1 slide a mais em casos limítrofes, mas continua respeitando o princípio aprovado (só pagina quando o próximo item realmente não cabe no rodapé). Validação visual obrigatória antes de declarar concluído.
+**Texto explicativo**
+- Atualizar o `<div>` de instrução do bloco (algo como "Preencha BA e PPI para cálculo automático, **ou apenas o Gap** se só houver o gap ano-a-ano") — espelhando o texto já existente em Metas (linha 2065).
+
+### Fora do escopo
+- Nenhuma mudança em layout, fontes, cores, exportação PPT (heights/pagination), cálculo de notas, cobertura racial, ou no estruturação dos eixos. Apenas comportamento de input + 1 campo novo opcional.
+
+### Arquivos afetados
+- `public/Ferramenta_ER.html` (único arquivo).
