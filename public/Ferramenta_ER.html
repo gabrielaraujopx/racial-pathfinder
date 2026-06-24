@@ -2202,7 +2202,8 @@ function renderItemIndicador(it, i, eixo6) {
       </div>
       <div class="item-card-row" style="margin-top:4px">
         <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB/INEP, PNAD Contínua, Coalizão...)"
-          oninput="upItem('indicadores',${i},'fonte',this.value);renderCoalizao()"
+          oninput="upItem('indicadores',${i},'fonte',this.value)"
+          onchange="renderCoalizao()"
           style="width:100%;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
       </div>
       <div class="item-card-row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
