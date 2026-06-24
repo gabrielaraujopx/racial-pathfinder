@@ -1696,6 +1696,7 @@ function renderCoalizao() {
             <div class="char-count" id="char-diag-${i}" style="color:${cor}">${len}/${lim}</div>
             <input value="${(it.fonte||'').replace(/"/g,'&quot;')}" placeholder="Fonte * (ex: SAEB 2023, IBGE/PNAD 2022, Coalizão...)"
               oninput="upDiagFonte(${i},this.value)"
+              onchange="renderCoalizao()"
               style="width:100%;margin-top:6px;padding:6px 9px;border:1px solid ${fonteOk?'#D6CFC2':'#C0392B'};border-radius:4px;font-size:11px;background:${fonteOk?'#fff':'#FFF5F5'}" />
           </div>
           <button class="item-remove" onclick="removeItem('diagnostico',${i})">×</button>
