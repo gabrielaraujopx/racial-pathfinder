@@ -2380,7 +2380,7 @@ function upDiagFonte(idx, val) {
   const it = state.coaliz[state.currentCoalizao].diagnostico[idx];
   if (!it) return;
   it.fonte = String(val||'');
-  saveState(); renderCoalizao();
+  saveState(); refreshMat();
 }
 function upVisao(val) {
   state.coaliz[state.currentCoalizao].visaoSucesso = val;
