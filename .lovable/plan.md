@@ -1,55 +1,78 @@
 ## Ajustes em `public/Ferramenta_ER.html`
 
-Três correções no gerador de PPT, sem alterar a UI da ferramenta nem o JSON de teste.
+Dois ajustes no gerador de PPT. Sem alterar lógica de cálculo nem o JSON.
 
-### 1. Linhas independentes para Meta BA e Meta PPI (gráfico Eixo 05)
+---
 
-**Hoje:** as projeções tracejadas só aparecem para metas com `ano > último ano histórico`, e existe uma "ponte" artificial que injeta o último ponto histórico no início da linha de meta (linhas 3034–3048). Isso impede comparar como as metas declaradas se comportavam *durante* a série histórica.
+### 1. Paginação inteligente da coalizão (Eixos 02, 03, 04)
 
-**Mudança:**
-- Remover o filtro `m.ano > ultAnoHist`. As linhas Meta BA e Meta PPI passam a usar **todas** as metas declaradas (`metasArr`), inclusive anos sobrepostos ao histórico.
-- Eliminar a "ponte" `metaBAByAno[ultAnoHist] = histBAByAno[ultAnoHist]` (e a equivalente de PPI). Cada série Meta usa apenas os anos onde de fato existe um valor declarado.
-- O eixo X (`anosUni`) passa a ser a união de todos os anos com qualquer valor (hist BA, hist PPI, meta BA, meta PPI, meta Gap). Isso garante que uma meta declarada para 2019, com histórico iniciando em 2015, apareça como ponto isolado/segmento próprio.
-- A anotação "🎯 Gap-alvo" continua exclusiva dos casos sem `valorMetaBA`/`valorMetaPPI`, mas passa a considerar todos os anos (não apenas futuros).
+**Problema atual:** o layout pass criado no ajuste anterior paginava cedo demais — Alfabetização sobrava espaço na coluna de Indicadores mas mesmo assim quebrava após o 3º indicador.
 
-### 2. Eliminar sobreposição dos rótulos de dados no gráfico
+**Resposta à dúvida do espaçamento:** sim, compactar com valor fixo pode gerar sobreposição quando o texto do indicador é longo (2-3 linhas). A solução é **espaçamento adaptativo por item**, calculado a partir da altura real do bloco de texto, e não um valor fixo.
 
-**Hoje:** todas as 4 séries usam `showValue:true`, `dataLabelPosition:'t'`, `dataLabelFontSize:7` e `lineDataSymbolSize:7`. Resultado: números empilhados em cima uns dos outros e por baixo dos pontos.
+**Como vai funcionar:**
 
-**Mudança (via opções por série — pptxgenjs aceita `options` por entrada do array de dados):**
-- Posicionar rótulos de forma intercalada:
-  - `BA` → label position `t` (acima)
-  - `PPI` → label position `b` (abaixo)
-  - `Meta BA` → label position `t`, deslocamento sutil + cor mais clara
-  - `Meta PPI` → label position `b`, deslocamento sutil + cor mais clara
-- Reduzir `lineDataSymbolSize` de 7 → 4 (pontos menores deixam o número legível ao lado).
-- Reduzir `dataLabelFontSize` de 7 → 6 e mudar cor das metas para um cinza/laranja mais suave, deixando os históricos com peso visual maior.
-- Quando o nº de anos no eixo X for ≥ 8, exibir rótulos **apenas das séries históricas** (Meta BA/PPI ficam sem `showValue` mas mantêm a linha). Em séries curtas mantém todos.
-- Garantir `dataLabelPosition` por série usando o formato `{ name, labels, values, options:{ dataLabelPosition, showValue, dataLabelFontSize, dataLabelColor } }` suportado pelo pptxgenjs.
+1. **Medição real de cada item** (por coluna, antes de desenhar):
+   - Para cada indicador/estratégia/lacuna, calcular `hTexto` = altura real ocupada pelo texto principal (já existe via `estH`, baseada em chars/linha e fontSize).
+   - Considerar também a altura do bloco lateral (bolinha numerada + Q + RSN + RN no caso de indicadores) — o item ocupa `max(hTexto, hLateral)`.
 
-### 3. Paginação dos itens nos slides de coalizão
+2. **Gap adaptativo entre itens:**
+   - Definir `gapMin = 0.08"` (~5.8pt) e `gapIdeal = 0.18"` (~13pt).
+   - Calcular `espacoLivre = colBot - colTop - Σ(hItem)`.
+   - `gapReal = clamp(espacoLivre / (n-1), gapMin, gapIdeal)`.
+   - Se `gapReal >= gapMin` para todos os itens da coluna → cabem todos sem paginar.
+   - Se `gapReal < gapMin` → começar a paginar (move últimos itens para próxima página, recalcula gap da página atual, repete).
 
-**Hoje:** o slide da coalizão renderiza Indicadores/Estratégias/Lacunas em 3 colunas com `c.indicadores.slice(0,10).forEach(...)` mais um corte `if (yI + totalH > colBot) return;` (linhas 2879, 2911, 2936). Resultado: Pré-escola tem 8 indicadores, mas só 4 cabem na coluna e o restante é silenciosamente descartado.
+3. **Garantia anti-sobreposição:**
+   - O cálculo parte de `hTexto` real (não de um valor fixo), então um indicador com texto longo "empurra" naturalmente o próximo, e o gap é só o espaço *adicional* entre eles. Não há colapso de texto sobre texto mesmo no `gapMin`.
+   - O bloco lateral (bolinha + Q/RSN/RN) é desenhado com a mesma `y` inicial e altura do bloco do texto principal, garantindo que **acompanha o item em todas as páginas**.
 
-**Mudança:**
-- Antes de desenhar cada coluna, fazer um **layout pass**: percorrer todos os itens (sem o `slice(0,10)`) acumulando `totalH` e quebrar em "páginas" sempre que `yCol + totalH > colBot`.
-- O número total de páginas da coalizão = `max(páginasIndic, páginasEstrat, páginasLacunas)`.
-- Para cada página `p ∈ [0, totalPaginas)`:
-  - Criar um slide novo (já existe `pres.addSlide()` no loop — vira loop interno).
-  - Header recebe sufixo `· (parte p/total)` quando `totalPaginas > 1`.
-  - Repetir as faixas superiores (header marrom, índice de redução de gaps, diagnóstico + visão de sucesso, headers das 3 colunas, avisos de barreira).
-  - Cada coluna renderiza apenas o slice de itens correspondente à sua página; se uma coluna tem menos páginas que o total, exibe os itens da última página apenas no último slide (ou fica vazia nos slides extras — preferência: deixar vazia com label "(continua nos demais eixos)" para evitar confusão).
-- Manter a numeração dos itens contínua entre páginas (Indicador 5, 6, 7, 8…), não reiniciar do 1.
-- Remover o teto rígido `slice(0,10)` e `slice(0,8)` — passa a ser limitado apenas pelo espaço vertical, agora resolvido pela paginação.
+4. **Paginação independente por coluna:**
+   - Indicadores, Estratégias e Lacunas calculam suas próprias páginas. `totalPaginasCoalizao = max(pInd, pEstrat, pLac)`.
+   - Numeração contínua entre páginas (Indicador 5, 6, 7...).
+   - Colunas que terminaram antes ficam vazias nas páginas extras (sem rótulo extra, para não poluir).
+   - Header do slide recebe sufixo `· (parte p/total)` apenas quando `totalPaginas > 1`.
 
-### Verificação
+**Resultado esperado em Alfabetização:** se 4 indicadores cabem com `gap ≥ gapMin`, o slide única página os 4. Se ainda sobrar espaço, o gap se expande até `gapIdeal`. Só paginar quando matematicamente não couber.
 
-Após editar, regenerar o PPT a partir de `public/dados_teste_variabilidade.json` (que já cobre os 6 cenários de gráfico + Pré-escola com 8 indicadores) e validar:
-1. Cada item Eixo 05 com meta BA/PPI mostra duas linhas tracejadas próprias, sem ponte forçada.
-2. Nenhum rótulo de valor fica sobreposto a outro ou ao ponto da linha em qualquer um dos 6 cenários.
-3. O slide da coalizão Pré-escola lista os 8 indicadores (provavelmente em 2 slides "parte 1/2" e "parte 2/2").
+---
+
+### 2. Modo de visualização dos gráficos (Eixo 05)
+
+**Nova UI na ferramenta** — toggle global no topo da seção de gráficos do Eixo 05, com duas opções:
+
+- **(A) Gap unificado** *(padrão)*: 1 gráfico por indicador, com linhas de Gap Real (série histórica) + Gap-Alvo (todos os anos preenchidos pela coalizão) no mesmo eixo. Até **4 gráficos por slide**. Pagina quando há mais de 4 indicadores.
+- **(B) BA × PPI separado**: 2 gráficos por indicador (Real à esquerda: BA hist + PPI hist; Projetado à direita: Meta BA + Meta PPI). Até **2 indicadores (= 4 gráficos) por slide**, lado a lado. Pagina quando há mais de 2 indicadores.
+
+**Detalhes de implementação:**
+
+- **Toggle UI**: select/radio "Modo de visualização" no header da aba Eixo 05, persistido em `localStorage` (`er_chart_mode`) para não perder ao recarregar.
+- **Valores de meta visíveis**: nos dois modos, todos os pontos de meta exibem o valor (resolve queixa anterior de que metas ficavam sem rótulo).
+- **Anti-sobreposição de rótulos**: manter o intercalado top/bottom já implementado, mas agora aplicado também ao modo Gap unificado (Gap Real `t`, Gap-Alvo `b`).
+- **Modo B**:
+  - Gráfico Real usa apenas pares (ano, BA) e (ano, PPI) históricos.
+  - Gráfico Projetado usa apenas Meta BA e Meta PPI declarados, com seu eixo X independente (todos os anos com meta declarada, inclusive sobrepostos ao histórico).
+  - Título de cada gráfico fica acima: `Indicador X — Real` / `Indicador X — Projetado`.
+  - Largura de cada gráfico ≈ metade da área útil; altura idêntica ao modo A.
+- **Modo A**:
+  - Linha sólida (Gap Real) sobre os anos com histórico.
+  - Linha tracejada (Gap-Alvo) sobre todos os anos com meta declarada (sem ponte artificial).
+  - Eixo X = união de todos os anos com qualquer valor.
+
+**Paginação dos slides de gráfico:** já existe lógica de slide-por-bloco; ajustar para considerar `itensPorSlide = modo === 'B' ? 2 : 4`.
+
+---
 
 ### Arquivos afetados
 
 - `public/Ferramenta_ER.html` (única alteração).
-- Nenhuma mudança no JSON de teste nem em outros arquivos.
+- Sem mudanças no JSON de teste nem em outros arquivos.
+
+### Verificação
+
+Após editar, regenerar PPT a partir de `public/dados_teste_variabilidade.json`:
+1. **Alfabetização (coalizão)**: confirmar que indicadores 4/5/6 entram na parte 1 se houver espaço; só pagina quando texto + gap mínimo extrapolam.
+2. **Pré-escola (8 indicadores)**: deve continuar paginando em "parte 1/2" e "parte 2/2" sem perder itens.
+3. **Eixo 05 modo A**: 4 gráficos por slide, Gap Real + Gap-Alvo juntos, rótulos de meta visíveis.
+4. **Eixo 05 modo B**: 2 indicadores por slide × 2 gráficos cada, Real à esquerda e Projetado à direita.
+5. Nenhum texto de indicador sobreposto a outro em nenhuma coalizão.
