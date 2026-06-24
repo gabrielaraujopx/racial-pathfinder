@@ -2902,9 +2902,9 @@ async function exportPPTX() {
     const impH = 0.86;
     const impCorHex = imp.semItens ? '8A8A8A' : impactoCor(imp.nivel).replace('#','');
     const impBg    = imp.semItens ? 'EEEAE3'
-                    : imp.nivel==='Reduzindo gaps' ? 'E8F4EE'
-                    : imp.nivel==='Avanço parcial' ? 'D4EDE0'
-                    : imp.nivel==='Avanço incipiente' ? 'FEF3DC'
+                    : imp.nivel==='Redução substancial'  ? 'E8F4EE'
+                    : imp.nivel==='Avanço significativo' ? 'D4EDE0'
+                    : imp.nivel==='Avanço parcial'       ? 'FEF3DC'
                     : imp.nivel==='Estagnado'      ? 'FEF3DC'
                     : imp.nivel==='Sem medição'    ? 'EEEAE3'
                                                    : 'FCE8E8';
@@ -3009,7 +3009,7 @@ async function exportPPTX() {
       : '';
     addEixoHeader(0,      'INDICADORES' + _e1lblExtra, C.azul,    mat.e1);
     addEixoHeader(colW,   'ESTRATÉGIAS', C.marrom,  mat.e2);
-    addEixoHeader(colW*2, 'LACUNAS IDENTIFICADAS', C.amarelo, mat.e3, true);
+    addEixoHeader(colW*2, 'LACUNAS', C.amarelo, mat.e3, true);
 
     // ── Aviso de Barreira de Acesso a Dados Públicos por eixo ──
     // Strip fina amarela logo abaixo do header de cada eixo quando há barreira ativa.
