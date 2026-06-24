@@ -958,7 +958,21 @@ const state = {
   currentCoalizao: 0,
   currentView: 'coalizao',
   coaliz: defaultCoalizoes(), // preenchido no init
+  // Modo de visualização dos gráficos do Eixo 05 no PPT:
+  //   'A' = Gap unificado (Gap Real + Gap-Alvo no mesmo gráfico, 4/slide)
+  //   'B' = BA×PPI separado (Real + Projetado, 2 gráficos × 2 indicadores por slide)
+  // Persistido em localStorage para sobreviver a recargas.
+  pptChartMode: (function(){
+    try { return (localStorage.getItem('er_chart_mode') === 'B') ? 'B' : 'A'; }
+    catch(e){ return 'A'; }
+  })(),
 };
+
+function setPptChartMode(m) {
+  state.pptChartMode = (m === 'B') ? 'B' : 'A';
+  try { localStorage.setItem('er_chart_mode', state.pptChartMode); } catch(e){}
+  showCoalizao(state.currentCoalizao);
+}
 
 // ══════════════════════════════════════════════════════════════
 // CÁLCULO DE MATURIDADE
