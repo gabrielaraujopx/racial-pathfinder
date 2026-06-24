@@ -2981,8 +2981,9 @@ async function exportPPTX() {
     _idxsIndPg.forEach((idx) => {
       const ind = c.indicadores[idx];
       const fonteTxt = (ind.fonte||'').trim();
-      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
-      const tH     = Math.max(circR, estH(txt, indTW, itemFS));
+      const txtBase = ind.texto||'—';
+      const txtMed  = fonteTxt ? `${txtBase} (${fonteTxt})` : txtBase;
+      const tH     = Math.max(circR, estH(txtMed, indTW, itemFS));
       const totalH = tH + _gapInd;
       const cX  = PAD*0.6;
       const tX  = cX + leftZone;
@@ -2990,7 +2991,14 @@ async function exportPPTX() {
       const corBol = emLac ? C.vermelho : C.azul;
       s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:corBol},line:{color:corBol}});
       s.addText(emLac ? '⚠' : String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:emLac?8:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
-      s.addText(txt,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      if (fonteTxt) {
+        s.addText([
+          {text: txtBase,            options:{fontSize:itemFS, color:C.cinza,  fontFace:'Calibri'}},
+          {text: ' ('+fonteTxt+')',  options:{fontSize:8,      color:C.cinzaM, fontFace:'Calibri', italic:true}}
+        ],{x:tX,y:yI,w:indTW,h:tH,wrap:true,valign:'top'});
+      } else {
+        s.addText(txtBase,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      }
       // 3 mini-badges à direita do texto, alinhadas com a bolinha
       const bdgs = [
         { label:'Q',    ...corStatusQ(ind.statusQualidade) },
