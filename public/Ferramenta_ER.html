@@ -2779,7 +2779,7 @@ async function exportPPTX() {
     };
     const _hIndPre = (ind) => {
       const fonteTxt = (ind.fonte||'').trim();
-      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
+      const txt = fonteTxt ? `${ind.texto||'—'} (${fonteTxt})` : (ind.texto||'—');
       return Math.max(_circRpre, estH(txt, _indTWpre, _itemFSpre));
     };
     const _hEstPre = (est) => Math.max(_circRpre, estH(est.texto||'—', _eTWpre, _itemFSpre));
