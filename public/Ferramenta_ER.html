@@ -2627,7 +2627,7 @@ async function exportPPTX() {
   const estH = (txt, wIn, fs) => {
     const chPerLine = Math.max(8, Math.floor(wIn * 96 * 0.55 / (fs * 0.6)));
     const lines     = Math.max(1, Math.ceil((txt||'—').length / chPerLine));
-    return lines * fs * 0.0155 + 0.04; // 0.04 de margem extra
+    return lines * fs * 0.0155 + 0.02; // margem mínima — caixa abraça o texto
   };
 
   // ── CAPA ──────────────────────────────────────────────────
@@ -2754,20 +2754,19 @@ async function exportPPTX() {
       estrategias: (_bCtxPre.estrategias && _bCtxPre.estrategias.ativa) ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
       lacunas:     (_bCtxPre.lacunas     && _bCtxPre.lacunas.ativa)     ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
     };
-    // Paginação adaptativa: empacota o máximo de itens por página, ajustando o
-    // espaçamento entre eles entre [gapMin, gapIdeal]. Só quebra para uma nova
-    // página quando os próprios textos + gapMin estouram a altura disponível.
-    const _gapMin   = 0.10;  // ≈ 7.2pt — espaço mínimo legível entre itens
-    const _gapIdeal = 0.18;  // ≈ 13pt — espaço confortável quando sobra área
+    // Paginação greedy com gap fixo: empacota o máximo de itens por página
+    // mantendo um espaçamento constante e proporcional ao texto. Só quebra
+    // quando o próximo item realmente não cabe (mesmo aproveitando o rodapé).
+    const _gapBase = 0.08;  // ≈ 5.8pt — gap fixo entre itens
     const _paginateColPre = (items, mkH, startY) => {
       const hs = items.map((it, i) => mkH(it, i));
       const avail = _colBotPre - startY;
       const pages = [];
       let cur = [], sumH = 0;
       hs.forEach((h, idx) => {
-        // n = nº de itens já presentes; ao adicionar fica n+1 itens com n gaps
-        const projGaps = cur.length * _gapMin;
-        if (cur.length > 0 && (sumH + h + projGaps) > avail) {
+        // ao adicionar este item, fica (cur.length+1) itens e cur.length gaps
+        const projH = sumH + h + cur.length * _gapBase;
+        if (cur.length > 0 && projH > avail) {
           pages.push(cur);
           cur = []; sumH = 0;
         }
@@ -2775,19 +2774,12 @@ async function exportPPTX() {
         sumH += h;
       });
       if (cur.length > 0) pages.push(cur);
-      if (!pages.length) return [{ idxs: [], gap: _gapIdeal }];
-      // Para cada página, calcula o gap real distribuindo o espaço livre.
-      return pages.map(idxs => {
-        if (idxs.length <= 1) return { idxs, gap: _gapIdeal };
-        const totH = idxs.reduce((s,i)=>s+hs[i],0);
-        const free = avail - totH;
-        const gap  = Math.max(_gapMin, Math.min(_gapIdeal, free/(idxs.length-1)));
-        return { idxs, gap };
-      });
+      if (!pages.length) return [{ idxs: [], gap: _gapBase }];
+      return pages.map(idxs => ({ idxs, gap: _gapBase }));
     };
     const _hIndPre = (ind) => {
       const fonteTxt = (ind.fonte||'').trim();
-      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
+      const txt = fonteTxt ? `${ind.texto||'—'} (${fonteTxt})` : (ind.texto||'—');
       return Math.max(_circRpre, estH(txt, _indTWpre, _itemFSpre));
     };
     const _hEstPre = (est) => Math.max(_circRpre, estH(est.texto||'—', _eTWpre, _itemFSpre));
@@ -2805,9 +2797,9 @@ async function exportPPTX() {
     const _totPagCoal = Math.max(_pagInd.length, _pagEst.length, _pagLac.length, 1);
 
     for (let pgCoal = 0; pgCoal < _totPagCoal; pgCoal++) {
-    const _pgInd = _pagInd[pgCoal] || { idxs: [], gap: _gapIdeal };
-    const _pgEst = _pagEst[pgCoal] || { idxs: [], gap: _gapIdeal };
-    const _pgLac = _pagLac[pgCoal] || { idxs: [], gap: _gapIdeal };
+    const _pgInd = _pagInd[pgCoal] || { idxs: [], gap: _gapBase };
+    const _pgEst = _pagEst[pgCoal] || { idxs: [], gap: _gapBase };
+    const _pgLac = _pagLac[pgCoal] || { idxs: [], gap: _gapBase };
     const _idxsIndPg = _pgInd.idxs;
     const _idxsEstPg = _pgEst.idxs;
     const _idxsLacPg = _pgLac.idxs;
@@ -2870,14 +2862,22 @@ async function exportPPTX() {
     s.addText('01 — DIAGNÓSTICO E CONTEXTO',{x:PAD,y:diagY+0.03,w:3.2,h:0.16,fontSize:10,bold:true,color:C.marrom,charSpacing:0.4,fontFace:'Calibri'});
 
     if (c.diagnostico && c.diagnostico.length > 0) {
-      const diagTexto = c.diagnostico
-        .map(d => {
-          const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
-          const f = (d.fonte||'').trim();
-          return f ? `${t} (Fonte: ${f})` : t;
-        })
-        .filter(Boolean).join('  ·  ');
-      s.addText(diagTexto,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,fontSize:7,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      const diagRuns = [];
+      c.diagnostico.forEach((d, di) => {
+        const t = (d.texto||'').slice(0, CHAR_LIMITS.diagnosticoItem);
+        if (!t) return;
+        const f = (d.fonte||'').trim();
+        if (diagRuns.length > 0) {
+          diagRuns.push({text:'  ·  ', options:{fontSize:7, color:C.cinzaM, fontFace:'Calibri'}});
+        }
+        diagRuns.push({text: t, options:{fontSize:7, color:C.cinza, fontFace:'Calibri'}});
+        if (f) {
+          diagRuns.push({text: ' ('+f+')', options:{fontSize:6, color:C.cinzaM, fontFace:'Calibri', italic:true}});
+        }
+      });
+      if (diagRuns.length) {
+        s.addText(diagRuns,{x:PAD,y:diagY+0.19,w:diagTW,h:diagH-0.21,wrap:true,valign:'top'});
+      }
     }
 
     const visX = W - visW - PAD + 0.05;
@@ -2989,8 +2989,9 @@ async function exportPPTX() {
     _idxsIndPg.forEach((idx) => {
       const ind = c.indicadores[idx];
       const fonteTxt = (ind.fonte||'').trim();
-      const txt = fonteTxt ? `${ind.texto||'—'} (Fonte: ${fonteTxt})` : (ind.texto||'—');
-      const tH     = Math.max(circR, estH(txt, indTW, itemFS));
+      const txtBase = ind.texto||'—';
+      const txtMed  = fonteTxt ? `${txtBase} (${fonteTxt})` : txtBase;
+      const tH     = Math.max(circR, estH(txtMed, indTW, itemFS));
       const totalH = tH + _gapInd;
       const cX  = PAD*0.6;
       const tX  = cX + leftZone;
@@ -2998,7 +2999,14 @@ async function exportPPTX() {
       const corBol = emLac ? C.vermelho : C.azul;
       s.addShape(pres.ShapeType.ellipse,{x:cX,y:yI,w:circR,h:circR,fill:{color:corBol},line:{color:corBol}});
       s.addText(emLac ? '⚠' : String(idx+1),{x:cX,y:yI,w:circR,h:circR,fontSize:emLac?8:7,bold:true,color:C.branco,align:'center',valign:'middle',fontFace:'Calibri'});
-      s.addText(txt,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      if (fonteTxt) {
+        s.addText([
+          {text: txtBase,            options:{fontSize:itemFS, color:C.cinza,  fontFace:'Calibri'}},
+          {text: ' ('+fonteTxt+')',  options:{fontSize:8,      color:C.cinzaM, fontFace:'Calibri', italic:true}}
+        ],{x:tX,y:yI,w:indTW,h:tH,wrap:true,valign:'top'});
+      } else {
+        s.addText(txtBase,{x:tX,y:yI,w:indTW,h:tH,fontSize:itemFS,color:C.cinza,fontFace:'Calibri',wrap:true,valign:'top'});
+      }
       // 3 mini-badges à direita do texto, alinhadas com a bolinha
       const bdgs = [
         { label:'Q',    ...corStatusQ(ind.statusQualidade) },
