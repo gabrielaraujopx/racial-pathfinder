@@ -2754,20 +2754,19 @@ async function exportPPTX() {
       estrategias: (_bCtxPre.estrategias && _bCtxPre.estrategias.ativa) ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
       lacunas:     (_bCtxPre.lacunas     && _bCtxPre.lacunas.ativa)     ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
     };
-    // Paginação adaptativa: empacota o máximo de itens por página, ajustando o
-    // espaçamento entre eles entre [gapMin, gapIdeal]. Só quebra para uma nova
-    // página quando os próprios textos + gapMin estouram a altura disponível.
-    const _gapMin   = 0.10;  // ≈ 7.2pt — espaço mínimo legível entre itens
-    const _gapIdeal = 0.18;  // ≈ 13pt — espaço confortável quando sobra área
+    // Paginação greedy com gap fixo: empacota o máximo de itens por página
+    // mantendo um espaçamento constante e proporcional ao texto. Só quebra
+    // quando o próximo item realmente não cabe (mesmo aproveitando o rodapé).
+    const _gapBase = 0.08;  // ≈ 5.8pt — gap fixo entre itens
     const _paginateColPre = (items, mkH, startY) => {
       const hs = items.map((it, i) => mkH(it, i));
       const avail = _colBotPre - startY;
       const pages = [];
       let cur = [], sumH = 0;
       hs.forEach((h, idx) => {
-        // n = nº de itens já presentes; ao adicionar fica n+1 itens com n gaps
-        const projGaps = cur.length * _gapMin;
-        if (cur.length > 0 && (sumH + h + projGaps) > avail) {
+        // ao adicionar este item, fica (cur.length+1) itens e cur.length gaps
+        const projH = sumH + h + cur.length * _gapBase;
+        if (cur.length > 0 && projH > avail) {
           pages.push(cur);
           cur = []; sumH = 0;
         }
@@ -2775,15 +2774,8 @@ async function exportPPTX() {
         sumH += h;
       });
       if (cur.length > 0) pages.push(cur);
-      if (!pages.length) return [{ idxs: [], gap: _gapIdeal }];
-      // Para cada página, calcula o gap real distribuindo o espaço livre.
-      return pages.map(idxs => {
-        if (idxs.length <= 1) return { idxs, gap: _gapIdeal };
-        const totH = idxs.reduce((s,i)=>s+hs[i],0);
-        const free = avail - totH;
-        const gap  = Math.max(_gapMin, Math.min(_gapIdeal, free/(idxs.length-1)));
-        return { idxs, gap };
-      });
+      if (!pages.length) return [{ idxs: [], gap: _gapBase }];
+      return pages.map(idxs => ({ idxs, gap: _gapBase }));
     };
     const _hIndPre = (ind) => {
       const fonteTxt = (ind.fonte||'').trim();
@@ -2805,9 +2797,9 @@ async function exportPPTX() {
     const _totPagCoal = Math.max(_pagInd.length, _pagEst.length, _pagLac.length, 1);
 
     for (let pgCoal = 0; pgCoal < _totPagCoal; pgCoal++) {
-    const _pgInd = _pagInd[pgCoal] || { idxs: [], gap: _gapIdeal };
-    const _pgEst = _pagEst[pgCoal] || { idxs: [], gap: _gapIdeal };
-    const _pgLac = _pagLac[pgCoal] || { idxs: [], gap: _gapIdeal };
+    const _pgInd = _pagInd[pgCoal] || { idxs: [], gap: _gapBase };
+    const _pgEst = _pagEst[pgCoal] || { idxs: [], gap: _gapBase };
+    const _pgLac = _pagLac[pgCoal] || { idxs: [], gap: _gapBase };
     const _idxsIndPg = _pgInd.idxs;
     const _idxsEstPg = _pgEst.idxs;
     const _idxsLacPg = _pgLac.idxs;
