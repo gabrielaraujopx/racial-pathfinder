@@ -2754,20 +2754,36 @@ async function exportPPTX() {
       estrategias: (_bCtxPre.estrategias && _bCtxPre.estrategias.ativa) ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
       lacunas:     (_bCtxPre.lacunas     && _bCtxPre.lacunas.ativa)     ? _baseStartYpre + 0.20 + 0.04 : _baseStartYpre,
     };
+    // Paginação adaptativa: empacota o máximo de itens por página, ajustando o
+    // espaçamento entre eles entre [gapMin, gapIdeal]. Só quebra para uma nova
+    // página quando os próprios textos + gapMin estouram a altura disponível.
+    const _gapMin   = 0.10;  // ≈ 7.2pt — espaço mínimo legível entre itens
+    const _gapIdeal = 0.18;  // ≈ 13pt — espaço confortável quando sobra área
     const _paginateColPre = (items, mkH, startY) => {
+      const hs = items.map((it, i) => mkH(it, i));
+      const avail = _colBotPre - startY;
       const pages = [];
-      let cur = [], y = startY;
-      items.forEach((it, idx) => {
-        const h = mkH(it, idx) + _itmGapPre;
-        if (y + h > _colBotPre && cur.length > 0) {
+      let cur = [], sumH = 0;
+      hs.forEach((h, idx) => {
+        // n = nº de itens já presentes; ao adicionar fica n+1 itens com n gaps
+        const projGaps = cur.length * _gapMin;
+        if (cur.length > 0 && (sumH + h + projGaps) > avail) {
           pages.push(cur);
-          cur = []; y = startY;
+          cur = []; sumH = 0;
         }
         cur.push(idx);
-        y += h;
+        sumH += h;
       });
       if (cur.length > 0) pages.push(cur);
-      return pages.length ? pages : [[]];
+      if (!pages.length) return [{ idxs: [], gap: _gapIdeal }];
+      // Para cada página, calcula o gap real distribuindo o espaço livre.
+      return pages.map(idxs => {
+        if (idxs.length <= 1) return { idxs, gap: _gapIdeal };
+        const totH = idxs.reduce((s,i)=>s+hs[i],0);
+        const free = avail - totH;
+        const gap  = Math.max(_gapMin, Math.min(_gapIdeal, free/(idxs.length-1)));
+        return { idxs, gap };
+      });
     };
     const _hIndPre = (ind) => {
       const fonteTxt = (ind.fonte||'').trim();
