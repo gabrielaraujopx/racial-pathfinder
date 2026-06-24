@@ -1,34 +1,48 @@
-## Diagnóstico do problema atual
+## Diagnóstico (validado no PPT exportado)
 
-Em `public/Ferramenta_ER.html` (linhas 2760–2786) a paginação calcula um **gap distribuído**: divide o espaço livre entre os itens, limitado a `[gapMin=0.10", gapIdeal=0.18"]`. Com poucos itens curtos, o gap fica fixado em **0.18" (~13pt)**, gerando "buraco" sob itens pequenos. Além disso, `estH` adiciona margem fixa de **0.04"** a cada caixa.
+Gerei o PPT com o JSON `ER_dados_2026-06-24.json` e inspecionei os slides:
 
-## Plano de intervenção
+- **Pré-escola parte 1/2**: 4 indicadores, ~1.4" de coluna vazia abaixo.
+- **Pré-escola parte 2/2**: 4 indicadores (5-8), mesma folga.
+- **Alfabetização parte 1/2**: 2 indicadores, espaço de sobra suficiente para o 3º.
+- **Alfabetização parte 2/2**: existe só para abrigar o 3º indicador.
 
-### 1. Espaçamento proporcional ao conteúdo (Eixos 02, 03, 04)
+A lógica de empacotamento (linhas 2761-2778) está correta — só pagina quando `projH > avail`. O problema é o **estimador de altura `estH`** (linhas 2627-2631):
 
-- **Gap fixo entre itens:** `gapBase = 0.08"` (~5.8pt) entre todos os itens da página. Não cresce quando sobra espaço.
-- **Caixa abraça o texto:** reduzir margem extra de `estH` de `0.04"` → `0.02"`. Caixa proporcional ao número real de linhas.
-- **Empacotamento máximo (greedy):** o algoritmo continua adicionando itens enquanto `Σ(hItem) + (n−1)·gapBase ≤ avail`. Só quebra para próxima página quando o próximo item de fato não cabe nem com o gap mínimo. Ou seja, **se sobrar espaço no rodapé suficiente para o próximo item, ele entra ali** — paginação só ocorre quando matematicamente impossível encaixar.
-- **Sobra sem item:** se o último item de uma coluna couber mas ainda restar espaço, esse espaço fica como margem inferior (sem inflar gaps).
-- Demais elementos (bolinha numerada, Q/RSN²/RN, badges, triângulo de criticidade, encaminhamento) seguem ancorados em `yI`/`yE`/`yL`, acompanhando cada item.
+```
+chPerLine = floor(wIn * 96 * 0.55 / (fs * 0.6))
+```
 
-### 2. Formato da fonte (Indicadores e Diagnóstico)
+Para a coluna Indicadores (`_indTWpre ≈ 1.86"`, fs 11pt) isso dá ~14 caracteres por linha. O render real do PowerPoint cabe ~30-32 caracteres. O resultado é que **cada item é estimado com o dobro de linhas**, a coluna parece cheia no papel mesmo quando está pela metade, e a paginação dispara cedo.
 
-Trocar `"(Fonte: nome)"` por `"(nome)"` em fonte menor via rich text do pptxgenjs.
+## Intervenção
 
-- **Indicadores (coalizão), linhas 2790 e 2992:** substituir string única por array `[{text: ind.texto, options:{fontSize:11}}, {text: ' ('+fonteTxt+')', options:{fontSize:8, italic:true, color:C.cinzaM}}]`.
-- **Diagnóstico (faixa superior), linhas 2872–2880:** mesma ideia. Cada item vira dois runs (texto em fontSize 7, fonte em 6 itálico `C.cinzaM`), separados por `·`.
-- `estH` continua recebendo a string completa para evitar subestimar a altura.
+Substituir a heurística por **medição real via canvas** em `public/Ferramenta_ER.html`, sem alterar layout, fontes, cores, gaps, badges ou qualquer outro elemento visual.
 
-### Arquivos afetados
+### Mudança técnica
 
-- `public/Ferramenta_ER.html`.
+Reescrever o `estH(txt, wIn, fs)` (≈15 linhas):
 
-### Verificação
+1. Criar um `_measureCtx = document.createElement('canvas').getContext('2d')` uma única vez por export.
+2. `ctx.font = fs + 'pt Calibri'` (família usada nos slides).
+3. Simular wrap: dividir `txt` em palavras, somar `ctx.measureText(word + ' ').width` até estourar `wIn * 96` pixels → incrementa contador de linhas; respeitar quebras explícitas `\n` (relevante para o eixo Lacunas com `→ recomendação`).
+4. Retornar `lines * fs * 0.0140 + 0.02` (fator de altura de linha mais próximo do Calibri no PPT real; o atual `0.0155` também superestima ~10%).
+5. Fallback defensivo se `document` indisponível: fórmula antiga com fator `0.85` em vez de `0.55`.
 
-1. Coalizão com itens curtos → próximos itens grudados (gap ~0.08"), sobra concentrada no rodapé.
-2. Coalizão com itens longos (2–3 linhas) → sem sobreposição, gap consistente.
-3. **Aproveitamento de rodapé:** se ainda couber 1 item no fim da coluna, ele entra na página atual em vez de ir para a seguinte.
-4. Pré-escola (8 indicadores) → paginação só quando inevitável; nenhum item perdido.
-5. Indicadores exibem `texto (nome da fonte)` com a fonte em corpo menor itálico.
-6. Diagnóstico exibe `texto (nome) · texto (nome) · …` com fonte em corpo menor itálico.
+### Efeito esperado (validável)
+
+- Pré-escola: 6-7 indicadores em uma página (talvez única); pagina só se restar 1-2.
+- Alfabetização: 3 indicadores numa única página, sem paginação.
+- Coalizões com itens realmente longos continuam paginando, agora com base em altura real.
+
+### Validação
+
+Após aplicar, executar novamente: gerar PPT com este mesmo JSON via Playwright, converter para imagens e conferir os slides de Pré-escola e Alfabetização. Critérios:
+
+1. Pré-escola não fica com >1" de coluna vazia em nenhuma parte.
+2. Alfabetização cabe em 1 slide.
+3. Nenhuma sobreposição entre itens em qualquer coalizão.
+
+### Arquivos
+
+- `public/Ferramenta_ER.html` (somente o bloco do `estH` e a criação do helper de canvas).
