@@ -1874,6 +1874,17 @@ function renderEixo6Form(c) {
         <span><strong>Incluir slide(s) de visualização gráfica BA × PPI no PPT</strong>
         <span style="color:var(--cinza-m);font-weight:400">— após o slide do Eixo 05 desta coalizão, gera gráfico de linha (BA vs PPI) por item listado, em grid de até 4 por slide.</span></span>
       </label>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #B5BCC9;display:flex;flex-direction:column;gap:4px">
+        <span style="font-weight:600;color:var(--cinza)">Modo de visualização dos gráficos (aplica-se a todas as coalizões):</span>
+        <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:400">
+          <input type="radio" name="er_chart_mode" value="A" ${state.pptChartMode==='A'?'checked':''} onchange="setPptChartMode('A')" style="margin-top:2px">
+          <span><strong>Gap unificado</strong> — 1 gráfico por indicador com Gap Real (série histórica) e Gap-Alvo (anos com meta) na mesma área. Até 4 indicadores por slide.</span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:400">
+          <input type="radio" name="er_chart_mode" value="B" ${state.pptChartMode==='B'?'checked':''} onchange="setPptChartMode('B')" style="margin-top:2px">
+          <span><strong>BA × PPI separado</strong> — 2 gráficos por indicador (Real à esquerda, Projetado/Meta à direita). Até 2 indicadores por slide.</span>
+        </label>
+      </div>
     </div>
 
     ${semIndicadores ? `<div style="padding:12px;background:#FCE8E8;border-left:3px solid #C0392B;border-radius:5px;font-size:12px;color:#7A2A20;margin-bottom:12px">
