@@ -1299,7 +1299,7 @@ function _calcStatusVsMeta(item, serie, marcoEfetivo, sent, limAbs) {
   const metas = Array.isArray(item.metas) ? item.metas : [];
   if (metas.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
   if (!serie || serie.length === 0) return { statusMeta: 'Sem meta declarada', metaInfo: null };
-  const calcGap = p => sent === 'subir' ? (p.valorBA - p.valorPPI) : (p.valorPPI - p.valorBA);
+  const calcGap = p => _gapDoPonto(p, sent);
   // Ano mais recente com dado e que possui meta declarada ≤ a ele.
   const anosComDado = Array.from(new Set(serie.map(p=>p.ano))).sort((a,b)=>a-b);
   const ultAnoDado = anosComDado[anosComDado.length-1];
