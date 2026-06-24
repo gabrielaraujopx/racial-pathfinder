@@ -2331,7 +2331,7 @@ function renderSintese() {
                   : m.nivel==='Sem redução'?'mat-baixa'
                   : m.nivel==='Retrocesso'?'mat-baixa'
                   : 'mat-vazia';
-        const clG = e.nivel==='Reduzindo gaps'?'mat-alta':e.nivel==='Avanço parcial'?'mat-avancada':(e.nivel==='Avanço incipiente'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia';
+        const clG = e.nivel==='Redução substancial'?'mat-alta':e.nivel==='Avanço significativo'?'mat-avancada':(e.nivel==='Avanço parcial'||e.nivel==='Estagnado')?'mat-desenv':(e.nivel==='Sem avanço'||e.nivel==='Gaps se abrindo')?'mat-baixa':'mat-vazia';
         return {
           metaTag: e.semItens ? '—' : (m.nivel + (m.nVsMetaValido>0?' ('+m.pct+'%)':'')),
           metaCl: clM,
