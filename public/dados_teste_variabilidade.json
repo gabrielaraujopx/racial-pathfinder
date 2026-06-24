@@ -439,53 +439,26 @@
     "visaoSucesso": "Reduzir gap para ≤10 p.p. em todas as redes priorizadas até 2028.",
     "indicadores": [
       {
-        "texto": "Aprendizagem adequada 2º ano - Leitura",
-        "fonte": "SAEB/INEP",
-        "tipo": "Alcance",
-        "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
-      },
-      {
-        "texto": "Aprendizagem adequada 2º ano - Matemática",
-        "fonte": "SAEB/INEP",
-        "tipo": "Alcance",
-        "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
-      },
-      {
-        "texto": "Taxa de alfabetização 7 anos",
-        "fonte": "Coalizão",
-        "tipo": "Alcance",
-        "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
-      },
-      {
-        "texto": "% professores alfabetização com formação específica",
-        "fonte": "INEP",
-        "tipo": "Alcance",
-        "tipoRacial": "geral",
-        "statusQualidade": "Tem",
-        "resultadoEstados": "S",
-        "resultadoNacional": "S"
-      },
-      {
-        "texto": "Material didático racialmente sensível adotado",
-        "fonte": "Coalizão",
+        "texto": "% Crianças alfabetizadas 2º ano",
+        "fonte": "ICA",
         "tipo": "Transformação",
         "tipoRacial": "geral",
-        "statusQualidade": "Tem parcialmente",
-        "resultadoEstados": "P",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
+        "resultadoNacional": "S"
+      },
+      {
+        "texto": "Avaliação de Fluência (Crescimento % de alunos iniciantes + fluentes nos estados PARC)\n",
+        "fonte": "Avaliação de Fluência ",
+        "tipo": "Transformação",
+        "tipoRacial": "geral",
+        "statusQualidade": "Tem",
+        "resultadoEstados": "S",
         "resultadoNacional": "P"
       },
       {
-        "texto": "Frequência escolar 1º-3º ano",
-        "fonte": "INEP",
+        "texto": "% de matrículas em estados PARC e municípios com apoio X Brasil",
+        "fonte": "CENSO",
         "tipo": "Alcance",
         "tipoRacial": "geral",
         "statusQualidade": "Tem",
@@ -518,8 +491,8 @@
     "estadoLacunas": "mapeadas",
     "barreirasContexto": {
       "indicadores": {
-        "ativa": false,
-        "justificativa": ""
+        "ativa": true,
+        "justificativa": "dificuldade de acesso aos microdados raciais do ica. "
       },
       "estrategias": {
         "ativa": false,
@@ -532,20 +505,24 @@
     },
     "eixo6": {
       "pontosMinimos": 3,
-      "limiarGapAbsoluto": 1.0,
-      "pptAnoInicial": null,
-      "pptAnoFinal": null,
+      "limiarGapAbsoluto": 1,
+      "pptAnoInicial": 2016,
+      "pptAnoFinal": 2025,
       "coalizaoAnoInicio": 2019,
+      "barreira": {
+        "ativa": false,
+        "justificativa": ""
+      },
       "incluirGraficos": true,
       "itens": [
         {
           "indicadorRef": "ind-0",
-          "metrica": "Leitura adequada (%)",
+          "metrica": "Leitura e escrita adequada (%)",
           "unidade": "%",
           "sentidoDesejado": "subir",
           "serie": [
             {
-              "ano": 2015,
+              "ano": 2023,
               "valorBA": 65,
               "valorPPI": 38,
               "fonte": "SAEB/INEP"
@@ -576,6 +553,9 @@
             }
           ],
           "observacoes": "",
+          "pptAnoInicialOverride": 2023,
+          "pptAnoFinalOverride": 2025,
+          "coalizaoAnoInicioOverride": 2019,
           "barreira": {
             "ativa": false,
             "justificativa": ""
@@ -583,39 +563,39 @@
           "metas": [
             {
               "ano": 2021,
-              "valorMetaGap": 17.5,
-              "valorMetaBA": 69.0,
-              "valorMetaPPI": 51.5
+              "valorMetaBA": 69,
+              "valorMetaPPI": 51.5,
+              "valorMetaGap": 17.5
             },
             {
               "ano": 2023,
-              "valorMetaGap": 10.0,
               "valorMetaBA": 69.8,
-              "valorMetaPPI": 59.8
+              "valorMetaPPI": 59.8,
+              "valorMetaGap": 10
             },
             {
               "ano": 2025,
-              "valorMetaGap": 8.6,
               "valorMetaBA": 70.6,
-              "valorMetaPPI": 62.0
+              "valorMetaPPI": 62,
+              "valorMetaGap": 8.6
             },
             {
               "ano": 2026,
-              "valorMetaGap": 7.9,
-              "valorMetaBA": 71.0,
-              "valorMetaPPI": 63.1
+              "valorMetaBA": 71,
+              "valorMetaPPI": 63.1,
+              "valorMetaGap": 7.9
             },
             {
               "ano": 2029,
-              "valorMetaGap": 5.8,
               "valorMetaBA": 72.2,
-              "valorMetaPPI": 66.4
+              "valorMetaPPI": 66.4,
+              "valorMetaGap": 5.8
             },
             {
               "ano": 2033,
-              "valorMetaGap": 3.0,
               "valorMetaBA": 73.8,
-              "valorMetaPPI": 70.8
+              "valorMetaPPI": 70.8,
+              "valorMetaGap": 3
             }
           ]
         },
@@ -657,6 +637,9 @@
             }
           ],
           "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null,
           "barreira": {
             "ativa": false,
             "justificativa": ""
@@ -664,39 +647,39 @@
           "metas": [
             {
               "ano": 2021,
-              "valorMetaGap": 19.38,
-              "valorMetaBA": 64.0,
-              "valorMetaPPI": 44.62
+              "valorMetaBA": 64,
+              "valorMetaPPI": 44.62,
+              "valorMetaGap": 19.38
             },
             {
               "ano": 2023,
-              "valorMetaGap": 13.75,
               "valorMetaBA": 64.8,
-              "valorMetaPPI": 51.05
+              "valorMetaPPI": 51.05,
+              "valorMetaGap": 13.75
             },
             {
               "ano": 2025,
-              "valorMetaGap": 11.83,
               "valorMetaBA": 65.6,
-              "valorMetaPPI": 53.77
+              "valorMetaPPI": 53.77,
+              "valorMetaGap": 11.83
             },
             {
               "ano": 2026,
-              "valorMetaGap": 10.86,
-              "valorMetaBA": 66.0,
-              "valorMetaPPI": 55.14
+              "valorMetaBA": 66,
+              "valorMetaPPI": 55.14,
+              "valorMetaGap": 10.86
             },
             {
               "ano": 2029,
-              "valorMetaGap": 7.98,
               "valorMetaBA": 67.2,
-              "valorMetaPPI": 59.22
+              "valorMetaPPI": 59.22,
+              "valorMetaGap": 7.98
             },
             {
               "ano": 2033,
-              "valorMetaGap": 4.13,
               "valorMetaBA": 68.8,
-              "valorMetaPPI": 64.67
+              "valorMetaPPI": 64.67,
+              "valorMetaGap": 4.13
             }
           ]
         },
@@ -738,6 +721,9 @@
             }
           ],
           "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null,
           "barreira": {
             "ativa": false,
             "justificativa": ""
@@ -745,33 +731,33 @@
           "metas": [
             {
               "ano": 2021,
-              "valorMetaGap": 16.0,
-              "valorMetaBA": 76.0,
-              "valorMetaPPI": 60.0
+              "valorMetaBA": 76,
+              "valorMetaPPI": 60,
+              "valorMetaGap": 16
             },
             {
               "ano": 2023,
-              "valorMetaGap": 12.0,
-              "valorMetaBA": 78.0,
-              "valorMetaPPI": 66.0
+              "valorMetaBA": 78,
+              "valorMetaPPI": 66,
+              "valorMetaGap": 12
             },
             {
               "ano": 2025,
-              "valorMetaGap": 8.0,
-              "valorMetaBA": 80.0,
-              "valorMetaPPI": 72.0
+              "valorMetaBA": 80,
+              "valorMetaPPI": 72,
+              "valorMetaGap": 8
             },
             {
               "ano": 2029,
-              "valorMetaGap": 4.0,
-              "valorMetaBA": 84.0,
-              "valorMetaPPI": 80.0
+              "valorMetaBA": 84,
+              "valorMetaPPI": 80,
+              "valorMetaGap": 4
             },
             {
               "ano": 2033,
-              "valorMetaGap": 2.0,
-              "valorMetaBA": 88.0,
-              "valorMetaPPI": 86.0
+              "valorMetaBA": 88,
+              "valorMetaPPI": 86,
+              "valorMetaGap": 2
             }
           ]
         },
@@ -807,6 +793,9 @@
             }
           ],
           "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null,
           "barreira": {
             "ativa": false,
             "justificativa": ""
@@ -820,6 +809,9 @@
           "sentidoDesejado": "subir",
           "serie": [],
           "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null,
           "barreira": {
             "ativa": true,
             "justificativa": "Sem painel público — só amostra interna."
@@ -833,6 +825,9 @@
           "sentidoDesejado": "subir",
           "serie": [],
           "observacoes": "",
+          "pptAnoInicialOverride": null,
+          "pptAnoFinalOverride": null,
+          "coalizaoAnoInicioOverride": null,
           "barreira": {
             "ativa": true,
             "justificativa": "Censo Escolar não desagrega frequência por raça por município."
