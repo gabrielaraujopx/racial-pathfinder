@@ -3204,7 +3204,7 @@ async function exportPPTX() {
           const gapReal = (it.serie || [])
             .filter(p => p && p.ano!=null && p.ano!=='' && _pontoTemGap(p))
             .slice().sort((a,b)=>a.ano-b.ano)
-            .map(p => ({ ano: p.ano, v: _gapDoPonto(p, sentido === 'descer' ? 'descer' : 'subir') }))
+            .map(p => ({ ano: p.ano, v: _gapDoPonto(p, sentido) }))
             .filter(o => o.v != null && Number.isFinite(o.v));
           const gapAlvo = metasArr.map(m => {
             let g = (m.valorMetaGap == null) ? null : +m.valorMetaGap;
